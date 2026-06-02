@@ -41,6 +41,7 @@ import { PageHeaderComponent } from '@shared/components/page-header/page-header.
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ToastService } from '@shared/services/toast.service';
 import {
+  ArrowRightLeft,
   Grid3x3,
   LucideAngularModule,
   Pencil,
@@ -89,6 +90,7 @@ export class PhaseGroupsComponent implements OnInit {
   protected readonly shuffleIcon = Shuffle;
   protected readonly gridIcon = Grid3x3;
   protected readonly xIcon = X;
+  protected readonly moveIcon = ArrowRightLeft;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -114,6 +116,8 @@ export class PhaseGroupsComponent implements OnInit {
 
   protected readonly confirmDrawOpen = signal(false);
   protected readonly drawing = signal(false);
+
+  protected readonly moveTeamTarget = signal<IPhaseTeamResponse | null>(null);
 
   protected readonly isOwner = computed(() => {
     const t = this.tournament();
@@ -396,14 +400,48 @@ export class PhaseGroupsComponent implements OnInit {
     const team = event.previousContainer.data[event.previousIndex];
     if (!team) return;
 
-    const sourceGroupId = team.groupId;
-    if (sourceGroupId === targetGroupId) return;
+    if (team.groupId === targetGroupId) return;
 
+    this._performMove(team, targetGroupId, targetGroupName, false);
+  }
+
+  protected canMoveTeam(team: IPhaseTeamResponse): boolean {
+    if (!this.canEdit()) return false;
+    if (team.groupId !== null) return true;
+    return this.groups().length > 0;
+  }
+
+  protected openMoveTeam(team: IPhaseTeamResponse): void {
+    if (!this.canMoveTeam(team)) return;
+    if (this.movingTeamId() !== null) return;
+    this.moveTeamTarget.set(team);
+  }
+
+  protected closeMoveTeam(): void {
+    if (this.movingTeamId() !== null) return;
+    this.moveTeamTarget.set(null);
+  }
+
+  protected selectMoveDestination(
+    team: IPhaseTeamResponse,
+    targetGroupId: string | null,
+    targetGroupName: string | null,
+  ): void {
+    if (team.groupId === targetGroupId) return;
+    if (this.movingTeamId() !== null) return;
+    this._performMove(team, targetGroupId, targetGroupName, true);
+  }
+
+  private _performMove(
+    team: IPhaseTeamResponse,
+    targetGroupId: string | null,
+    targetGroupName: string | null,
+    announce: boolean,
+  ): void {
     const tid = this.tournament()?.id;
     const pid = this.phase()?.id;
     if (!tid || !pid) return;
 
-    // Optimistic update
     const previousState = this.phaseTeams();
     this.phaseTeams.update((list) =>
       list.map((t) =>
@@ -420,12 +458,18 @@ export class PhaseGroupsComponent implements OnInit {
       .subscribe({
         next: (updated) => {
           this.movingTeamId.set(null);
+          this.moveTeamTarget.set(null);
           this.phaseTeams.update((list) =>
             list.map((t) => (t.teamId === updated.teamId ? updated : t)),
           );
+          if (announce) {
+            const dest = targetGroupName ?? 'Sem grupo';
+            this._toast.success(`${updated.teamName} → ${dest}.`);
+          }
         },
         error: (err: unknown) => {
           this.movingTeamId.set(null);
+          this.moveTeamTarget.set(null);
           this.phaseTeams.set(previousState);
           this._toast.error(
             err instanceof ApiException
@@ -440,6 +484,10 @@ export class PhaseGroupsComponent implements OnInit {
   protected onEscape(): void {
     if (this.groupModalOpen() && !this.savingGroup()) {
       this.closeGroupModal();
+      return;
+    }
+    if (this.moveTeamTarget() !== null && this.movingTeamId() === null) {
+      this.closeMoveTeam();
     }
   }
 

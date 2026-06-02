@@ -3,11 +3,13 @@ import {
   Component,
   computed,
   DestroyRef,
+  HostListener,
   inject,
   OnInit,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
@@ -16,14 +18,25 @@ import { IPredictionResponse } from '@core/interfaces/prediction.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { PredictionsService } from '@core/services/predictions.service';
 import { TournamentsService } from '@core/services/tournaments.service';
-import { AvatarComponent } from '@shared/components/avatar/avatar.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { UsersService } from '@core/services/users.service';
 import {
+  backdropFade,
+  modalScale,
+} from '@shared/animations/animations';
+import { AvatarComponent } from '@shared/components/avatar/avatar.component';
+import { ButtonComponent } from '@shared/components/button/button.component';
+import { InputComponent } from '@shared/components/input/input.component';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { ToastService } from '@shared/services/toast.service';
+import {
+  KeyRound,
   LucideAngularModule,
+  Pencil,
   Settings,
   Sparkles,
   Trophy,
   Users,
+  X,
 } from 'lucide-angular';
 
 @Component({
@@ -32,23 +45,65 @@ import {
   imports: [
     RouterLink,
     LucideAngularModule,
+    ReactiveFormsModule,
     PageHeaderComponent,
     AvatarComponent,
+    ButtonComponent,
+    InputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
+  animations: [modalScale, backdropFade],
 })
 export class ProfileComponent implements OnInit {
   private readonly _authState = inject(AuthState);
   private readonly _tournamentsService = inject(TournamentsService);
   private readonly _predictionsService = inject(PredictionsService);
+  private readonly _usersService = inject(UsersService);
+  private readonly _toast = inject(ToastService);
+  private readonly _fb = inject(FormBuilder);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly trophyIcon = Trophy;
   protected readonly sparklesIcon = Sparkles;
   protected readonly usersIcon = Users;
   protected readonly settingsIcon = Settings;
+  protected readonly pencilIcon = Pencil;
+  protected readonly keyIcon = KeyRound;
+  protected readonly xIcon = X;
+
+  protected readonly editProfileOpen = signal(false);
+  protected readonly editProfileSubmitting = signal(false);
+  protected readonly editProfileError = signal<string | null>(null);
+
+  protected readonly changePasswordOpen = signal(false);
+  protected readonly changePasswordSubmitting = signal(false);
+  protected readonly changePasswordError = signal<string | null>(null);
+
+  protected readonly profileForm = this._fb.group({
+    name: this._fb.nonNullable.control('', {
+      validators: [
+        Validators.required,
+        Validators.minLength(2),
+        Validators.maxLength(120),
+      ],
+    }),
+    avatarUrl: this._fb.nonNullable.control(''),
+  });
+
+  protected readonly passwordForm = this._fb.group({
+    currentPassword: this._fb.nonNullable.control('', {
+      validators: [Validators.required],
+    }),
+    newPassword: this._fb.nonNullable.control('', {
+      validators: [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(100),
+      ],
+    }),
+  });
 
   protected readonly user = this._authState.user;
   protected readonly loading = signal(true);
@@ -89,6 +144,152 @@ export class ProfileComponent implements OnInit {
 
   public ngOnInit(): void {
     this._load();
+    this._refreshMe();
+  }
+
+  protected openEditProfile(): void {
+    const u = this.user();
+    if (!u) return;
+    this.profileForm.reset({
+      name: u.name,
+      avatarUrl: u.avatarUrl ?? '',
+    });
+    this.editProfileError.set(null);
+    this.editProfileOpen.set(true);
+  }
+
+  protected closeEditProfile(): void {
+    if (this.editProfileSubmitting()) return;
+    this.editProfileOpen.set(false);
+    this.editProfileError.set(null);
+  }
+
+  protected submitProfile(): void {
+    if (this.editProfileSubmitting()) return;
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      return;
+    }
+    const raw = this.profileForm.getRawValue();
+    const trimmedAvatar = raw.avatarUrl.trim();
+
+    this.editProfileSubmitting.set(true);
+    this.editProfileError.set(null);
+
+    this._usersService
+      .updateMe({
+        name: raw.name.trim(),
+        avatarUrl: trimmedAvatar.length > 0 ? trimmedAvatar : null,
+      })
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: () => {
+          this.editProfileSubmitting.set(false);
+          this.editProfileOpen.set(false);
+          this._toast.success('Perfil atualizado.');
+        },
+        error: (err: unknown) => {
+          this.editProfileSubmitting.set(false);
+          this.editProfileError.set(
+            err instanceof ApiException
+              ? err.message
+              : 'Não foi possível atualizar o perfil.',
+          );
+        },
+      });
+  }
+
+  protected openChangePassword(): void {
+    this.passwordForm.reset({ currentPassword: '', newPassword: '' });
+    this.changePasswordError.set(null);
+    this.changePasswordOpen.set(true);
+  }
+
+  protected closeChangePassword(): void {
+    if (this.changePasswordSubmitting()) return;
+    this.changePasswordOpen.set(false);
+    this.changePasswordError.set(null);
+  }
+
+  protected submitPassword(): void {
+    if (this.changePasswordSubmitting()) return;
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+    const raw = this.passwordForm.getRawValue();
+
+    this.changePasswordSubmitting.set(true);
+    this.changePasswordError.set(null);
+
+    this._usersService
+      .changePassword({
+        currentPassword: raw.currentPassword,
+        newPassword: raw.newPassword,
+      })
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: () => {
+          this.changePasswordSubmitting.set(false);
+          this.changePasswordOpen.set(false);
+          this._toast.success('Senha alterada com sucesso.');
+        },
+        error: (err: unknown) => {
+          this.changePasswordSubmitting.set(false);
+          this.changePasswordError.set(
+            err instanceof ApiException
+              ? err.message
+              : 'Não foi possível alterar a senha.',
+          );
+        },
+      });
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.editProfileOpen() && !this.editProfileSubmitting()) {
+      this.closeEditProfile();
+      return;
+    }
+    if (this.changePasswordOpen() && !this.changePasswordSubmitting()) {
+      this.closeChangePassword();
+    }
+  }
+
+  protected nameError(): string | null {
+    const c = this.profileForm.controls.name;
+    if (!c.touched || c.valid) return null;
+    if (c.hasError('required') || c.hasError('minlength')) {
+      return 'Nome precisa ter ao menos 2 caracteres.';
+    }
+    if (c.hasError('maxlength')) return 'Máximo de 120 caracteres.';
+    return null;
+  }
+
+  protected currentPasswordError(): string | null {
+    const c = this.passwordForm.controls.currentPassword;
+    if (!c.touched || c.valid) return null;
+    if (c.hasError('required')) return 'Informe a senha atual.';
+    return null;
+  }
+
+  protected newPasswordError(): string | null {
+    const c = this.passwordForm.controls.newPassword;
+    if (!c.touched || c.valid) return null;
+    if (c.hasError('required')) return 'Informe a nova senha.';
+    if (c.hasError('minlength')) return 'Mínimo de 8 caracteres.';
+    if (c.hasError('maxlength')) return 'Máximo de 100 caracteres.';
+    return null;
+  }
+
+  private _refreshMe(): void {
+    this._usersService
+      .getMe()
+      .pipe(
+        takeUntilDestroyed(this._destroyRef),
+        catchError(() => of(null)),
+      )
+      .subscribe();
   }
 
   private _load(): void {

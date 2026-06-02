@@ -39,6 +39,10 @@ export class TokenStorage {
     this._write(REFRESH_TOKEN_KEY, refreshToken);
   }
 
+  public updateUser(user: IUserSummary): void {
+    this._write(USER_KEY, JSON.stringify(user));
+  }
+
   public clear(): void {
     this._remove(ACCESS_TOKEN_KEY);
     this._remove(REFRESH_TOKEN_KEY);

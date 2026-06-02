@@ -271,10 +271,6 @@ export class TournamentFormComponent implements OnInit {
     this.saveForm.emit(payload);
   }
 
-  protected onCancel(): void {
-    this.cancelForm.emit();
-  }
-
   protected onDelete(): void {
     this.deleteTournament.emit();
   }

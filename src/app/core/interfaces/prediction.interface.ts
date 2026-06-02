@@ -14,3 +14,17 @@ export interface IPlacePredictionRequest {
   homeScore: number;
   awayScore: number;
 }
+
+/**
+ * Agregado dos palpites de uma partida (sem revelar palpites individuais).
+ * Usado na "Previsão da Galera".
+ */
+export interface IPredictionStatsResponse {
+  totalVotes: number;
+  homeWin: number;
+  draw: number;
+  awayWin: number;
+  homeWinPct: number;
+  drawPct: number;
+  awayWinPct: number;
+}

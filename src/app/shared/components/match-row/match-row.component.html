@@ -1,0 +1,85 @@
+@let m = match();
+<div
+  class="row"
+  [class.row--cancelled]="m.status === 'CANCELLED'"
+>
+  <div class="row__when" [class.row__when--solo]="!dateLabel()">
+    @if (dateLabel(); as d) {
+      <span class="row__date">{{ d }}</span>
+    }
+    <span class="row__status" [attr.data-kind]="statusKind()">
+      {{ statusBadge() }}
+    </span>
+  </div>
+
+  <div class="row__teams">
+    <div
+      class="row__team"
+      [class.row__team--loser]="winnerSide() === 'away'"
+    >
+      <app-team-badge
+        [name]="m.homeTeam.name"
+        [shortName]="m.homeTeam.shortName"
+        [badgeUrl]="m.homeTeam.badgeUrl"
+        [size]="20"
+      />
+      <span class="row__team-name">{{ m.homeTeam.name }}</span>
+    </div>
+    <div
+      class="row__team"
+      [class.row__team--loser]="winnerSide() === 'home'"
+    >
+      <app-team-badge
+        [name]="m.awayTeam.name"
+        [shortName]="m.awayTeam.shortName"
+        [badgeUrl]="m.awayTeam.badgeUrl"
+        [size]="20"
+      />
+      <span class="row__team-name">{{ m.awayTeam.name }}</span>
+    </div>
+  </div>
+
+  <div class="row__score">
+    @if (hasScore()) {
+      <span
+        class="row__score-value"
+        [class.row__score-value--loser]="winnerSide() === 'away'"
+      >
+        {{ m.homeScore }}
+        @if (hasPenalties()) {
+          <span class="row__score-pen">({{ m.homePenalties }})</span>
+        }
+      </span>
+      <span
+        class="row__score-value"
+        [class.row__score-value--loser]="winnerSide() === 'home'"
+      >
+        {{ m.awayScore }}
+        @if (hasPenalties()) {
+          <span class="row__score-pen">({{ m.awayPenalties }})</span>
+        }
+      </span>
+    } @else {
+      <span class="row__score-placeholder">—</span>
+      <span class="row__score-placeholder">—</span>
+    }
+  </div>
+
+  @if (chip(); as c) {
+    @if (c.kind === 'pending') {
+      <button
+        type="button"
+        class="row__chip row__chip--action"
+        [attr.data-kind]="c.kind"
+        (click)="onPredictClick($event)"
+      >
+        <lucide-icon [img]="sparklesIcon" [size]="12" />
+        {{ c.label }}
+      </button>
+    } @else {
+      <span class="row__chip" [attr.data-kind]="c.kind">
+        {{ c.label }}
+      </span>
+    }
+  }
+</div>

@@ -42,6 +42,11 @@ export class AuthState {
     this._refreshTokenSig.set(refreshToken);
   }
 
+  public applyUserUpdate(user: IUserSummary): void {
+    this._storage.updateUser(user);
+    this._userSig.set(user);
+  }
+
   public clear(): void {
     this._storage.clear();
     this._accessTokenSig.set(null);

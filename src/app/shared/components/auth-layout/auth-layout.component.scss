@@ -1,14 +1,14 @@
 :host {
   display: block;
-  min-height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .auth-layout {
   position: relative;
   display: flex;
-  min-height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   padding-inline: var(--space-4);
   padding-block: max(var(--space-6), var(--safe-top))
     max(var(--space-6), var(--safe-bottom));

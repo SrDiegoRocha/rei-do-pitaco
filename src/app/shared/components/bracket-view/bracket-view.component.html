@@ -1,0 +1,227 @@
+@let roundList = rounds();
+<div class="bv" [attr.data-mode]="mode()">
+  @for (round of roundList; track round.round; let rIndex = $index, rLast = $last) {
+    <section
+      class="bv-round"
+      [class.bv-round--final]="rLast"
+      [attr.aria-labelledby]="'bv-round-' + round.round"
+    >
+      <header class="bv-round__header">
+        <span class="bv-round__icon" aria-hidden="true">
+          @if (rLast) {
+            <lucide-icon [img]="crownIcon" [size]="14" />
+          } @else {
+            <lucide-icon [img]="trophyIcon" [size]="14" />
+          }
+        </span>
+        <h3 class="bv-round__name" [id]="'bv-round-' + round.round">
+          {{ round.name }}
+        </h3>
+        <span class="bv-round__count">
+          {{ mainTies(round).length }}
+          {{ mainTies(round).length === 1 ? 'jogo' : 'jogos' }}
+        </span>
+      </header>
+
+      <ul class="bv-ties">
+        @for (tie of mainTies(round); track tie.tieId) {
+          <li
+            class="bv-tie"
+            [class.bv-tie--complete]="tie.complete"
+            [class.bv-tie--winner-home]="tie.winner?.id === tie.homeTeam?.id"
+            [class.bv-tie--winner-away]="tie.winner?.id === tie.awayTeam?.id"
+          >
+            <div class="bv-tie__row">
+              <div
+                class="bv-tie__side"
+                [class.bv-tie__side--winner]="tie.winner && tie.winner.id === tie.homeTeam?.id"
+                [class.bv-tie__side--loser]="tie.winner && tie.homeTeam && tie.winner.id !== tie.homeTeam.id"
+              >
+                @if (tie.homeTeam; as home) {
+                  <app-team-badge
+                    [name]="home.name"
+                    [shortName]="home.shortName"
+                    [badgeUrl]="home.badgeUrl"
+                    [size]="24"
+                  />
+                  <span class="bv-tie__team">{{ home.shortName ?? home.name }}</span>
+                } @else {
+                  <span class="bv-tie__team bv-tie__team--empty">A definir</span>
+                }
+              </div>
+              <span class="bv-tie__agg">
+                {{ tie.homeAggregate }}
+                @if (tie.homePenalties !== null) {
+                  <span class="bv-tie__pen">({{ tie.homePenalties }})</span>
+                }
+              </span>
+            </div>
+            <div class="bv-tie__row">
+              <div
+                class="bv-tie__side"
+                [class.bv-tie__side--winner]="tie.winner && tie.winner.id === tie.awayTeam?.id"
+                [class.bv-tie__side--loser]="tie.winner && tie.awayTeam && tie.winner.id !== tie.awayTeam.id"
+              >
+                @if (tie.awayTeam; as away) {
+                  <app-team-badge
+                    [name]="away.name"
+                    [shortName]="away.shortName"
+                    [badgeUrl]="away.badgeUrl"
+                    [size]="24"
+                  />
+                  <span class="bv-tie__team">{{ away.shortName ?? away.name }}</span>
+                } @else {
+                  <span class="bv-tie__team bv-tie__team--empty">A definir</span>
+                }
+              </div>
+              <span class="bv-tie__agg">
+                {{ tie.awayAggregate }}
+                @if (tie.awayPenalties !== null) {
+                  <span class="bv-tie__pen">({{ tie.awayPenalties }})</span>
+                }
+              </span>
+            </div>
+
+            <div class="bv-tie__meta">
+              @if (tie.winner; as w) {
+                <span class="bv-tie__winner">
+                  <lucide-icon [img]="crownIcon" [size]="11" />
+                  {{ w.shortName ?? w.name }} avança
+                </span>
+              } @else if (tie.complete) {
+                <span class="bv-tie__status bv-tie__status--pending">
+                  Aguardando pênaltis
+                </span>
+              } @else {
+                <span class="bv-tie__status">
+                  {{ tie.legs.length === 1 ? 'A jogar' : 'Em andamento' }}
+                </span>
+              }
+              @if (tie.legs.length > 1) {
+                <span class="bv-tie__legs-count">
+                  {{ tie.legs.length }} jogos
+                </span>
+              }
+            </div>
+
+            @if (showLegs() && tie.legs.length > 0) {
+              <details class="bv-tie__details">
+                <summary class="bv-tie__details-summary">Ver pernas</summary>
+                <ul class="bv-legs">
+                  @for (leg of tie.legs; track leg.id; let legIdx = $index) {
+                    <li class="bv-leg">
+                      <span class="bv-leg__label">
+                        {{ legLabel(legIdx, tie.legs.length) }}
+                      </span>
+                      @if (formatDate(leg.scheduledAt); as d) {
+                        <span class="bv-leg__when">
+                          <lucide-icon [img]="calendarIcon" [size]="11" />
+                          {{ d }}
+                        </span>
+                      } @else {
+                        <span class="bv-leg__when bv-leg__when--muted">
+                          Sem horário
+                        </span>
+                      }
+                      <span class="bv-leg__score">
+                        @if (leg.status === 'COMPLETED') {
+                          <strong>{{ leg.homeScore }}</strong>
+                          <span>×</span>
+                          <strong>{{ leg.awayScore }}</strong>
+                          @if (leg.homePenalties !== null && leg.awayPenalties !== null) {
+                            <span class="bv-leg__pen">
+                              pên {{ leg.homePenalties }}×{{ leg.awayPenalties }}
+                            </span>
+                          }
+                        } @else if (leg.status === 'CANCELLED') {
+                          <span class="bv-leg__cancelled">Cancelada</span>
+                        } @else {
+                          <span class="bv-leg__pending">—</span>
+                        }
+                      </span>
+                      @if (matchHref(leg.id); as href) {
+                        <a class="bv-leg__link" [routerLink]="href">Ver</a>
+                      }
+                    </li>
+                  }
+                </ul>
+              </details>
+            }
+          </li>
+        }
+      </ul>
+
+      @if (thirdPlaceTie(round); as third) {
+        <section class="bv-third" aria-label="Disputa de 3º lugar">
+          <header class="bv-third__header">
+            <lucide-icon [img]="medalIcon" [size]="12" />
+            <h4 class="bv-third__title">Disputa de 3º lugar</h4>
+          </header>
+          <div
+            class="bv-tie bv-tie--third"
+            [class.bv-tie--complete]="third.complete"
+          >
+            <div class="bv-tie__row">
+              <div
+                class="bv-tie__side"
+                [class.bv-tie__side--winner]="third.winner && third.winner.id === third.homeTeam?.id"
+                [class.bv-tie__side--loser]="third.winner && third.homeTeam && third.winner.id !== third.homeTeam.id"
+              >
+                @if (third.homeTeam; as home) {
+                  <app-team-badge
+                    [name]="home.name"
+                    [shortName]="home.shortName"
+                    [badgeUrl]="home.badgeUrl"
+                    [size]="22"
+                  />
+                  <span class="bv-tie__team">{{ home.shortName ?? home.name }}</span>
+                } @else {
+                  <span class="bv-tie__team bv-tie__team--empty">A definir</span>
+                }
+              </div>
+              <span class="bv-tie__agg">
+                {{ third.homeAggregate }}
+                @if (third.homePenalties !== null) {
+                  <span class="bv-tie__pen">({{ third.homePenalties }})</span>
+                }
+              </span>
+            </div>
+            <div class="bv-tie__row">
+              <div
+                class="bv-tie__side"
+                [class.bv-tie__side--winner]="third.winner && third.winner.id === third.awayTeam?.id"
+                [class.bv-tie__side--loser]="third.winner && third.awayTeam && third.winner.id !== third.awayTeam.id"
+              >
+                @if (third.awayTeam; as away) {
+                  <app-team-badge
+                    [name]="away.name"
+                    [shortName]="away.shortName"
+                    [badgeUrl]="away.badgeUrl"
+                    [size]="22"
+                  />
+                  <span class="bv-tie__team">{{ away.shortName ?? away.name }}</span>
+                } @else {
+                  <span class="bv-tie__team bv-tie__team--empty">A definir</span>
+                }
+              </div>
+              <span class="bv-tie__agg">
+                {{ third.awayAggregate }}
+                @if (third.awayPenalties !== null) {
+                  <span class="bv-tie__pen">({{ third.awayPenalties }})</span>
+                }
+              </span>
+            </div>
+            @if (third.winner; as w) {
+              <div class="bv-tie__meta">
+                <span class="bv-tie__winner bv-tie__winner--bronze">
+                  <lucide-icon [img]="awardIcon" [size]="11" />
+                  {{ w.shortName ?? w.name }} · 3º
+                </span>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </section>
+  }
+</div>

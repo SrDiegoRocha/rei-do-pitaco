@@ -103,10 +103,24 @@
                     [size]="32"
                   />
                   <span class="team-chip__name">{{ team.teamName }}</span>
+                  @if (canMoveTeam(team)) {
+                    <button
+                      type="button"
+                      class="team-chip__action"
+                      (click)="openMoveTeam(team)"
+                      (pointerdown)="$event.stopPropagation()"
+                      (mousedown)="$event.stopPropagation()"
+                      (touchstart)="$event.stopPropagation()"
+                      [disabled]="movingTeamId() !== null"
+                      [attr.aria-label]="'Mover ' + team.teamName"
+                    >
+                      <lucide-icon [img]="moveIcon" [size]="16" />
+                    </button>
+                  }
                 </li>
               } @empty {
                 <li class="group__empty-hint" aria-hidden="true">
-                  Arraste times aqui para tirá-los do grupo
+                  Todos os times já estão em grupos.
                 </li>
               }
             </ul>
@@ -173,10 +187,24 @@
                     [size]="32"
                   />
                   <span class="team-chip__name">{{ team.teamName }}</span>
+                  @if (canMoveTeam(team)) {
+                    <button
+                      type="button"
+                      class="team-chip__action"
+                      (click)="openMoveTeam(team)"
+                      (pointerdown)="$event.stopPropagation()"
+                      (mousedown)="$event.stopPropagation()"
+                      (touchstart)="$event.stopPropagation()"
+                      [disabled]="movingTeamId() !== null"
+                      [attr.aria-label]="'Mover ' + team.teamName"
+                    >
+                      <lucide-icon [img]="moveIcon" [size]="16" />
+                    </button>
+                  }
                 </li>
               } @empty {
                 <li class="group__empty-hint" aria-hidden="true">
-                  Arraste times aqui
+                  Sem times. Arraste ou use o botão de mover em outro time.
                 </li>
               }
             </ul>
@@ -284,3 +312,73 @@
   (confirmed)="confirmDrawAction()"
   (cancelled)="cancelDraw()"
 />
+
+@if (moveTeamTarget(); as team) {
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="move-team-title">
+    <div
+      class="modal__backdrop"
+      (click)="closeMoveTeam()"
+      aria-hidden="true"
+      @backdropFade
+    ></div>
+    <div class="modal__content" @modalScale>
+      <header class="modal__header">
+        <div class="modal__heading">
+          <h2 class="modal__title" id="move-team-title">Mover time</h2>
+          <p class="modal__subtitle">
+            <strong>{{ team.teamName }}</strong>
+            · atualmente em
+            <span>{{ team.groupName ?? 'Sem grupo' }}</span>
+          </p>
+        </div>
+        <button
+          type="button"
+          class="modal__close"
+          (click)="closeMoveTeam()"
+          [disabled]="movingTeamId() !== null"
+          aria-label="Fechar"
+        >
+          <lucide-icon [img]="xIcon" [size]="18" />
+        </button>
+      </header>
+
+      <ul class="action-list">
+        @for (group of groups(); track group.id) {
+          @if (group.id !== team.groupId) {
+            <li>
+              <button
+                type="button"
+                class="action-list__item"
+                (click)="selectMoveDestination(team, group.id, group.name)"
+                [disabled]="movingTeamId() !== null"
+              >
+                <span class="action-list__label">Mover para</span>
+                <span class="action-list__value">{{ group.name }}</span>
+              </button>
+            </li>
+          }
+        }
+        @if (team.groupId !== null) {
+          <li>
+            <button
+              type="button"
+              class="action-list__item action-list__item--danger"
+              (click)="selectMoveDestination(team, null, null)"
+              [disabled]="movingTeamId() !== null"
+            >
+              <span class="action-list__label">Remover do grupo</span>
+              <span class="action-list__value">Sem grupo</span>
+            </button>
+          </li>
+        }
+        @if (
+          team.groupId === null && groups().length === 0
+        ) {
+          <li class="action-list__empty">
+            Crie um grupo antes para mover este time.
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+}

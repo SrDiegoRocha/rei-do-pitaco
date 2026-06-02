@@ -4,6 +4,8 @@
       <a
         class="page-header__back"
         [routerLink]="path"
+        [queryParams]="backQueryParams()"
+        [fragment]="backFragment() ?? undefined"
         [attr.aria-label]="backLabel()"
       >
         <lucide-icon [img]="arrowLeftIcon" [size]="20" />

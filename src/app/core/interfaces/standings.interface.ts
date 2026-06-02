@@ -1,3 +1,5 @@
+export type StandingZoneStyle = 'qualified' | 'eliminated' | 'none';
+
 export interface IStandingRow {
   position: number;
   teamId: string;
@@ -12,6 +14,11 @@ export interface IStandingRow {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+  zoneId: string | null;
+  zoneName: string | null;
+  nextPhaseId: string | null;
+  nextPhaseName: string | null;
+  qualifies: boolean;
 }
 
 export interface IGroupStandings {

@@ -97,9 +97,6 @@ export class PhaseFormComponent implements OnInit {
       'AUTOMATIC',
       { validators: [Validators.required] },
     ),
-    qualifiersPerGroup: this._fb.control<number | null>(null, {
-      validators: [Validators.min(1)],
-    }),
     playsInsideGroupOnly: this._fb.nonNullable.control<boolean>(false),
     hasThirdPlace: this._fb.nonNullable.control<boolean>(false),
   });
@@ -167,7 +164,6 @@ export class PhaseFormComponent implements OnInit {
         phaseType: init.phaseType,
         matchLegMode: init.matchLegMode,
         matchGenerationMode: init.matchGenerationMode,
-        qualifiersPerGroup: init.qualifiersPerGroup,
         playsInsideGroupOnly: init.playsInsideGroupOnly ?? false,
         hasThirdPlace: init.hasThirdPlace,
       });
@@ -182,13 +178,6 @@ export class PhaseFormComponent implements OnInit {
     if (!c.touched || c.valid) return null;
     if (c.hasError('required')) return 'Nome é obrigatório';
     if (c.hasError('maxlength')) return 'Máximo de 60 caracteres';
-    return null;
-  }
-
-  protected qualifiersError(): string | null {
-    const c = this.form.controls.qualifiersPerGroup;
-    if (!c.touched || c.valid) return null;
-    if (c.hasError('min')) return 'Mínimo 1';
     return null;
   }
 
@@ -240,8 +229,6 @@ export class PhaseFormComponent implements OnInit {
       phaseType: raw.phaseType,
       matchLegMode: raw.matchLegMode,
       matchGenerationMode: raw.matchGenerationMode,
-      qualifiersPerGroup:
-        raw.phaseType === 'GROUPS' ? raw.qualifiersPerGroup : null,
       playsInsideGroupOnly:
         raw.phaseType === 'GROUPS' ? raw.playsInsideGroupOnly : null,
       hasThirdPlace:
@@ -249,10 +236,6 @@ export class PhaseFormComponent implements OnInit {
     };
 
     this.saveForm.emit(payload);
-  }
-
-  protected onCancel(): void {
-    this.cancelForm.emit();
   }
 
   protected onDelete(): void {

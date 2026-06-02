@@ -1,0 +1,260 @@
+<section class="page">
+  <app-page-header
+    title="Participante"
+    [backTo]="backToHref()"
+    [backQueryParams]="backQueryParams()"
+  />
+
+  @if (loading()) {
+    <div class="page__skeleton">
+      <div class="u-skeleton page__skeleton-hero"></div>
+      <div class="u-skeleton page__skeleton-line"></div>
+      <div class="u-skeleton page__skeleton-line"></div>
+    </div>
+  } @else if (loadError(); as err) {
+    <div class="page__error" role="alert">
+      <p class="page__error-text">{{ err }}</p>
+    </div>
+  } @else if (participant(); as p) {
+    <article class="hero">
+      <app-avatar [name]="p.name" [imageUrl]="p.avatarUrl" [size]="72" />
+      <div class="hero__info">
+        <h2 class="hero__name">
+          {{ p.name }}
+          @if (isMe()) {
+            <span class="hero__you">você</span>
+          }
+        </h2>
+        <div class="hero__meta">
+          <span class="hero__pos">{{ p.position }}º no ranking</span>
+          <span aria-hidden="true">·</span>
+          <span><strong>{{ p.totalPoints }}</strong> pts</span>
+        </div>
+      </div>
+    </article>
+
+    <nav class="tabs" role="tablist" aria-label="Seções do participante">
+      <button
+        type="button"
+        role="tab"
+        class="tabs__btn"
+        [class.tabs__btn--active]="activeTab() === 'info'"
+        [attr.aria-selected]="activeTab() === 'info'"
+        (click)="setTab('info')"
+      >
+        Detalhes
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tabs__btn"
+        [class.tabs__btn--active]="activeTab() === 'predictions'"
+        [attr.aria-selected]="activeTab() === 'predictions'"
+        (click)="setTab('predictions')"
+      >
+        Palpites
+      </button>
+    </nav>
+
+    <div class="tab-body">
+      @if (activeTab() === 'info') {
+        <article class="stats">
+          <div class="stats__grid">
+            <div class="stat stat--accent">
+              <span class="stat__value">{{ p.totalPoints }}</span>
+              <span class="stat__label">Pontos</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">{{ accuracy() }}%</span>
+              <span class="stat__label">Aproveitamento</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">{{ p.position }}º</span>
+              <span class="stat__label">Posição</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value stat__value--exact">
+                {{ p.exactScoreHits }}
+              </span>
+              <span class="stat__label">Placar exato</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value stat__value--winner">
+                {{ p.winnerHits }}
+              </span>
+              <span class="stat__label">Acertou vencedor</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value stat__value--wrong">
+                {{ p.wrongs }}
+              </span>
+              <span class="stat__label">Erros</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">{{ p.totalPredictions }}</span>
+              <span class="stat__label">Palpites</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">{{ pointsPerPrediction() }}</span>
+              <span class="stat__label">Pts / palpite</span>
+            </div>
+          </div>
+          <p class="stats__hint">
+            Aproveitamento = acertos (exato + vencedor) sobre os
+            {{ resolvedCount() }} palpites já resolvidos.
+          </p>
+        </article>
+
+        <article class="compare">
+          <header class="compare__header">
+            <span class="compare__icon" aria-hidden="true">
+              <lucide-icon [img]="compareIcon" [size]="18" />
+            </span>
+            <div class="compare__heading">
+              <h3 class="compare__title">Comparar</h3>
+              <p class="compare__subtitle">
+                Escolha outro participante para comparar lado a lado.
+              </p>
+            </div>
+          </header>
+
+          @if (compareOptions().length === 0) {
+            <p class="compare__empty">
+              Não há outros participantes para comparar ainda.
+            </p>
+          } @else {
+            <select
+              class="compare__select"
+              [value]="compareId() ?? ''"
+              (change)="onCompareChange($event)"
+              aria-label="Participante para comparar"
+            >
+              <option value="">Selecione um participante…</option>
+              @for (opt of compareOptions(); track opt.userId) {
+                <option [value]="opt.userId">
+                  {{ opt.position }}º · {{ opt.name }}
+                </option>
+              }
+            </select>
+
+            @if (compareRow(); as other) {
+              <div class="vs">
+                <div class="vs__head">
+                  <div class="vs__person">
+                    <app-avatar [name]="p.name" [imageUrl]="p.avatarUrl" [size]="32" />
+                    <span class="vs__person-name">{{ p.name }}</span>
+                  </div>
+                  <span class="vs__x" aria-hidden="true">×</span>
+                  <div class="vs__person vs__person--right">
+                    <span class="vs__person-name">{{ other.name }}</span>
+                    <app-avatar [name]="other.name" [imageUrl]="other.avatarUrl" [size]="32" />
+                  </div>
+                </div>
+
+                <ul class="vs__metrics">
+                  @for (metric of compareMetrics(); track metric.label) {
+                    <li class="vs__metric">
+                      <span
+                        class="vs__num"
+                        [class.vs__num--win]="isBetter(metric, 'a')"
+                      >
+                        {{ metric.a }}{{ metric.suffix ?? '' }}
+                      </span>
+                      <span class="vs__metric-label">{{ metric.label }}</span>
+                      <span
+                        class="vs__num vs__num--right"
+                        [class.vs__num--win]="isBetter(metric, 'b')"
+                      >
+                        {{ metric.b }}{{ metric.suffix ?? '' }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          }
+        </article>
+      }
+
+      @if (activeTab() === 'predictions') {
+        @if (predictionsError()) {
+          <app-empty-state
+            [icon]="sparklesIcon"
+            title="Palpites indisponíveis"
+            description="Não foi possível carregar os palpites deste participante agora."
+          />
+        } @else if (predictionRows().length === 0) {
+          <app-empty-state
+            [icon]="sparklesIcon"
+            title="Nenhum palpite ainda"
+            description="Os palpites deste participante aparecem aqui."
+          />
+        } @else {
+          <ul class="preds" [@listStagger]="predictionRows().length">
+            @for (row of predictionRows(); track row.prediction.id) {
+              <li class="pred">
+                <div class="pred__top">
+                  <span class="pred__phase">
+                    {{ predictionPhaseLabel(row.match) }}
+                  </span>
+                  @if (matchResultRevealed(row.match)) {
+                    <span class="pred__pts" [class.pred__pts--zero]="row.prediction.points === 0">
+                      +{{ row.prediction.points }} pts
+                    </span>
+                  } @else {
+                    <span class="pred__pending">Aguardando</span>
+                  }
+                </div>
+
+                <div class="pred__row">
+                  <div class="pred__team">
+                    <app-team-badge
+                      [name]="row.match.homeTeam.name"
+                      [shortName]="row.match.homeTeam.shortName"
+                      [badgeUrl]="row.match.homeTeam.badgeUrl"
+                      [primaryColor]="row.match.homeTeam.primaryColor ?? '#10B981'"
+                      [size]="24"
+                    />
+                    <span class="pred__team-name">
+                      {{ row.match.homeTeam.shortName ?? row.match.homeTeam.name }}
+                    </span>
+                  </div>
+
+                  <div class="pred__scores">
+                    @if (predScoreHidden(row)) {
+                      <span class="pred__guess pred__guess--hidden" title="Oculto até o início">
+                        ? × ?
+                      </span>
+                    } @else {
+                      <span class="pred__guess">
+                        {{ row.prediction.homeScore }} × {{ row.prediction.awayScore }}
+                      </span>
+                    }
+                    @if (matchResultRevealed(row.match)) {
+                      <span class="pred__actual">
+                        Resultado: {{ row.match.homeScore }} × {{ row.match.awayScore }}
+                      </span>
+                    }
+                  </div>
+
+                  <div class="pred__team pred__team--right">
+                    <span class="pred__team-name">
+                      {{ row.match.awayTeam.shortName ?? row.match.awayTeam.name }}
+                    </span>
+                    <app-team-badge
+                      [name]="row.match.awayTeam.name"
+                      [shortName]="row.match.awayTeam.shortName"
+                      [badgeUrl]="row.match.awayTeam.badgeUrl"
+                      [primaryColor]="row.match.awayTeam.primaryColor ?? '#6366F1'"
+                      [size]="24"
+                    />
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </div>
+  }
+</section>

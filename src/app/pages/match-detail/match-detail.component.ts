@@ -15,29 +15,36 @@ import { ApiException } from '@core/errors/api-error';
 import { MatchStatus } from '@core/interfaces/enums';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
-import { IPredictionResponse } from '@core/interfaces/prediction.interface';
+import {
+  IPredictionResponse,
+  IPredictionStatsResponse,
+} from '@core/interfaces/prediction.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { MatchesService } from '@core/services/matches.service';
 import { PhasesService } from '@core/services/phases.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { TournamentsService } from '@core/services/tournaments.service';
+import { AvatarComponent } from '@shared/components/avatar/avatar.component';
+import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import {
   IMatchResultPayload,
   MatchResultDialogComponent,
 } from '@shared/components/match-result-dialog/match-result-dialog.component';
-import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import {
   IPredictionPayload,
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { ThemeService } from '@shared/services/theme.service';
 import { ToastService } from '@shared/services/toast.service';
+import { readableAccent } from '@core/utils/color-contrast';
 import {
   ArrowLeftRight,
   Ban,
   CalendarDays,
+  ChevronRight,
   Hash,
   LucideAngularModule,
   Pencil,
@@ -47,11 +54,13 @@ import {
   Users,
 } from 'lucide-angular';
 
-const STATUS_LABEL: Record<MatchStatus, string> = {
+const STATUS_TEXT: Record<MatchStatus, string> = {
   SCHEDULED: 'Agendada',
-  COMPLETED: 'Concluída',
+  COMPLETED: 'Encerrada',
   CANCELLED: 'Cancelada',
 };
+
+type MatchTab = 'predictions' | 'info';
 
 @Component({
   selector: 'app-match-detail',
@@ -62,6 +71,7 @@ const STATUS_LABEL: Record<MatchStatus, string> = {
     PageHeaderComponent,
     TeamBadgeComponent,
     AvatarComponent,
+    ButtonComponent,
     MatchResultDialogComponent,
     PredictionDialogComponent,
     ConfirmDialogComponent,
@@ -76,6 +86,7 @@ export class MatchDetailComponent implements OnInit {
   private readonly _matchesService = inject(MatchesService);
   private readonly _predictionsService = inject(PredictionsService);
   private readonly _authState = inject(AuthState);
+  private readonly _theme = inject(ThemeService);
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
@@ -90,12 +101,15 @@ export class MatchDetailComponent implements OnInit {
   protected readonly banIcon = Ban;
   protected readonly trashIcon = Trash2;
   protected readonly sparklesIcon = Sparkles;
+  protected readonly chevronRightIcon = ChevronRight;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly phase = signal<IPhaseResponse | null>(null);
   protected readonly match = signal<IMatchResponse | null>(null);
+
+  protected readonly activeTab = signal<MatchTab>('predictions');
 
   protected readonly resultDialogOpen = signal(false);
   protected readonly resultSubmitting = signal(false);
@@ -123,21 +137,25 @@ export class MatchDetailComponent implements OnInit {
 
   protected readonly backToHref = computed(() => {
     const t = this.tournament();
-    const p = this.phase();
-    return t && p
-      ? `/tournaments/${t.id}/phases/${p.id}/matches`
-      : '/tournaments';
+    return t ? `/tournaments/${t.id}` : '/tournaments';
   });
 
-  protected readonly statusLabel = computed(() => {
+  protected readonly backQueryParams = computed(() => ({ tab: 'matches' }));
+
+  protected readonly backFragment = computed(() => {
     const m = this.match();
-    return m ? STATUS_LABEL[m.status] : '';
+    return m ? `match-${m.id}` : null;
+  });
+
+  protected readonly statusText = computed(() => {
+    const m = this.match();
+    return m ? STATUS_TEXT[m.status] : '';
   });
 
   protected readonly statusClass = computed(() => {
     const m = this.match();
     if (!m) return '';
-    return `match-hero__status match-hero__status--${m.status.toLowerCase()}`;
+    return `hero__status hero__status--${m.status.toLowerCase()}`;
   });
 
   protected readonly hasScore = computed(() => {
@@ -145,38 +163,72 @@ export class MatchDetailComponent implements OnInit {
     return m !== null && m.homeScore !== null && m.awayScore !== null;
   });
 
-  protected readonly scheduledLabel = computed(() => {
+  protected readonly dateLabel = computed(() => {
     const m = this.match();
-    if (!m || !m.scheduledAt) return 'Sem horário definido';
+    if (!m || !m.scheduledAt) return 'Sem horário';
     try {
-      const date = new Date(m.scheduledAt);
       return new Intl.DateTimeFormat('pt-BR', {
-        weekday: 'short',
         day: '2-digit',
-        month: 'short',
+        month: '2-digit',
         year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(date);
+      }).format(new Date(m.scheduledAt));
     } catch {
       return m.scheduledAt;
     }
   });
 
-  protected readonly roundLabel = computed(() => {
+  protected readonly timeLabel = computed(() => {
     const m = this.match();
-    return m ? `Rodada ${m.round + 1}` : '';
+    if (!m || !m.scheduledAt) return '';
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(m.scheduledAt));
+    } catch {
+      return '';
+    }
   });
 
-  protected readonly isTwoLegged = computed(
-    () => this.phase()?.matchLegMode === 'TWO_LEGGED',
+  protected readonly subMeta = computed(() => {
+    const m = this.match();
+    const p = this.phase();
+    if (!m || !p) return '';
+    const parts: string[] = [p.name, `Rodada ${m.round}`];
+    if (m.groupName) parts.push(`Grupo ${m.groupName}`);
+    if (p.matchLegMode === 'TWO_LEGGED') parts.push('Ida e volta');
+    return parts.join(' · ');
+  });
+
+  protected readonly winnerSide = computed<'home' | 'away' | 'draw' | null>(
+    () => {
+      const m = this.match();
+      if (!m || m.status !== 'COMPLETED') return null;
+      if (m.homeScore === null || m.awayScore === null) return null;
+      if (m.homeScore > m.awayScore) return 'home';
+      if (m.awayScore > m.homeScore) return 'away';
+      if (m.homePenalties !== null && m.awayPenalties !== null) {
+        if (m.homePenalties > m.awayPenalties) return 'away';
+        if (m.awayPenalties > m.homePenalties) return 'home';
+      }
+      return 'draw';
+    },
   );
 
-  protected readonly cancelledNote = computed(() => {
-    return this.match()?.status === 'CANCELLED'
-      ? 'Esta partida foi cancelada. Palpites associados não pontuam.'
-      : null;
+  protected readonly hasPenalties = computed(() => {
+    const m = this.match();
+    return (
+      m !== null &&
+      m.homePenalties !== null &&
+      m.awayPenalties !== null
+    );
   });
+
+  protected readonly cancelledNote = computed(() =>
+    this.match()?.status === 'CANCELLED'
+      ? 'Esta partida foi cancelada. Palpites associados não pontuam.'
+      : null,
+  );
 
   protected readonly isOwner = computed(() => {
     const t = this.tournament();
@@ -184,7 +236,47 @@ export class MatchDetailComponent implements OnInit {
     return !!(t && user && t.owner.id === user.id);
   });
 
-  protected readonly canEdit = computed(() => {
+  /** Aba "Detalhes" só para o organizador, e só quando há ações disponíveis. */
+  protected readonly showInfoTab = computed(
+    () => this.isOwner() && this.tournament()?.status !== 'FINISHED',
+  );
+
+  // "Previsão da Galera" — agregado dos palpites antes do jogo começar.
+  protected readonly predictionStats =
+    signal<IPredictionStatsResponse | null>(null);
+
+  /** Mostra o card enquanto o resultado não saiu e a partida não começou. */
+  protected readonly showCrowdCard = computed(() => {
+    const m = this.match();
+    const stats = this.predictionStats();
+    if (!m || !stats) return false;
+    if (!this.isActiveMember()) return false;
+    if (stats.totalVotes <= 0) return false;
+    if (m.status !== 'SCHEDULED') return false;
+    if (m.scheduledAt) {
+      return new Date(m.scheduledAt).getTime() > Date.now();
+    }
+    return true;
+  });
+
+  protected readonly homeTeamColor = computed(
+    () => this.match()?.homeTeam.primaryColor || '#10B981',
+  );
+
+  protected readonly awayTeamColor = computed(
+    () => this.match()?.awayTeam.primaryColor || '#6366F1',
+  );
+
+  // Versão da cor com contraste garantido para o texto da %, conforme o tema.
+  protected readonly homePctColor = computed(() =>
+    readableAccent(this.homeTeamColor(), this._theme.resolvedTheme() === 'dark'),
+  );
+
+  protected readonly awayPctColor = computed(() =>
+    readableAccent(this.awayTeamColor(), this._theme.resolvedTheme() === 'dark'),
+  );
+
+  protected readonly canEditScheduling = computed(() => {
     if (!this.isOwner()) return false;
     if (this.tournament()?.status === 'FINISHED') return false;
     if (this.match()?.status === 'COMPLETED') return false;
@@ -207,8 +299,10 @@ export class MatchDetailComponent implements OnInit {
     if (!t || !m) return false;
     if (t.status !== 'IN_PROGRESS') return false;
     if (m.status === 'CANCELLED') return false;
-    if (!m.scheduledAt) return false;
-    return new Date(m.scheduledAt).getTime() <= Date.now();
+    if (m.scheduledAt) {
+      return new Date(m.scheduledAt).getTime() <= Date.now();
+    }
+    return true;
   });
 
   protected readonly setResultBlockReason = computed(() => {
@@ -220,18 +314,21 @@ export class MatchDetailComponent implements OnInit {
     if (t.status === 'DRAFT' || t.status === 'OPEN') {
       return 'Resultados só podem ser lançados após o torneio começar.';
     }
-    if (t.status === 'FINISHED') return null;
-    if (!m.scheduledAt) {
-      return 'Defina o agendamento antes de lançar o resultado.';
-    }
-    if (new Date(m.scheduledAt).getTime() > Date.now()) {
-      return 'O resultado só pode ser lançado depois do horário agendado.';
+    if (t.status === 'FINISHED') return 'Torneio encerrado.';
+    if (m.scheduledAt && new Date(m.scheduledAt).getTime() > Date.now()) {
+      return 'Aguardando o horário agendado.';
     }
     return null;
   });
 
   protected readonly resultActionLabel = computed(() =>
     this.match()?.status === 'COMPLETED' ? 'Editar resultado' : 'Lançar resultado',
+  );
+
+  protected readonly resultActionDescription = computed(() =>
+    this.match()?.status === 'COMPLETED'
+      ? 'Refaz o placar e recalcula pontos.'
+      : 'Define o placar final e libera pontos.',
   );
 
   protected readonly canCancel = computed(() => {
@@ -263,9 +360,11 @@ export class MatchDetailComponent implements OnInit {
     const m = this.match();
     if (!t || !m) return false;
     if (t.status !== 'IN_PROGRESS') return false;
-    if (m.status !== 'SCHEDULED') return false;
-    if (!m.scheduledAt) return false;
-    return new Date(m.scheduledAt).getTime() > Date.now();
+    if (m.status === 'CANCELLED') return false;
+    if (m.scheduledAt) {
+      return new Date(m.scheduledAt).getTime() > Date.now();
+    }
+    return m.status !== 'COMPLETED';
   });
 
   protected readonly predictionBlockReason = computed(() => {
@@ -282,14 +381,14 @@ export class MatchDetailComponent implements OnInit {
     if (m.status === 'CANCELLED') {
       return 'Partida cancelada não aceita palpites.';
     }
+    if (m.scheduledAt) {
+      if (new Date(m.scheduledAt).getTime() <= Date.now()) {
+        return 'Palpites encerrados (a partida começou).';
+      }
+      return null;
+    }
     if (m.status === 'COMPLETED') {
-      return 'Resultado já lançado, não dá mais para palpitar.';
-    }
-    if (!m.scheduledAt) {
-      return 'Sem horário definido — aguardando o organizador agendar.';
-    }
-    if (new Date(m.scheduledAt).getTime() <= Date.now()) {
-      return 'Prazo encerrado — palpites travados na deadline.';
+      return 'Palpites encerrados (resultado lançado).';
     }
     return null;
   });
@@ -297,6 +396,26 @@ export class MatchDetailComponent implements OnInit {
   protected readonly predictionActionLabel = computed(() =>
     this.myPrediction() ? 'Editar palpite' : 'Lançar palpite',
   );
+
+  protected readonly canRevealScores = computed(() => {
+    const m = this.match();
+    if (!m) return false;
+    if (m.status === 'COMPLETED' || m.status === 'CANCELLED') return true;
+    if (m.scheduledAt) {
+      return new Date(m.scheduledAt).getTime() <= Date.now();
+    }
+    return false;
+  });
+
+  protected readonly revealLockReason = computed(() => {
+    const m = this.match();
+    if (!m) return null;
+    if (m.status === 'COMPLETED' || m.status === 'CANCELLED') return null;
+    if (m.scheduledAt) {
+      return 'Os placares serão revelados após o início da partida.';
+    }
+    return 'Os placares serão revelados quando o resultado for lançado.';
+  });
 
   protected readonly sortedPredictions = computed<IPredictionResponse[]>(() => {
     const me = this._authState.user();
@@ -310,13 +429,9 @@ export class MatchDetailComponent implements OnInit {
     });
   });
 
-  protected readonly canViewAllPredictions = computed(() => {
-    if (this.isOwner()) return true;
-    if (!this.isActiveMember()) return false;
-    const m = this.match();
-    if (!m || !m.scheduledAt) return false;
-    return new Date(m.scheduledAt).getTime() <= Date.now();
-  });
+  protected setTab(tab: MatchTab): void {
+    this.activeTab.set(tab);
+  }
 
   protected openResultDialog(): void {
     if (!this.canSetResult()) return;
@@ -358,11 +473,11 @@ export class MatchDetailComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.cancelSubmitting.set(false);
-          const message =
+          this._toast.error(
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível cancelar a partida.';
-          this._toast.error(message);
+              : 'Não foi possível cancelar a partida.',
+          );
         },
       });
   }
@@ -392,21 +507,17 @@ export class MatchDetailComponent implements OnInit {
           this.deleteSubmitting.set(false);
           this.deleteDialogOpen.set(false);
           this._toast.success('Partida excluída.');
-          void this._router.navigate([
-            '/tournaments',
-            t.id,
-            'phases',
-            p.id,
-            'matches',
-          ]);
+          void this._router.navigate(['/tournaments', t.id], {
+            queryParams: { tab: 'matches' },
+          });
         },
         error: (err: unknown) => {
           this.deleteSubmitting.set(false);
-          const message =
+          this._toast.error(
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível excluir a partida.';
-          this._toast.error(message);
+              : 'Não foi possível excluir a partida.',
+          );
         },
       });
   }
@@ -439,7 +550,15 @@ export class MatchDetailComponent implements OnInit {
           this.predictionSubmitting.set(false);
           this.predictionDialogOpen.set(false);
           this.myPrediction.set(prediction);
-          this._toast.success('Palpite salvo.');
+          this.allPredictions.update((list) => {
+            const idx = list.findIndex((p) => p.id === prediction.id);
+            if (idx >= 0) {
+              const next = [...list];
+              next[idx] = prediction;
+              return next;
+            }
+            return [...list, prediction];
+          });
         },
         error: (err: unknown) => {
           this.predictionSubmitting.set(false);
@@ -476,16 +595,22 @@ export class MatchDetailComponent implements OnInit {
         next: () => {
           this.removePredictionSubmitting.set(false);
           this.removePredictionDialogOpen.set(false);
+          const removedId = this.myPrediction()?.id;
           this.myPrediction.set(null);
+          if (removedId) {
+            this.allPredictions.update((list) =>
+              list.filter((p) => p.id !== removedId),
+            );
+          }
           this._toast.success('Palpite removido.');
         },
         error: (err: unknown) => {
           this.removePredictionSubmitting.set(false);
-          const message =
+          this._toast.error(
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível remover o palpite.';
-          this._toast.error(message);
+              : 'Não foi possível remover o palpite.',
+          );
         },
       });
   }
@@ -556,6 +681,17 @@ export class MatchDetailComponent implements OnInit {
       });
   }
 
+  private _loadPredictionStats(tid: string, mid: string): void {
+    if (!this.isOwner() && !this.isActiveMember()) return;
+    this._predictionsService
+      .stats(tid, mid)
+      .pipe(
+        takeUntilDestroyed(this._destroyRef),
+        catchError(() => of<IPredictionStatsResponse | null>(null)),
+      )
+      .subscribe((stats) => this.predictionStats.set(stats));
+  }
+
   private _load(tid: string, pid: string, mid: string): void {
     this.loading.set(true);
     this.loadError.set(null);
@@ -584,6 +720,7 @@ export class MatchDetailComponent implements OnInit {
           );
           this.loading.set(false);
           this._loadAllPredictions(tid, mid);
+          this._loadPredictionStats(tid, mid);
         },
         error: (err: unknown) => {
           this.loading.set(false);

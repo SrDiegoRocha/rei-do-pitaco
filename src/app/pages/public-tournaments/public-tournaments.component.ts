@@ -15,8 +15,12 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TournamentCardComponent } from '@shared/components/tournament-card/tournament-card.component';
 import { Globe } from 'lucide-angular';
+
+const PAGE_SIZE = 12;
+const SORT = 'createdAt,desc';
 
 @Component({
   selector: 'app-public-tournaments',
@@ -25,6 +29,7 @@ import { Globe } from 'lucide-angular';
     TournamentCardComponent,
     EmptyStateComponent,
     ButtonComponent,
+    PaginationComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +46,9 @@ export class PublicTournamentsComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly items = signal<ITournamentResponse[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly currentPage = signal(0);
+  protected readonly totalPages = signal(1);
+  protected readonly totalElements = signal(0);
 
   protected readonly isEmpty = computed(
     () =>
@@ -57,15 +65,30 @@ export class PublicTournamentsComponent implements OnInit {
     this._load();
   }
 
+  protected goToPage(page: number): void {
+    if (this.loading()) return;
+    this.currentPage.set(page);
+    this._load();
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   private _load(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
     this._service
-      .listPublic({ page: 0, size: 20, sort: 'createdAt,desc' })
+      .listPublic({
+        page: this.currentPage(),
+        size: PAGE_SIZE,
+        sort: SORT,
+      })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (page) => {
           this.items.set(page.content);
+          this.totalPages.set(Math.max(1, page.totalPages));
+          this.totalElements.set(page.totalElements);
           this.loading.set(false);
         },
         error: (err: unknown) => {

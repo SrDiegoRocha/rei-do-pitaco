@@ -1,5 +1,11 @@
 import { DOCUMENT } from '@angular/common';
-import { effect, inject, Injectable, signal } from '@angular/core';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  signal,
+} from '@angular/core';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
@@ -16,6 +22,11 @@ export class ThemeService {
   );
 
   public readonly mode = this._modeSig.asReadonly();
+
+  /** Tema efetivo (resolve 'system' → 'light'/'dark'), reativo. */
+  public readonly resolvedTheme = computed<ResolvedTheme>(() =>
+    this._resolveTheme(this._modeSig(), this._systemPrefersDarkSig()),
+  );
 
   constructor() {
     this._watchSystemPreference();

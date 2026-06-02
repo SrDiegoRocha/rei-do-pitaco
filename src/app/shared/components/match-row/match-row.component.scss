@@ -1,0 +1,192 @@
+:host {
+  display: block;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border-subtle, var(--border-default));
+}
+
+:host:last-of-type .row {
+  border-bottom: none;
+}
+
+.row--cancelled .row__teams,
+.row--cancelled .row__score {
+  opacity: 0.55;
+}
+
+.row__when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+
+/* No date: only the status (FT / —) shows, centered in the column */
+.row__when--solo {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.row__date {
+  font-size: var(--text-2xs, 10px);
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__status {
+  font-size: var(--text-2xs, 10px);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__status[data-kind='done'] {
+  color: var(--text-tertiary);
+}
+
+.row__status[data-kind='cancelled'] {
+  color: var(--danger);
+}
+
+.row__status[data-kind='scheduled'] {
+  color: var(--text-secondary);
+}
+
+.row__teams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.row__team {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.row__team-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Loser side (badge + name) is dimmed once the match is decided */
+.row__team--loser {
+  opacity: 0.45;
+}
+
+.row__team--loser .row__team-name {
+  font-weight: var(--font-regular, 400);
+}
+
+.row__score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  min-width: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__score-value {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.row__score-pen {
+  font-size: var(--text-2xs, 10px);
+  font-weight: var(--font-medium);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__score-value--loser {
+  opacity: 0.45;
+  font-weight: var(--font-medium);
+}
+
+.row__score-placeholder {
+  font-size: var(--text-base);
+  color: var(--text-tertiary);
+  line-height: 1;
+}
+
+.row__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-2xs, 10px);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
+  padding: 4px var(--space-2);
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.row__chip--action {
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 120ms ease;
+}
+
+.row__chip--action:hover {
+  background-color: var(--brand-hover, var(--brand));
+}
+
+.row__chip--action:active {
+  transform: scale(0.96);
+}
+
+.row__chip--action:focus-visible {
+  outline: 2px solid var(--border-focus, var(--brand));
+  outline-offset: 2px;
+}
+
+.row__chip[data-kind='pending'] {
+  background-color: var(--brand);
+  color: var(--text-on-brand, #fff);
+}
+
+.row__chip[data-kind='done'] {
+  background-color: var(--bg-muted);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__chip[data-kind='pts'] {
+  background-color: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__chip[data-kind='pts-zero'] {
+  background-color: var(--bg-muted);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__chip[data-kind='locked'] {
+  background-color: transparent;
+  color: var(--text-tertiary);
+  border-color: var(--border-default);
+}

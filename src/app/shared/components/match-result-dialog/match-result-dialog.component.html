@@ -100,6 +100,114 @@
         </div>
       </div>
 
+      @if (isKnockout()) {
+        <div class="penalties">
+          <button
+            type="button"
+            class="penalties__toggle"
+            [class.penalties__toggle--on]="hasPenalties()"
+            role="switch"
+            [attr.aria-checked]="hasPenalties()"
+            [disabled]="submitting()"
+            (click)="togglePenalties()"
+          >
+            <span class="penalties__toggle-track">
+              <span class="penalties__toggle-thumb"></span>
+            </span>
+            <span class="penalties__toggle-text">
+              <span class="penalties__toggle-name">Decidido nos pênaltis</span>
+              <span class="penalties__toggle-desc">
+                @if (aggregateTied()) {
+                  Agregado empatado — informe a disputa.
+                } @else {
+                  Use apenas se o agregado terminar empatado.
+                }
+              </span>
+            </span>
+          </button>
+
+          @if (hasPenalties()) {
+            <div class="penalties__score">
+              <div class="penalties__side">
+                <span class="penalties__label">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
+                <div class="stepper stepper--sm">
+                  <button
+                    type="button"
+                    class="stepper__btn"
+                    [disabled]="submitting() || homePen() <= 0"
+                    [attr.aria-label]="'Diminuir pênaltis de ' + m.homeTeam.name"
+                    (click)="decHomePen()"
+                  >
+                    <lucide-icon [img]="minusIcon" [size]="16" />
+                  </button>
+                  <input
+                    type="number"
+                    class="stepper__input stepper__input--sm"
+                    inputmode="numeric"
+                    min="0"
+                    max="30"
+                    [value]="homePen()"
+                    [disabled]="submitting()"
+                    [attr.aria-label]="'Pênaltis de ' + m.homeTeam.name"
+                    (input)="onHomePenInput($event)"
+                  />
+                  <button
+                    type="button"
+                    class="stepper__btn"
+                    [disabled]="submitting() || homePen() >= 30"
+                    [attr.aria-label]="'Aumentar pênaltis de ' + m.homeTeam.name"
+                    (click)="incHomePen()"
+                  >
+                    <lucide-icon [img]="plusIcon" [size]="16" />
+                  </button>
+                </div>
+              </div>
+
+              <span class="penalties__sep" aria-hidden="true">×</span>
+
+              <div class="penalties__side">
+                <span class="penalties__label">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
+                <div class="stepper stepper--sm">
+                  <button
+                    type="button"
+                    class="stepper__btn"
+                    [disabled]="submitting() || awayPen() <= 0"
+                    [attr.aria-label]="'Diminuir pênaltis de ' + m.awayTeam.name"
+                    (click)="decAwayPen()"
+                  >
+                    <lucide-icon [img]="minusIcon" [size]="16" />
+                  </button>
+                  <input
+                    type="number"
+                    class="stepper__input stepper__input--sm"
+                    inputmode="numeric"
+                    min="0"
+                    max="30"
+                    [value]="awayPen()"
+                    [disabled]="submitting()"
+                    [attr.aria-label]="'Pênaltis de ' + m.awayTeam.name"
+                    (input)="onAwayPenInput($event)"
+                  />
+                  <button
+                    type="button"
+                    class="stepper__btn"
+                    [disabled]="submitting() || awayPen() >= 30"
+                    [attr.aria-label]="'Aumentar pênaltis de ' + m.awayTeam.name"
+                    (click)="incAwayPen()"
+                  >
+                    <lucide-icon [img]="plusIcon" [size]="16" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            @if (penaltyError(); as err) {
+              <p class="penalties__warn" role="alert">{{ err }}</p>
+            }
+          }
+        </div>
+      }
+
       @if (serverError(); as err) {
         <p class="dialog__error" role="alert">{{ err }}</p>
       }
@@ -117,6 +225,7 @@
           variant="primary"
           size="md"
           [loading]="submitting()"
+          [disabled]="!canSubmit()"
           (buttonClick)="onConfirm()"
         >
           {{ confirmLabel() }}

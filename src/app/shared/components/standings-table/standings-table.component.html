@@ -1,0 +1,126 @@
+<div class="view-toggle" role="tablist" aria-label="Modo de visualização da tabela">
+  @for (opt of viewModeOptions; track opt.mode) {
+    <button
+      type="button"
+      role="tab"
+      class="view-toggle__btn"
+      [class.view-toggle__btn--active]="viewMode() === opt.mode"
+      [attr.aria-selected]="viewMode() === opt.mode"
+      (click)="setViewMode(opt.mode)"
+    >
+      {{ opt.label }}
+    </button>
+  }
+</div>
+
+@if (zoneLegend().length > 0) {
+  <article class="zones-legend">
+    <h3 class="zones-legend__title">Zonas de avanço</h3>
+    <ul class="zones-legend__list">
+      @for (zone of zoneLegend(); track zone.zoneId) {
+        <li
+          class="zones-legend__item"
+          [attr.data-zone-style]="zone.style"
+          [attr.data-zone-color]="zone.colorIndex"
+        >
+          <span class="zones-legend__dot" aria-hidden="true"></span>
+          <span class="zones-legend__name">{{ zone.zoneName }}</span>
+          @if (zone.nextPhaseName) {
+            <span class="zones-legend__dest">→ {{ zone.nextPhaseName }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </article>
+}
+
+<div
+  class="groups"
+  [attr.data-density]="density()"
+  [attr.data-view]="viewMode()"
+  [style.--stat-cols]="visibleStats().length"
+>
+  @for (group of groups(); track group.groupId ?? '__no_group__') {
+    <article class="standings">
+      @if (group.groupName) {
+        <header class="standings__header">
+          <h3 class="standings__title">Grupo {{ group.groupName }}</h3>
+          <span class="standings__count">
+            {{ group.rows.length }}
+            {{ group.rows.length === 1 ? 'time' : 'times' }}
+          </span>
+        </header>
+      }
+
+      <div class="standings__head" role="row" aria-label="Cabeçalho da tabela">
+        <span class="standings__head-cell standings__head-cell--pos">#</span>
+        <span class="standings__head-cell standings__head-cell--team">Time</span>
+        @for (col of visibleStats(); track col.key) {
+          <span
+            class="standings__head-cell standings__head-cell--stat"
+            [title]="col.title"
+          >
+            {{ col.label }}
+          </span>
+        }
+        <span class="standings__head-cell standings__head-cell--pts">P</span>
+      </div>
+
+      <ul class="standings__list" role="list">
+        @for (row of group.rows; track row.teamId) {
+          <li
+            class="srow"
+            [class.srow--leader]="row.position === 1"
+            [attr.data-position]="row.position"
+            [attr.data-zone-style]="rowStyle(row)"
+            [attr.data-zone-color]="rowColorIndex(row)"
+            [attr.title]="
+              row.zoneName
+                ? row.zoneName +
+                  (row.nextPhaseName ? ' → ' + row.nextPhaseName : '')
+                : null
+            "
+          >
+            <span class="srow__pos">{{ row.position }}</span>
+            <div class="srow__team">
+              <app-team-badge
+                [name]="row.teamName"
+                [shortName]="row.shortName"
+                [badgeUrl]="row.badgeUrl"
+                [size]="28"
+              />
+              <div class="srow__team-text">
+                <span class="srow__team-name">{{ row.teamName }}</span>
+                @if (row.shortName) {
+                  <span class="srow__team-short">{{ row.shortName }}</span>
+                }
+              </div>
+            </div>
+            <span class="srow__pts">
+              <strong>{{ row.points }}</strong>
+              <span class="srow__pts-suffix">pts</span>
+            </span>
+            <dl class="srow__stats" aria-label="Estatísticas do time">
+              @for (col of visibleStats(); track col.key) {
+                <div class="srow__stat" [class]="statToneClass(row, col)">
+                  <dt>{{ col.label }}</dt>
+                  <dd>{{ statValue(row, col.key) }}</dd>
+                </div>
+              }
+            </dl>
+          </li>
+        }
+      </ul>
+    </article>
+  }
+</div>
+
+<dl class="stats-legend" aria-label="Significado das colunas">
+  @for (col of visibleStats(); track col.key) {
+    <div class="stats-legend__item">
+      <dt>{{ col.label }}</dt>
+      <dd>{{ col.title }}</dd>
+    </div>
+  }
+  <div class="stats-legend__item"><dt>P</dt><dd>Pontos</dd></div>
+</dl>

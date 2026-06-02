@@ -16,7 +16,7 @@ import { CodeInputComponent } from '@shared/components/code-input/code-input.com
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ToastService } from '@shared/services/toast.service';
 
-const CODE_LENGTH = 8;
+const CODE_LENGTH = 6;
 
 @Component({
   selector: 'app-join-tournament',

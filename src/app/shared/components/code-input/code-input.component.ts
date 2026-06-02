@@ -18,7 +18,7 @@ import {
   styleUrl: './code-input.component.scss',
 })
 export class CodeInputComponent implements AfterViewInit {
-  public readonly length = input<number>(8);
+  public readonly length = input<number>(6);
   public readonly autoFocus = input<boolean>(false);
   public readonly disabled = input<boolean>(false);
   public readonly errorState = input<boolean>(false);
@@ -29,7 +29,7 @@ export class CodeInputComponent implements AfterViewInit {
   private readonly _cells = viewChildren<ElementRef<HTMLInputElement>>('cell');
 
   protected readonly chars = signal<string[]>(
-    Array(8).fill('') as string[],
+    Array(6).fill('') as string[],
   );
 
   protected readonly indices = computed(() =>

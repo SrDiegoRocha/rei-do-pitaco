@@ -76,14 +76,174 @@
       <header class="card__header">
         <h3 class="card__title">Conta</h3>
         <p class="card__subtitle">
-          Edição de perfil ainda não está disponível. Tema e logout estão em
-          Configurações.
+          Atualize seu nome, avatar e senha. Tema e logout estão em Configurações.
         </p>
       </header>
-      <a class="card__link" routerLink="/settings">
-        <lucide-icon [img]="settingsIcon" [size]="16" />
-        Ir para Configurações
-      </a>
+      <div class="card__actions">
+        <button type="button" class="card__btn" (click)="openEditProfile()">
+          <lucide-icon [img]="pencilIcon" [size]="16" />
+          Editar perfil
+        </button>
+        <button type="button" class="card__btn" (click)="openChangePassword()">
+          <lucide-icon [img]="keyIcon" [size]="16" />
+          Trocar senha
+        </button>
+        <a class="card__link" routerLink="/settings">
+          <lucide-icon [img]="settingsIcon" [size]="16" />
+          Configurações
+        </a>
+      </div>
     </article>
   }
 </section>
+
+@if (editProfileOpen()) {
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
+    <div
+      class="modal__backdrop"
+      (click)="closeEditProfile()"
+      aria-hidden="true"
+      @backdropFade
+    ></div>
+    <div class="modal__content" @modalScale>
+      <header class="modal__header">
+        <h2 class="modal__title" id="edit-profile-title">Editar perfil</h2>
+        <button
+          type="button"
+          class="modal__close"
+          (click)="closeEditProfile()"
+          [disabled]="editProfileSubmitting()"
+          aria-label="Fechar"
+        >
+          <lucide-icon [img]="xIcon" [size]="18" />
+        </button>
+      </header>
+
+      <form
+        class="modal__form"
+        [formGroup]="profileForm"
+        (ngSubmit)="submitProfile()"
+        novalidate
+      >
+        <app-input
+          formControlName="name"
+          label="Nome"
+          placeholder="Como você quer aparecer"
+          autocomplete="name"
+          [required]="true"
+          [errorText]="nameError()"
+        />
+        <app-input
+          formControlName="avatarUrl"
+          type="url"
+          label="URL do avatar (opcional)"
+          placeholder="https://..."
+          autocomplete="off"
+          helper="Cole um link de imagem. Deixe em branco para usar a inicial."
+        />
+
+        @if (editProfileError(); as err) {
+          <p class="modal__error" role="alert">{{ err }}</p>
+        }
+
+        <div class="modal__actions">
+          <app-button
+            type="button"
+            variant="ghost"
+            size="md"
+            [disabled]="editProfileSubmitting()"
+            (buttonClick)="closeEditProfile()"
+          >
+            Cancelar
+          </app-button>
+          <app-button
+            type="submit"
+            variant="primary"
+            size="md"
+            [loading]="editProfileSubmitting()"
+          >
+            Salvar alterações
+          </app-button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (changePasswordOpen()) {
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+    <div
+      class="modal__backdrop"
+      (click)="closeChangePassword()"
+      aria-hidden="true"
+      @backdropFade
+    ></div>
+    <div class="modal__content" @modalScale>
+      <header class="modal__header">
+        <h2 class="modal__title" id="change-password-title">Trocar senha</h2>
+        <button
+          type="button"
+          class="modal__close"
+          (click)="closeChangePassword()"
+          [disabled]="changePasswordSubmitting()"
+          aria-label="Fechar"
+        >
+          <lucide-icon [img]="xIcon" [size]="18" />
+        </button>
+      </header>
+
+      <form
+        class="modal__form"
+        [formGroup]="passwordForm"
+        (ngSubmit)="submitPassword()"
+        novalidate
+      >
+        <app-input
+          formControlName="currentPassword"
+          type="password"
+          label="Senha atual"
+          autocomplete="current-password"
+          [required]="true"
+          [errorText]="currentPasswordError()"
+        />
+        <app-input
+          formControlName="newPassword"
+          type="password"
+          label="Nova senha"
+          autocomplete="new-password"
+          [required]="true"
+          helper="Mínimo de 8 caracteres."
+          [errorText]="newPasswordError()"
+        />
+
+        @if (changePasswordError(); as err) {
+          <p class="modal__error" role="alert">{{ err }}</p>
+        }
+
+        <p class="modal__hint">
+          Trocar a senha não desconecta outros dispositivos.
+        </p>
+
+        <div class="modal__actions">
+          <app-button
+            type="button"
+            variant="ghost"
+            size="md"
+            [disabled]="changePasswordSubmitting()"
+            (buttonClick)="closeChangePassword()"
+          >
+            Cancelar
+          </app-button>
+          <app-button
+            type="submit"
+            variant="primary"
+            size="md"
+            [loading]="changePasswordSubmitting()"
+          >
+            Salvar senha
+          </app-button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

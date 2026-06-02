@@ -11,11 +11,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiException } from '@core/errors/api-error';
-import { ICreateMatchRequest } from '@core/interfaces/match.interface';
+import { IBracketResponse } from '@core/interfaces/bracket.interface';
+import {
+  ICreateMatchRequest,
+  IMatchResponse,
+} from '@core/interfaces/match.interface';
 import { IPhaseGroupResponse } from '@core/interfaces/phase-group.interface';
 import { IPhaseTeamResponse } from '@core/interfaces/phase-team.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
+import { BracketService } from '@core/services/bracket.service';
 import { MatchesService } from '@core/services/matches.service';
 import { PhaseGroupsService } from '@core/services/phase-groups.service';
 import { PhaseTeamsService } from '@core/services/phase-teams.service';
@@ -43,6 +48,7 @@ export class CreateMatchComponent implements OnInit {
   private readonly _phaseTeamsService = inject(PhaseTeamsService);
   private readonly _phaseGroupsService = inject(PhaseGroupsService);
   private readonly _matchesService = inject(MatchesService);
+  private readonly _bracketService = inject(BracketService);
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
@@ -54,6 +60,8 @@ export class CreateMatchComponent implements OnInit {
   protected readonly phase = signal<IPhaseResponse | null>(null);
   protected readonly phaseTeams = signal<IPhaseTeamResponse[]>([]);
   protected readonly groups = signal<IPhaseGroupResponse[]>([]);
+  protected readonly existingMatches = signal<IMatchResponse[]>([]);
+  protected readonly bracket = signal<IBracketResponse | null>(null);
 
   protected readonly submitting = signal(false);
   protected readonly serverError = signal<string | null>(null);
@@ -135,13 +143,15 @@ export class CreateMatchComponent implements OnInit {
       tournament: this._tournamentsService.getById(tid),
       phase: this._phasesService.getById(tid, pid),
       teams: this._phaseTeamsService.list(tid, pid),
+      matches: this._matchesService.list(tid, pid),
     })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
-        next: ({ tournament, phase, teams }) => {
+        next: ({ tournament, phase, teams, matches }) => {
           this.tournament.set(tournament);
           this.phase.set(phase);
           this.phaseTeams.set(teams);
+          this.existingMatches.set(matches);
 
           if (phase.phaseType === 'GROUPS') {
             this._phaseGroupsService
@@ -150,6 +160,22 @@ export class CreateMatchComponent implements OnInit {
               .subscribe({
                 next: (groups) => {
                   this.groups.set(groups);
+                  this.loading.set(false);
+                },
+                error: () => {
+                  this.loading.set(false);
+                },
+              });
+            return;
+          }
+
+          if (phase.phaseType === 'KNOCKOUT' && matches.length > 0) {
+            this._bracketService
+              .get(tid, pid)
+              .pipe(takeUntilDestroyed(this._destroyRef))
+              .subscribe({
+                next: (b) => {
+                  this.bracket.set(b);
                   this.loading.set(false);
                 },
                 error: () => {

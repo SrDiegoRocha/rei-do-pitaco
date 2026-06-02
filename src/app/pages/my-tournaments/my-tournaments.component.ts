@@ -10,23 +10,20 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ApiException } from '@core/errors/api-error';
-import { IPageParams } from '@core/interfaces/api.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger } from '@shared/animations/animations';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
+import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TournamentCardComponent } from '@shared/components/tournament-card/tournament-card.component';
 import { Plus, Ticket, Trophy, Users } from 'lucide-angular';
 
 type Tab = 'mine' | 'joined';
 
-const LOAD_PARAMS: IPageParams = {
-  page: 0,
-  size: 20,
-  sort: 'createdAt,desc',
-};
+const PAGE_SIZE = 12;
+const SORT = 'createdAt,desc';
 
 @Component({
   selector: 'app-my-tournaments',
@@ -36,6 +33,7 @@ const LOAD_PARAMS: IPageParams = {
     EmptyStateComponent,
     ErrorStateComponent,
     FabComponent,
+    PaginationComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +54,9 @@ export class MyTournamentsComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly items = signal<ITournamentResponse[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly currentPage = signal(0);
+  protected readonly totalPages = signal(1);
+  protected readonly totalElements = signal(0);
 
   protected readonly isEmpty = computed(
     () =>
@@ -74,6 +75,7 @@ export class MyTournamentsComponent implements OnInit {
     if (this.tab() === next) return;
     this.tab.set(next);
     this.items.set([]);
+    this.currentPage.set(0);
     this._load();
   }
 
@@ -81,20 +83,36 @@ export class MyTournamentsComponent implements OnInit {
     this._load();
   }
 
+  protected goToPage(page: number): void {
+    if (this.loading()) return;
+    this.currentPage.set(page);
+    this._load();
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   private _load(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
 
+    const params = {
+      page: this.currentPage(),
+      size: PAGE_SIZE,
+      sort: SORT,
+    };
     const source$ =
       this.tab() === 'mine'
-        ? this._service.listMine(LOAD_PARAMS)
-        : this._service.listJoined(LOAD_PARAMS);
+        ? this._service.listMine(params)
+        : this._service.listJoined(params);
 
     source$
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (page) => {
           this.items.set(page.content);
+          this.totalPages.set(Math.max(1, page.totalPages));
+          this.totalElements.set(page.totalElements);
           this.loading.set(false);
         },
         error: (err: unknown) => {

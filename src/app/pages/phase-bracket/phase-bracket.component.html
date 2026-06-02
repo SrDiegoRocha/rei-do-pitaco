@@ -1,0 +1,114 @@
+<section class="page">
+  <app-page-header
+    title="Chaveamento"
+    [subtitle]="phase()?.name ?? ''"
+    [backTo]="backToHref()"
+  />
+
+  @if (loading()) {
+    <div class="page__skeleton">
+      <div class="u-skeleton page__skeleton-round"></div>
+      <div class="u-skeleton page__skeleton-round"></div>
+    </div>
+  } @else if (loadError(); as err) {
+    <div class="page__error" role="alert">
+      <p class="page__error-text">{{ err }}</p>
+    </div>
+  } @else if (notKnockout()) {
+    <app-empty-state
+      [icon]="trophyIcon"
+      title="Esta fase não é de mata-mata"
+      description="O chaveamento só está disponível em fases do tipo Mata-mata. Use a Classificação para esta fase."
+    />
+  } @else if (isEmpty()) {
+    <app-empty-state
+      [icon]="circleDashedIcon"
+      title="Sem partidas ainda"
+      description="O chaveamento aparece quando as partidas desta fase forem criadas."
+    >
+      @if (matchesHref(); as href) {
+        <a class="page__cta" [routerLink]="href">
+          Ir para partidas
+        </a>
+      }
+    </app-empty-state>
+  } @else if (bracket(); as b) {
+    @if (isFinalized()) {
+      <article class="finalized" role="status">
+        <lucide-icon [img]="checkIcon" [size]="20" aria-hidden="true" />
+        <div class="finalized__body">
+          <strong>Fase finalizada</strong>
+          @if (finalizedAtLabel(); as fa) {
+            <span>em {{ fa }} — times já avançaram para a próxima fase.</span>
+          } @else {
+            <span>Times já avançaram para a próxima fase.</span>
+          }
+        </div>
+      </article>
+    } @else if (isOwner() && tournament()?.status !== 'FINISHED' && bracketComplete()) {
+      <article class="finalize">
+        <header class="finalize__header">
+          <h3 class="finalize__title">Mata-mata concluído</h3>
+          <p class="finalize__subtitle">
+            Todos os confrontos foram decididos. Finalize para encerrar a fase.
+          </p>
+        </header>
+        <button
+          type="button"
+          class="finalize__btn"
+          [disabled]="!canFinalize()"
+          (click)="openFinalize()"
+        >
+          <lucide-icon [img]="flagIcon" [size]="16" />
+          Finalizar fase
+        </button>
+        @if (finalizeBlockReason(); as reason) {
+          <p class="finalize__hint">{{ reason }}</p>
+        }
+      </article>
+    }
+
+    <div class="bracket-toggle" role="tablist" aria-label="Modo de visualização">
+      <button
+        type="button"
+        role="tab"
+        class="bracket-toggle__btn"
+        [class.bracket-toggle__btn--active]="viewMode() === 'cards'"
+        [attr.aria-selected]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+      >
+        Cards
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="bracket-toggle__btn"
+        [class.bracket-toggle__btn--active]="viewMode() === 'tree'"
+        [attr.aria-selected]="viewMode() === 'tree'"
+        (click)="setViewMode('tree')"
+      >
+        Chaveamento
+      </button>
+    </div>
+
+    <app-bracket-view
+      [bracket]="b"
+      [mode]="viewMode()"
+      [tournamentId]="tournament()?.id ?? null"
+      [phaseId]="phase()?.id ?? null"
+      [showLegs]="true"
+      [@listStagger]="b.rounds.length"
+    />
+  }
+</section>
+
+<app-confirm-dialog
+  [open]="confirmFinalizeOpen()"
+  title="Finalizar fase?"
+  description="Os vencedores serão materializados na próxima fase (segundo as zonas configuradas). A ação é idempotente, mas só funciona se a próxima fase não tiver times."
+  confirmLabel="Finalizar agora"
+  cancelLabel="Voltar"
+  [loading]="finalizing()"
+  (confirmed)="confirmFinalize()"
+  (cancelled)="cancelFinalize()"
+/>

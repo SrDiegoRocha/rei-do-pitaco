@@ -24,9 +24,10 @@ import { listStagger } from '@shared/animations/animations';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
-import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { StandingsTableComponent } from '@shared/components/standings-table/standings-table.component';
 import { ToastService } from '@shared/services/toast.service';
 import {
+  CheckCircle2,
   Flag,
   LucideAngularModule,
   Trophy,
@@ -38,7 +39,7 @@ import {
   imports: [
     LucideAngularModule,
     PageHeaderComponent,
-    TeamBadgeComponent,
+    StandingsTableComponent,
     EmptyStateComponent,
     ConfirmDialogComponent,
   ],
@@ -59,6 +60,7 @@ export class PhaseStandingsComponent implements OnInit {
 
   protected readonly trophyIcon = Trophy;
   protected readonly flagIcon = Flag;
+  protected readonly checkIcon = CheckCircle2;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -100,8 +102,29 @@ export class PhaseStandingsComponent implements OnInit {
     return s.groups.every((g) => g.rows.length === 0);
   });
 
+  protected readonly isFinalized = computed(
+    () => this.phase()?.finalizedAt != null,
+  );
+
+  protected readonly finalizedAtLabel = computed<string | null>(() => {
+    const iso = this.phase()?.finalizedAt;
+    if (!iso) return null;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  });
+
   protected readonly canFinalize = computed(() => {
     if (!this.isOwner()) return false;
+    if (this.isFinalized()) return false;
     if (this.tournament()?.status !== 'IN_PROGRESS') return false;
     const total = this.totalMatches();
     if (total === 0) return false;
@@ -161,6 +184,12 @@ export class PhaseStandingsComponent implements OnInit {
           this.finalizeDialogOpen.set(false);
           this.standings.set(result);
           this._toast.success('Fase finalizada. Próxima fase populada.');
+          this._phasesService
+            .getById(t.id, p.id)
+            .pipe(takeUntilDestroyed(this._destroyRef))
+            .subscribe({
+              next: (fresh) => this.phase.set(fresh),
+            });
         },
         error: (err: unknown) => {
           this.finalizing.set(false);
@@ -197,6 +226,10 @@ export class PhaseStandingsComponent implements OnInit {
             this.loadError.set('Fase não encontrada.');
           } else if (err instanceof ApiException && err.isForbidden) {
             this.loadError.set('Você não tem acesso a esta fase.');
+          } else if (err instanceof ApiException && err.isConflict) {
+            this.loadError.set(
+              'Esta fase é mata-mata. Use o chaveamento.',
+            );
           } else {
             this.loadError.set(
               err instanceof ApiException

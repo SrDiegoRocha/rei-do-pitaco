@@ -27,6 +27,14 @@ export class MatchesService {
     );
   }
 
+  public listForTournament(
+    tournamentId: string,
+  ): Observable<IMatchResponse[]> {
+    return this._http.get<IMatchResponse[]>(
+      `${this._baseUrl}/api/tournaments/${tournamentId}/matches`,
+    );
+  }
+
   public getById(
     tournamentId: string,
     phaseId: string,

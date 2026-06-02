@@ -1,267 +1,687 @@
 <section class="page">
-  <app-page-header
-    title="Torneio"
-    [subtitle]="tournament()?.name ?? ''"
-    backTo="/tournaments"
-  />
+  <app-page-header title="Torneio" backTo="/tournaments">
+    @if (canJoin()) {
+      <app-button
+        slot="actions"
+        variant="primary"
+        size="sm"
+        [loading]="joining()"
+        (buttonClick)="joinTournament()"
+      >
+        <lucide-icon [img]="logInIcon" [size]="16" />
+        Entrar
+      </app-button>
+    }
+  </app-page-header>
 
   @if (loading()) {
     <div class="page__skeleton">
       <div class="u-skeleton page__skeleton-hero"></div>
-      <div class="u-skeleton page__skeleton-line"></div>
-      <div class="u-skeleton page__skeleton-line"></div>
+      <div class="u-skeleton page__skeleton-tabs"></div>
+      <div class="u-skeleton page__skeleton-content"></div>
     </div>
   } @else if (loadError(); as err) {
-    <div class="page__error" role="alert">
-      <p class="page__error-text">{{ err }}</p>
-      <a class="page__error-cta" routerLink="/tournaments">
-        Voltar para Meus torneios
-      </a>
-    </div>
+    <app-error-state
+      title="Não foi possível carregar o torneio"
+      [message]="err"
+      [canRetry]="true"
+      [retrying]="loading()"
+      (retry)="retry()"
+    />
   } @else if (tournament(); as t) {
-    <article class="detail__hero">
-      <div class="detail__badges">
+    <article class="hero">
+      <div class="hero__top">
+        <span class="hero__logo" aria-hidden="true">
+          <lucide-icon [img]="trophyIcon" [size]="28" />
+        </span>
+        <div class="hero__title-wrap">
+          <h2 class="hero__name">{{ t.name }}</h2>
+          <p class="hero__owner">por {{ t.owner.name }}</p>
+        </div>
+        <span class="hero__members">
+          <span class="hero__members-value">{{ memberCountLabel() }}</span>
+          <span class="hero__members-label">
+            {{ t.memberCount === 1 ? 'membro' : 'membros' }}
+          </span>
+        </span>
+      </div>
+
+      <div class="hero__badges">
         <span [class]="statusClass()">{{ statusLabel() }}</span>
-        <span class="detail__privacy">
+        <span class="hero__privacy">
           @if (t.privacy === 'PRIVATE') {
-            <lucide-icon [img]="lockIcon" [size]="14" />
+            <lucide-icon [img]="lockIcon" [size]="12" />
           } @else {
-            <lucide-icon [img]="globeIcon" [size]="14" />
+            <lucide-icon [img]="globeIcon" [size]="12" />
           }
           {{ privacyLabel() }}
         </span>
       </div>
-
-      <h2 class="detail__name">{{ t.name }}</h2>
-
-      @if (t.description) {
-        <p class="detail__description">{{ t.description }}</p>
-      }
-
-      <div class="detail__meta">
-        <span class="detail__meta-item">
-          <lucide-icon [img]="usersIcon" [size]="14" />
-          <strong>{{ memberCountLabel() }}</strong> participantes
-        </span>
-        <span class="detail__meta-sep">·</span>
-        <span class="detail__meta-item">
-          <strong>{{ teamCountLabel() }}</strong> times
-        </span>
-        <span class="detail__meta-sep">·</span>
-        <span class="detail__meta-item">
-          criado em <strong>{{ createdAtLabel() }}</strong>
-        </span>
-      </div>
-
-      <div class="detail__owner">
-        por <strong>{{ t.owner.name }}</strong>
-      </div>
     </article>
 
-    <nav class="detail__quick-nav" aria-label="Subseções do torneio">
-      <a
-        class="detail__quick-link"
-        [routerLink]="['/tournaments', t.id, 'members']"
-      >
-        <span class="detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="usersIcon" [size]="20" />
-        </span>
-        <div class="detail__quick-info">
-          <span class="detail__quick-count">{{ t.memberCount }}</span>
-          <span class="detail__quick-label">Membros</span>
-        </div>
-        <lucide-icon
-          class="detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
-      <a
-        class="detail__quick-link"
-        [routerLink]="['/tournaments', t.id, 'teams']"
-      >
-        <span class="detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="trophyIcon" [size]="20" />
-        </span>
-        <div class="detail__quick-info">
-          <span class="detail__quick-count">{{ t.teamCount }}</span>
-          <span class="detail__quick-label">Times</span>
-        </div>
-        <lucide-icon
-          class="detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
-      <a
-        class="detail__quick-link"
-        [routerLink]="['/tournaments', t.id, 'phases']"
-      >
-        <span class="detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="workflowIcon" [size]="20" />
-        </span>
-        <div class="detail__quick-info">
-          <span class="detail__quick-label-strong">Fases</span>
-          <span class="detail__quick-label">Estrutura do torneio</span>
-        </div>
-        <lucide-icon
-          class="detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
-      <a
-        class="detail__quick-link"
-        [routerLink]="['/tournaments', t.id, 'ranking']"
-      >
-        <span class="detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="medalIcon" [size]="20" />
-        </span>
-        <div class="detail__quick-info">
-          <span class="detail__quick-label-strong">Ranking</span>
-          <span class="detail__quick-label">Pontuação dos participantes</span>
-        </div>
-        <lucide-icon
-          class="detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
-      <a
-        class="detail__quick-link"
-        [routerLink]="['/tournaments', t.id, 'predictions', 'me']"
-      >
-        <span class="detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="sparklesIcon" [size]="20" />
-        </span>
-        <div class="detail__quick-info">
-          <span class="detail__quick-label-strong">Meus palpites</span>
-          <span class="detail__quick-label">
-            Histórico e pontos no torneio
-          </span>
-        </div>
-        <lucide-icon
-          class="detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
-    </nav>
-
-    <article class="detail__invite">
-      <p class="detail__invite-label">Código de convite</p>
-      <div class="detail__invite-code-row">
-        <code class="detail__invite-code">{{ t.inviteCode }}</code>
-        <button
-          type="button"
-          class="detail__icon-btn"
-          (click)="copyCode()"
-          aria-label="Copiar código"
-          title="Copiar código"
-        >
-          <lucide-icon [img]="copyIcon" [size]="16" />
-        </button>
-        @if (isOwner()) {
+    <nav class="tabs" role="tablist" aria-label="Seções do torneio">
+      <div class="tabs__scroll">
+        @for (tab of tabs(); track tab.id) {
           <button
             type="button"
-            class="detail__icon-btn detail__icon-btn--warning"
-            (click)="requestRegenerate()"
-            aria-label="Regenerar código"
-            title="Regenerar código"
-            [disabled]="regenerating()"
+            role="tab"
+            class="tabs__btn"
+            [class.tabs__btn--active]="isTabActive(tab.id)"
+            [attr.aria-selected]="isTabActive(tab.id)"
+            (click)="selectTab(tab.id)"
           >
-            <lucide-icon [img]="refreshIcon" [size]="16" />
+            {{ tab.label }}
           </button>
         }
       </div>
-      <p class="detail__invite-hint">
-        @if (isOwner()) {
-          Compartilhe esse código com quem você quer convidar. Regenerar
-          invalida o código anterior imediatamente.
+    </nav>
+
+    <div class="tab-body">
+      @if (activeTab() === 'ranking') {
+        @if (ranking().length === 0) {
+          <app-empty-state
+            [icon]="medalIcon"
+            title="Ainda sem ranking"
+            description="A pontuação aparece aqui assim que os primeiros resultados forem lançados."
+          />
         } @else {
-          Use este código para convidar mais participantes.
+          @if (podium().length > 0) {
+            <div class="podium">
+              @for (row of podium(); track row.userId) {
+                <a
+                  class="podium__card"
+                  [id]="'rank-' + row.userId"
+                  [class.podium__card--first]="row.position === 1"
+                  [class.podium__card--mine]="row.userId === myUserId()"
+                  [routerLink]="participantLink(row.userId)"
+                  (click)="rememberRankReturn(row.userId)"
+                >
+                  <span class="podium__pos">
+                    <lucide-icon [img]="podiumIcon(row.position)" [size]="16" />
+                    {{ row.position }}º
+                  </span>
+                  <app-avatar
+                    [name]="row.name"
+                    [imageUrl]="row.avatarUrl"
+                    [size]="48"
+                  />
+                  <span class="podium__name">{{ row.name }}</span>
+                  <span class="podium__pts">{{ row.totalPoints }}</span>
+                  <span class="podium__pts-label">pts</span>
+                </a>
+              }
+            </div>
+          }
+
+          @if (rankingTail().length > 0) {
+            <ul class="rank-list">
+              @for (row of rankingTail(); track row.userId) {
+                <li>
+                  <a
+                    class="rank-row"
+                    [id]="'rank-' + row.userId"
+                    [class.rank-row--mine]="row.userId === myUserId()"
+                    [routerLink]="participantLink(row.userId)"
+                    (click)="rememberRankReturn(row.userId)"
+                  >
+                    <span class="rank-row__pos">{{ row.position }}</span>
+                    <app-avatar
+                      [name]="row.name"
+                      [imageUrl]="row.avatarUrl"
+                      [size]="32"
+                    />
+                    <div class="rank-row__info">
+                      <span class="rank-row__name">{{ row.name }}</span>
+                      <span class="rank-row__meta">
+                        {{ accuracyLabel(row) }}
+                      </span>
+                    </div>
+                    <div class="rank-row__stats">
+                      <span class="rank-row__pts">{{ row.totalPoints }}</span>
+                      <span class="rank-row__breakdown">
+                        {{ row.exactScoreHits }}E · {{ row.winnerHits }}V ·
+                        {{ row.wrongs }}X
+                      </span>
+                    </div>
+                    <lucide-icon
+                      class="rank-row__chev"
+                      [img]="chevronRightIcon"
+                      [size]="16"
+                      aria-hidden="true"
+                    />
+                  </a>
+                </li>
+              }
+            </ul>
+          }
         }
-      </p>
-    </article>
+      }
 
-    <article class="detail__card">
-      <header class="detail__card-header">
-        <h3 class="detail__card-title">Pontuação</h3>
-      </header>
-      <dl class="detail__points">
-        <div class="detail__points-item">
-          <dt>Vitória</dt>
-          <dd>{{ t.settings.winPoints }}</dd>
-        </div>
-        <div class="detail__points-item">
-          <dt>Empate</dt>
-          <dd>{{ t.settings.drawPoints }}</dd>
-        </div>
-        <div class="detail__points-item">
-          <dt>Derrota</dt>
-          <dd>{{ t.settings.lossPoints }}</dd>
-        </div>
-        <div class="detail__points-item">
-          <dt>Placar exato</dt>
-          <dd>{{ t.settings.exactScorePoints }}</dd>
-        </div>
-        <div class="detail__points-item">
-          <dt>Acertou vencedor</dt>
-          <dd>{{ t.settings.winnerPoints }}</dd>
-        </div>
-        <div class="detail__points-item">
-          <dt>Errou tudo</dt>
-          <dd>{{ t.settings.wrongPoints }}</dd>
-        </div>
-      </dl>
-    </article>
+      @if (activeTab() === 'matches') {
+        @if (matches().length === 0) {
+          <app-empty-state
+            [icon]="calendarIcon"
+            title="Sem partidas ainda"
+            description="As partidas aparecem aqui assim que forem criadas ou geradas."
+          />
+        } @else {
+          @if (matchesPhaseOptions().length > 1) {
+            <div
+              class="phase-filters"
+              role="tablist"
+              aria-label="Filtro de fase"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip"
+                [class.phase-filters__chip--active]="selectedMatchesPhaseId() === null"
+                [attr.aria-selected]="selectedMatchesPhaseId() === null"
+                (click)="selectMatchesPhase(null)"
+              >
+                Todas as fases
+              </button>
+              @for (phase of matchesPhaseOptions(); track phase.id) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="phase-filters__chip"
+                  [class.phase-filters__chip--active]="selectedMatchesPhaseId() === phase.id"
+                  [attr.aria-selected]="selectedMatchesPhaseId() === phase.id"
+                  (click)="selectMatchesPhase(phase.id)"
+                >
+                  {{ phase.name }}
+                </button>
+              }
+            </div>
+          }
 
-    <article class="detail__card">
-      <header class="detail__card-header">
-        <h3 class="detail__card-title">Critérios de desempate</h3>
-        <p class="detail__card-subtitle">Ordem importa</p>
-      </header>
-      <ol class="detail__tiebreak">
-        @for (criterion of t.settings.tiebreakCriteria; track criterion) {
-          <li class="detail__tiebreak-item">{{ tiebreakLabel(criterion) }}</li>
-        }
-      </ol>
-    </article>
+          @if (matchesBucketOptions().length > 1) {
+            <div
+              class="phase-filters phase-filters--sub"
+              role="tablist"
+              aria-label="Filtro de rodada ou etapa"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip phase-filters__chip--sub"
+                [class.phase-filters__chip--active]="selectedMatchesBucketKey() === null"
+                [attr.aria-selected]="selectedMatchesBucketKey() === null"
+                (click)="selectMatchesBucket(null)"
+              >
+                Todas
+              </button>
+              @for (opt of matchesBucketOptions(); track opt.key) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="phase-filters__chip phase-filters__chip--sub"
+                  [class.phase-filters__chip--active]="selectedMatchesBucketKey() === opt.key"
+                  [attr.aria-selected]="selectedMatchesBucketKey() === opt.key"
+                  (click)="selectMatchesBucket(opt.key)"
+                >
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          }
 
-    @if (isOwner()) {
-      <article class="detail__actions">
-        <header class="detail__card-header">
-          <h3 class="detail__card-title">Ações do organizador</h3>
-        </header>
+          @if (matchesGroupOptions().length > 1) {
+            <div
+              class="phase-filters phase-filters--sub"
+              role="tablist"
+              aria-label="Filtro de grupo"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip phase-filters__chip--sub"
+                [class.phase-filters__chip--active]="selectedMatchesGroupId() === null"
+                [attr.aria-selected]="selectedMatchesGroupId() === null"
+                (click)="selectMatchesGroup(null)"
+              >
+                Todos os grupos
+              </button>
+              @for (g of matchesGroupOptions(); track g.id) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="phase-filters__chip phase-filters__chip--sub"
+                  [class.phase-filters__chip--active]="selectedMatchesGroupId() === g.id"
+                  [attr.aria-selected]="selectedMatchesGroupId() === g.id"
+                  (click)="selectMatchesGroup(g.id)"
+                >
+                  Grupo {{ g.name }}
+                </button>
+              }
+            </div>
+          }
 
-        @if (statusContext(); as ctx) {
-          <app-button
-            [variant]="ctx.variant === 'destructive' ? 'destructive' : 'primary'"
-            size="lg"
-            [fullWidth]="true"
-            [loading]="changingStatus()"
-            (buttonClick)="requestStatusChange()"
-          >
-            @if (ctx.buttonIcon === 'play') {
-              <lucide-icon [img]="playIcon" [size]="18" />
-            } @else {
-              <lucide-icon [img]="flagIcon" [size]="18" />
+          @if (filteredMatchGroups().length === 0) {
+            <app-empty-state
+              [icon]="calendarIcon"
+              title="Sem partidas nesta fase"
+              description="Esta fase ainda não tem partidas criadas ou geradas."
+            />
+          } @else {
+          <div class="match-groups">
+            @for (group of filteredMatchGroups(); track group.key) {
+              <section class="match-group">
+                <header class="match-group__header">
+                  <span class="match-group__phase">{{ group.phaseName }}</span>
+                  <span
+                    class="match-group__round"
+                    [class.match-group__round--third]="group.kind === 'THIRD_PLACE'"
+                  >
+                    {{ group.label }}
+                  </span>
+                </header>
+                <div class="match-group__list">
+                  @for (match of group.matches; track match.id) {
+                    <a
+                      class="match-row-link"
+                      [id]="'match-' + match.id"
+                      [routerLink]="matchLink(match)"
+                    >
+                      <app-match-row
+                        [match]="match"
+                        [myPrediction]="myPredictionFor(match.id)"
+                        [isActiveMember]="isActiveMember()"
+                        [tournamentInProgress]="tournamentInProgress()"
+                        (predictClick)="openPredictionFor($event)"
+                      />
+                    </a>
+                  }
+                </div>
+              </section>
             }
-            {{ ctx.buttonLabel }}
-          </app-button>
+          </div>
+          }
+        }
+      }
+
+      @if (activePhase(); as phase) {
+        @if (phase.phaseType === 'KNOCKOUT') {
+          @if (activeBracketLoading()) {
+            <div class="page__skeleton">
+              <div class="u-skeleton page__skeleton-content"></div>
+            </div>
+          } @else if (activeBracketError(); as err) {
+            <app-error-state
+              title="Não foi possível carregar o chaveamento"
+              [message]="err"
+              [canRetry]="false"
+            />
+          } @else if (activeBracket(); as b) {
+            @if (b.rounds.length === 0) {
+              <app-empty-state
+                [icon]="calendarIcon"
+                title="Mata-mata sem partidas"
+                description="Gere ou crie as partidas desta fase para visualizar o chaveamento."
+              />
+            } @else {
+              <div class="bracket-toggle" role="tablist" aria-label="Modo de visualização">
+                <button
+                  type="button"
+                  role="tab"
+                  class="bracket-toggle__btn"
+                  [class.bracket-toggle__btn--active]="bracketViewMode() === 'cards'"
+                  [attr.aria-selected]="bracketViewMode() === 'cards'"
+                  (click)="setBracketViewMode('cards')"
+                >
+                  Cards
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="bracket-toggle__btn"
+                  [class.bracket-toggle__btn--active]="bracketViewMode() === 'tree'"
+                  [attr.aria-selected]="bracketViewMode() === 'tree'"
+                  (click)="setBracketViewMode('tree')"
+                >
+                  Chaveamento
+                </button>
+              </div>
+
+              <app-bracket-view
+                [bracket]="b"
+                [mode]="bracketViewMode()"
+                [tournamentId]="tournament()?.id ?? null"
+                [phaseId]="phase.id"
+                [showLegs]="false"
+              />
+            }
+          } @else {
+            <app-empty-state
+              [icon]="calendarIcon"
+              title="Mata-mata sem partidas"
+              description="Gere ou crie as partidas desta fase para visualizar o chaveamento."
+            />
+          }
+        } @else {
+          @if (activeStandingsLoading()) {
+            <div class="page__skeleton">
+              <div class="u-skeleton page__skeleton-content"></div>
+            </div>
+          } @else if (activeStandingsError(); as err) {
+            <app-error-state
+              title="Não foi possível carregar a classificação"
+              [message]="err"
+              [canRetry]="false"
+            />
+          } @else if (activeStandings(); as s) {
+            @if (s.groups.length === 0 || s.groups[0]?.rows?.length === 0) {
+              <app-empty-state
+                [icon]="medalIcon"
+                title="Sem classificação ainda"
+                description="A tabela aparece após o primeiro resultado lançado."
+              />
+            } @else {
+              <app-standings-table [standings]="s" density="compact" />
+            }
+          }
+        }
+      }
+
+      @if (activeTab() === 'predictions') {
+        @if (myPredictionsRows().length === 0) {
+          <app-empty-state
+            [icon]="sparklesIcon"
+            title="Sem palpites ainda"
+            description="Seus palpites neste torneio aparecem aqui."
+          />
+        } @else {
+          <ul class="my-pred-list">
+            @for (row of myPredictionsRows(); track row.prediction.id) {
+              <li>
+                <a class="my-pred" [routerLink]="matchLink(row.match)">
+                  <header class="my-pred__top">
+                    <span class="my-pred__phase">{{ row.phaseName }}</span>
+                    <span class="my-pred__time">
+                      {{ scheduledLabel(row.match.scheduledAt) }}
+                    </span>
+                  </header>
+                  <div class="my-pred__teams">
+                    <div class="my-pred__side">
+                      <app-team-badge
+                        [name]="row.match.homeTeam.name"
+                        [shortName]="row.match.homeTeam.shortName"
+                        [badgeUrl]="row.match.homeTeam.badgeUrl"
+                        [size]="24"
+                      />
+                      <span>{{ row.match.homeTeam.name }}</span>
+                    </div>
+                    <div class="my-pred__scores">
+                      <div class="my-pred__score my-pred__score--mine">
+                        <span class="my-pred__score-label">Meu</span>
+                        <span class="my-pred__score-val">
+                          {{ row.prediction.homeScore }}
+                          ×
+                          {{ row.prediction.awayScore }}
+                        </span>
+                      </div>
+                      <div class="my-pred__score">
+                        <span class="my-pred__score-label">Real</span>
+                        @if (
+                          row.match.homeScore !== null &&
+                          row.match.awayScore !== null &&
+                          row.match.status !== 'CANCELLED'
+                        ) {
+                          <span class="my-pred__score-val">
+                            {{ row.match.homeScore }} × {{ row.match.awayScore }}
+                          </span>
+                        } @else if (row.match.status === 'CANCELLED') {
+                          <span class="my-pred__score-val my-pred__score-val--muted">
+                            CANC
+                          </span>
+                        } @else {
+                          <span class="my-pred__score-val my-pred__score-val--muted">
+                            —
+                          </span>
+                        }
+                      </div>
+                    </div>
+                    <div class="my-pred__side my-pred__side--away">
+                      <app-team-badge
+                        [name]="row.match.awayTeam.name"
+                        [shortName]="row.match.awayTeam.shortName"
+                        [badgeUrl]="row.match.awayTeam.badgeUrl"
+                        [size]="24"
+                      />
+                      <span>{{ row.match.awayTeam.name }}</span>
+                    </div>
+                  </div>
+                  <footer class="my-pred__footer">
+                    @if (row.match.status === 'COMPLETED') {
+                      <span
+                        class="my-pred__pts"
+                        [class.my-pred__pts--zero]="row.prediction.points === 0"
+                      >
+                        +{{ row.prediction.points }} pts
+                      </span>
+                    } @else if (row.match.status === 'CANCELLED') {
+                      <span class="my-pred__pts my-pred__pts--zero">
+                        Cancelada
+                      </span>
+                    } @else {
+                      <span class="my-pred__pts my-pred__pts--pending">
+                        Aguardando
+                      </span>
+                    }
+                  </footer>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      }
+
+      @if (activeTab() === 'info') {
+        <article class="info-card">
+          @if (t.description) {
+            <p class="info-card__description">{{ t.description }}</p>
+          }
+          <div class="info-card__meta">
+            <span>Criado em <strong>{{ createdAtLabel() }}</strong></span>
+            <span aria-hidden="true">·</span>
+            <span>
+              <strong>{{ teamCountLabel() }}</strong> times
+            </span>
+          </div>
+        </article>
+
+        <article class="invite">
+          <p class="invite__label">Código de convite</p>
+          <div class="invite__row">
+            <code class="invite__code">{{ t.inviteCode }}</code>
+            <button
+              type="button"
+              class="invite__icon-btn"
+              (click)="copyCode()"
+              aria-label="Copiar código"
+              title="Copiar código"
+            >
+              <lucide-icon [img]="copyIcon" [size]="16" />
+            </button>
+            @if (isOwner()) {
+              <button
+                type="button"
+                class="invite__icon-btn invite__icon-btn--warning"
+                (click)="requestRegenerate()"
+                aria-label="Regenerar código"
+                title="Regenerar código"
+                [disabled]="regenerating()"
+              >
+                <lucide-icon [img]="refreshIcon" [size]="16" />
+              </button>
+            }
+          </div>
+          <p class="invite__hint">
+            @if (isOwner()) {
+              Compartilhe esse código com quem você quer convidar. Regenerar
+              invalida o código anterior imediatamente.
+            } @else {
+              Use este código para convidar mais participantes.
+            }
+          </p>
+        </article>
+
+        @if (isOwner()) {
+          <nav class="info-nav" aria-label="Mais sobre o torneio">
+            <a
+              id="info-members"
+              class="info-nav__link"
+              [routerLink]="['/tournaments', t.id, 'members']"
+              (click)="rememberReturn('info-members')"
+            >
+              <span class="info-nav__icon" aria-hidden="true">
+                <lucide-icon [img]="usersIcon" [size]="18" />
+              </span>
+              <span class="info-nav__text">
+                <span class="info-nav__title">Membros</span>
+                <span class="info-nav__hint">{{ t.memberCount }} participantes</span>
+              </span>
+              <lucide-icon [img]="chevronRightIcon" [size]="18" aria-hidden="true" />
+            </a>
+            <a
+              id="info-teams"
+              class="info-nav__link"
+              [routerLink]="['/tournaments', t.id, 'teams']"
+              (click)="rememberReturn('info-teams')"
+            >
+              <span class="info-nav__icon" aria-hidden="true">
+                <lucide-icon [img]="shieldIcon" [size]="18" />
+              </span>
+              <span class="info-nav__text">
+                <span class="info-nav__title">Times do torneio</span>
+                <span class="info-nav__hint">{{ t.teamCount }} times</span>
+              </span>
+              <lucide-icon [img]="chevronRightIcon" [size]="18" aria-hidden="true" />
+            </a>
+            <a
+              id="info-phases"
+              class="info-nav__link"
+              [routerLink]="['/tournaments', t.id, 'phases']"
+              (click)="rememberReturn('info-phases')"
+            >
+              <span class="info-nav__icon" aria-hidden="true">
+                <lucide-icon [img]="workflowIcon" [size]="18" />
+              </span>
+              <span class="info-nav__text">
+                <span class="info-nav__title">Gerenciar fases</span>
+                <span class="info-nav__hint">
+                  {{ phases().length }} fases · criar, editar, reordenar
+                </span>
+              </span>
+              <lucide-icon [img]="chevronRightIcon" [size]="18" aria-hidden="true" />
+            </a>
+          </nav>
         }
 
-        <a class="detail__edit-link" [routerLink]="['/tournaments', t.id, 'edit']">
-          <lucide-icon [img]="pencilIcon" [size]="16" />
-          Editar configurações
-        </a>
-      </article>
-    }
+        <article class="info-card">
+          <header class="info-card__header">
+            <h3 class="info-card__title">Pontuação</h3>
+          </header>
+          <dl class="points">
+            <div class="points__item">
+              <dt>Vitória</dt>
+              <dd>{{ t.settings.winPoints }}</dd>
+            </div>
+            <div class="points__item">
+              <dt>Empate</dt>
+              <dd>{{ t.settings.drawPoints }}</dd>
+            </div>
+            <div class="points__item">
+              <dt>Derrota</dt>
+              <dd>{{ t.settings.lossPoints }}</dd>
+            </div>
+            <div class="points__item">
+              <dt>Placar exato</dt>
+              <dd>{{ t.settings.exactScorePoints }}</dd>
+            </div>
+            <div class="points__item">
+              <dt>Acertou vencedor</dt>
+              <dd>{{ t.settings.winnerPoints }}</dd>
+            </div>
+            <div class="points__item">
+              <dt>Errou tudo</dt>
+              <dd>{{ t.settings.wrongPoints }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="info-card">
+          <header class="info-card__header">
+            <h3 class="info-card__title">Critérios de desempate</h3>
+            <p class="info-card__subtitle">Ordem importa</p>
+          </header>
+          <ol class="tiebreak">
+            @for (criterion of t.settings.tiebreakCriteria; track criterion) {
+              <li class="tiebreak__item">{{ tiebreakLabel(criterion) }}</li>
+            }
+          </ol>
+        </article>
+
+        @if (isOwner()) {
+          <article class="info-card" id="info-actions">
+            <header class="info-card__header">
+              <h3 class="info-card__title">Ações do organizador</h3>
+              <p class="info-card__subtitle">
+                Avance o torneio e ajuste as configurações.
+              </p>
+            </header>
+            <div class="org-actions">
+              @if (statusContext(); as ctx) {
+                <app-button
+                  [variant]="ctx.variant === 'destructive' ? 'destructive' : 'primary'"
+                  size="lg"
+                  [fullWidth]="true"
+                  [loading]="changingStatus()"
+                  (buttonClick)="requestStatusChange()"
+                >
+                  @if (ctx.buttonIcon === 'play') {
+                    <lucide-icon [img]="playIcon" [size]="18" />
+                  } @else {
+                    <lucide-icon [img]="flagIcon" [size]="18" />
+                  }
+                  {{ ctx.buttonLabel }}
+                </app-button>
+              }
+              <a
+                class="org-actions__edit"
+                [routerLink]="['/tournaments', t.id, 'edit']"
+                (click)="rememberReturn('info-actions')"
+              >
+                <lucide-icon [img]="pencilIcon" [size]="16" />
+                Editar configurações
+              </a>
+            </div>
+          </article>
+        }
+
+        @if (canLeave()) {
+          <article class="info-card leave-card">
+            <header class="info-card__header">
+              <h3 class="info-card__title">Participação</h3>
+              <p class="info-card__subtitle">
+                Você pode sair deste torneio quando quiser.
+              </p>
+            </header>
+            <app-button
+              variant="destructive"
+              size="lg"
+              [fullWidth]="true"
+              [loading]="leaving()"
+              (buttonClick)="requestLeave()"
+            >
+              <lucide-icon [img]="logOutIcon" [size]="18" />
+              Sair do torneio
+            </app-button>
+          </article>
+        }
+      }
+    </div>
 
     @if (statusContext(); as ctx) {
       <app-confirm-dialog
@@ -285,6 +705,27 @@
       [loading]="regenerating()"
       (confirmed)="confirmRegenerate()"
       (cancelled)="cancelRegenerate()"
+    />
+
+    <app-confirm-dialog
+      [open]="leaveDialogOpen()"
+      title="Sair do torneio?"
+      description="Você deixará de participar e seus palpites não pontuarão mais. Pode voltar depois usando o código de convite."
+      confirmLabel="Sair do torneio"
+      variant="destructive"
+      [loading]="leaving()"
+      (confirmed)="confirmLeave()"
+      (cancelled)="cancelLeave()"
+    />
+
+    <app-prediction-dialog
+      [open]="predictionMatch() !== null"
+      [match]="predictionMatch()"
+      [current]="predictionCurrent()"
+      [submitting]="predictionSubmitting()"
+      [serverError]="predictionError()"
+      (confirmed)="submitPrediction($event)"
+      (cancelled)="closePrediction()"
     />
   }
 </section>

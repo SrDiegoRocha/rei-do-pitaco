@@ -15,6 +15,10 @@
       </p>
     </header>
 
+    @if (knockoutEligibilityMessage(); as msg) {
+      <div class="mform__hint" role="status">{{ msg }}</div>
+    }
+
     <div class="mform__field">
       <label class="mform__label" for="match-home">Mandante</label>
       <select
@@ -60,27 +64,67 @@
 
   <section class="mform__section">
     <header class="mform__section-header">
-      <h2 class="mform__section-title">Rodada e grupo</h2>
-      <p class="mform__section-subtitle">
-        @if (isGroupsPhase()) {
+      @if (isKnockoutPhase()) {
+        <h2 class="mform__section-title">Etapa</h2>
+        <p class="mform__section-subtitle">
+          Em qual etapa do mata-mata este confronto acontece
+        </p>
+      } @else if (isGroupsPhase()) {
+        <h2 class="mform__section-title">Rodada e grupo</h2>
+        <p class="mform__section-subtitle">
           Em qual rodada e grupo este confronto acontece
-        } @else {
+        </p>
+      } @else {
+        <h2 class="mform__section-title">Rodada</h2>
+        <p class="mform__section-subtitle">
           Em qual rodada este confronto acontece
-        }
-      </p>
+        </p>
+      }
     </header>
 
     <div class="mform__grid-2">
-      <app-input
-        formControlName="round"
-        type="number"
-        label="Rodada"
-        placeholder="1"
-        inputmode="numeric"
-        [errorText]="roundError()"
-        [required]="true"
-        helper="Use 1 para primeira rodada, 2 para segunda, etc."
-      />
+      @if (isKnockoutPhase()) {
+        <div class="mform__field">
+          <label class="mform__label" for="match-round">Etapa</label>
+          @if (koRoundOptions().length > 0) {
+            <select
+              id="match-round"
+              class="mform__select"
+              [value]="koEtapaSelectValue()"
+              (change)="onEtapaChange($event)"
+            >
+              @for (opt of koRoundOptions(); track etapaOptionValue(opt)) {
+                <option [value]="etapaOptionValue(opt)">{{ opt.label }}</option>
+              }
+            </select>
+            @if (roundError(); as err) {
+              <p class="mform__field-error" role="alert">{{ err }}</p>
+            }
+          } @else {
+            <app-input
+              formControlName="round"
+              type="number"
+              label=""
+              placeholder="1"
+              inputmode="numeric"
+              [errorText]="roundError()"
+              [required]="true"
+              helper="O número de times da fase precisa ser potência de 2 para usar nomes de etapas."
+            />
+          }
+        </div>
+      } @else {
+        <app-input
+          formControlName="round"
+          type="number"
+          label="Rodada"
+          placeholder="1"
+          inputmode="numeric"
+          [errorText]="roundError()"
+          [required]="true"
+          helper="Use 1 para primeira rodada, 2 para segunda, etc."
+        />
+      }
 
       @if (isGroupsPhase()) {
         <div class="mform__field">

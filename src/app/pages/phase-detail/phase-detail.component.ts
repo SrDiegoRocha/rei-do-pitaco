@@ -24,6 +24,7 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import {
   CalendarDays,
+  CheckCircle2,
   ChevronRight,
   Crown,
   Grid3x3,
@@ -75,6 +76,7 @@ export class PhaseDetailComponent implements OnInit {
   protected readonly workflowIcon = Workflow;
   protected readonly calendarIcon = CalendarDays;
   protected readonly trophyIcon = Trophy;
+  protected readonly checkIcon = CheckCircle2;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -118,6 +120,44 @@ export class PhaseDetailComponent implements OnInit {
     if (!p) return '';
     return `phase-detail__type phase-detail__type--${p.phaseType.toLowerCase().replace('_', '-')}`;
   });
+
+  protected readonly isKnockout = computed(
+    () => this.phase()?.phaseType === 'KNOCKOUT',
+  );
+
+  protected readonly finalizedAtLabel = computed<string | null>(() => {
+    const iso = this.phase()?.finalizedAt;
+    if (!iso) return null;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  });
+
+  protected readonly standingsRouterLink = computed(() => {
+    const t = this.tournament();
+    const p = this.phase();
+    if (!t || !p) return null;
+    const leaf = p.phaseType === 'KNOCKOUT' ? 'bracket' : 'standings';
+    return ['/tournaments', t.id, 'phases', p.id, leaf];
+  });
+
+  protected readonly standingsTitle = computed(() =>
+    this.isKnockout() ? 'Chaveamento' : 'Classificação',
+  );
+
+  protected readonly standingsSubtitle = computed(() =>
+    this.isKnockout()
+      ? 'Confrontos, vencedores e disputa de 3º'
+      : 'Tabela e finalização da fase',
+  );
 
   public ngOnInit(): void {
     const tid = this._route.snapshot.paramMap.get('id');

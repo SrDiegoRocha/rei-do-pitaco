@@ -175,16 +175,6 @@
         <h2 class="pform__section-title">Configurações dos grupos</h2>
       </header>
 
-      <app-input
-        formControlName="qualifiersPerGroup"
-        type="number"
-        label="Times que se classificam por grupo (opcional)"
-        placeholder="Ex.: 2"
-        inputmode="numeric"
-        [errorText]="qualifiersError()"
-        helper="Usado nas zonas pra decidir quem avança."
-      />
-
       <button
         type="button"
         class="pform__toggle"
@@ -236,15 +226,6 @@
   }
 
   <div class="pform__actions">
-    <app-button
-      type="button"
-      variant="ghost"
-      size="lg"
-      [disabled]="submitting() || deleting()"
-      (buttonClick)="onCancel()"
-    >
-      Cancelar
-    </app-button>
     <app-button
       type="submit"
       variant="primary"

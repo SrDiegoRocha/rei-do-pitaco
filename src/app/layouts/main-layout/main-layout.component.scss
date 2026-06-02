@@ -1,7 +1,7 @@
 :host {
   display: block;
-  height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -20,8 +20,12 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* Top spacing lives on .layout__inner (scrollable content), not here, so a
+     position:sticky child anchors flush to the scrollport top — no gap below
+     the header in WebKit, which sticks relative to the content box when the
+     scroll container has padding-top. */
   padding-inline: var(--space-4);
-  padding-block: var(--space-4) var(--space-6);
+  padding-bottom: var(--space-6);
   padding-inline-start: max(var(--space-4), var(--safe-left));
   padding-inline-end: max(var(--space-4), var(--safe-right));
 }
@@ -32,14 +36,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding-top: var(--space-4);
 }
 
 @media (min-width: 768px) {
   .layout__main {
-    padding-block: var(--space-6) var(--space-8);
+    padding-bottom: var(--space-8);
   }
   .layout__inner {
     max-width: 720px;
+    padding-top: var(--space-6);
   }
 }
 
@@ -48,10 +54,11 @@
     flex-direction: row;
   }
   .layout__main {
-    padding: var(--space-8);
+    padding: 0 var(--space-8) var(--space-8);
   }
   .layout__inner {
     max-width: 960px;
+    padding-top: var(--space-8);
   }
 }
 

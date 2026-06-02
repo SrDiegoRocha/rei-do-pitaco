@@ -16,8 +16,12 @@ import { listStagger } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
+import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TeamCardComponent } from '@shared/components/team-card/team-card.component';
 import { Plus, Shield } from 'lucide-angular';
+
+const PAGE_SIZE = 24;
+const SORT = 'name,asc';
 
 @Component({
   selector: 'app-my-teams',
@@ -27,6 +31,7 @@ import { Plus, Shield } from 'lucide-angular';
     EmptyStateComponent,
     ButtonComponent,
     FabComponent,
+    PaginationComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +49,9 @@ export class MyTeamsComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly items = signal<ITeamResponse[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly currentPage = signal(0);
+  protected readonly totalPages = signal(1);
+  protected readonly totalElements = signal(0);
 
   protected readonly isEmpty = computed(
     () =>
@@ -60,15 +68,30 @@ export class MyTeamsComponent implements OnInit {
     this._load();
   }
 
+  protected goToPage(page: number): void {
+    if (this.loading()) return;
+    this.currentPage.set(page);
+    this._load();
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   private _load(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
     this._service
-      .list({ page: 0, size: 30, sort: 'name,asc' })
+      .list({
+        page: this.currentPage(),
+        size: PAGE_SIZE,
+        sort: SORT,
+      })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (page) => {
           this.items.set(page.content);
+          this.totalPages.set(Math.max(1, page.totalPages));
+          this.totalElements.set(page.totalElements);
           this.loading.set(false);
         },
         error: (err: unknown) => {

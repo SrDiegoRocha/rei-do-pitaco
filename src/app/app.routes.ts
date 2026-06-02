@@ -80,20 +80,22 @@ export const routes: Routes = [
         title: 'Membros · FutBet',
       },
       {
-        path: 'tournaments/:id/predictions/me',
+        path: 'tournaments/:id/participants/:userId',
         loadComponent: () =>
-          import('@pages/my-predictions/my-predictions.component').then(
-            (m) => m.MyPredictionsComponent,
-          ),
-        title: 'Meus palpites · FutBet',
+          import(
+            '@pages/participant-detail/participant-detail.component'
+          ).then((m) => m.ParticipantDetailComponent),
+        title: 'Participante · FutBet',
+      },
+      {
+        path: 'tournaments/:id/predictions/me',
+        redirectTo: 'tournaments/:id?tab=predictions',
+        pathMatch: 'full',
       },
       {
         path: 'tournaments/:id/ranking',
-        loadComponent: () =>
-          import(
-            '@pages/tournament-ranking/tournament-ranking.component'
-          ).then((m) => m.TournamentRankingComponent),
-        title: 'Ranking · FutBet',
+        redirectTo: 'tournaments/:id?tab=ranking',
+        pathMatch: 'full',
       },
       {
         path: 'tournaments/:id/teams',
@@ -110,7 +112,7 @@ export const routes: Routes = [
           import(
             '@pages/tournament-phases/tournament-phases.component'
           ).then((m) => m.TournamentPhasesComponent),
-        title: 'Fases · FutBet',
+        title: 'Gerenciar fases · FutBet',
       },
       {
         path: 'tournaments/:id/phases/new',
@@ -185,6 +187,14 @@ export const routes: Routes = [
             (m) => m.PhaseStandingsComponent,
           ),
         title: 'Classificação · FutBet',
+      },
+      {
+        path: 'tournaments/:id/phases/:pid/bracket',
+        loadComponent: () =>
+          import('@pages/phase-bracket/phase-bracket.component').then(
+            (m) => m.PhaseBracketComponent,
+          ),
+        title: 'Chaveamento · FutBet',
       },
       {
         path: 'tournaments/:id/phases/:pid/matches/new',

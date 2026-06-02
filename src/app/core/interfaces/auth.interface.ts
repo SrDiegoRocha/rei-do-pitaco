@@ -32,3 +32,13 @@ export interface ISignInRequest {
 export interface IRefreshTokenRequest {
   refreshToken: string;
 }
+
+export interface IUpdateProfileRequest {
+  name: string;
+  avatarUrl?: string | null;
+}
+
+export interface IChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}

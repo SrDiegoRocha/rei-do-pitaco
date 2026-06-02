@@ -19,6 +19,13 @@ import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { MatchesService } from '@core/services/matches.service';
 import { PhasesService } from '@core/services/phases.service';
 import { TournamentsService } from '@core/services/tournaments.service';
+import {
+  currentKnockoutRound,
+  expectedKnockoutRounds,
+  isCurrentKnockoutRoundDone,
+  isKnockoutFinalDone,
+} from '@core/utils/knockout-state';
+import { knockoutRoundLabel } from '@core/utils/round-label';
 import { listStagger } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -27,8 +34,12 @@ import { FabComponent } from '@shared/components/fab/fab.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ToastService } from '@shared/services/toast.service';
+import { BracketService } from '@core/services/bracket.service';
+import { IBracketResponse } from '@core/interfaces/bracket.interface';
 import {
   CalendarDays,
+  CheckCircle2,
+  Flag,
   LucideAngularModule,
   Plus,
   Sparkles,
@@ -67,6 +78,7 @@ export class PhaseMatchesComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
   private readonly _phasesService = inject(PhasesService);
   private readonly _matchesService = inject(MatchesService);
+  private readonly _bracketService = inject(BracketService);
   private readonly _authState = inject(AuthState);
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
@@ -75,6 +87,10 @@ export class PhaseMatchesComponent implements OnInit {
   protected readonly calendarIcon = CalendarDays;
   protected readonly plusIcon = Plus;
   protected readonly sparklesIcon = Sparkles;
+  protected readonly checkIcon = CheckCircle2;
+  protected readonly flagIcon = Flag;
+
+  protected readonly bracket = signal<IBracketResponse | null>(null);
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -108,11 +124,6 @@ export class PhaseMatchesComponent implements OnInit {
     return !!(t && user && t.owner.id === user.id);
   });
 
-  protected readonly canCreateMatch = computed(() => {
-    if (!this.isOwner()) return false;
-    return this.tournament()?.status !== 'FINISHED';
-  });
-
   protected readonly isGroupsPhase = computed(
     () => this.phase()?.phaseType === 'GROUPS',
   );
@@ -121,15 +132,100 @@ export class PhaseMatchesComponent implements OnInit {
     () => this.phase()?.phaseType === 'KNOCKOUT',
   );
 
+  protected readonly isFinalized = computed(
+    () => this.phase()?.finalizedAt != null,
+  );
+
+  /** Fase de mata-mata realmente terminada — chegou na rodada final e está decidida. */
+  protected readonly isFinalDone = computed(() => {
+    if (!this.isKnockoutPhase()) return false;
+    const p = this.phase();
+    if (!p) return false;
+    return isKnockoutFinalDone(this.bracket(), p.teamCount, p.hasThirdPlace);
+  });
+
+  /** A rodada atual do KO está toda decidida (pronta pra gerar a próxima). */
+  protected readonly isCurrentRoundDone = computed(() => {
+    if (!this.isKnockoutPhase()) return false;
+    return isCurrentKnockoutRoundDone(this.bracket());
+  });
+
+  /** Pronto para gerar a próxima rodada (KO + rodada atual decidida + não é a final). */
+  protected readonly canGenerateNextRound = computed(() => {
+    if (!this.isKnockoutPhase()) return false;
+    if (this.isFinalDone()) return false;
+    if (!this.isCurrentRoundDone()) return false;
+    return true;
+  });
+
+  protected readonly currentRoundNumber = computed(() =>
+    currentKnockoutRound(this.bracket()),
+  );
+
+  protected readonly currentRoundFriendlyLabel = computed(() => {
+    const r = this.currentRoundNumber();
+    const p = this.phase();
+    if (r === null || !p) return null;
+    return knockoutRoundLabel(r, p.teamCount);
+  });
+
+  protected readonly nextRoundFriendlyLabel = computed(() => {
+    const r = this.currentRoundNumber();
+    const p = this.phase();
+    if (r === null || !p) return null;
+    const expected = expectedKnockoutRounds(p.teamCount);
+    if (expected === 0 || r >= expected) return null;
+    const base = knockoutRoundLabel(r + 1, p.teamCount);
+    // Quando a próxima rodada é a final E a fase tem disputa de 3º lugar,
+    // a geração automática cria os 2 confrontos juntos.
+    if (r + 1 === expected && p.hasThirdPlace) {
+      return `${base} + Disputa de 3º lugar`;
+    }
+    return base;
+  });
+
+  protected readonly canCreateMatch = computed(() => {
+    if (!this.isOwner()) return false;
+    if (this.tournament()?.status === 'FINISHED') return false;
+    if (this.isFinalized()) return false;
+    if (this.isKnockoutPhase() && this.isFinalDone()) return false;
+    return true;
+  });
+
   protected readonly canGenerate = computed(() => {
     if (!this.isOwner()) return false;
     const t = this.tournament();
     const p = this.phase();
     if (!t || !p) return false;
     if (t.status === 'FINISHED') return false;
+    if (this.isFinalized()) return false;
     if (p.matchGenerationMode !== 'AUTOMATIC') return false;
-    if (this.isKnockoutPhase()) return true;
+    if (this.isKnockoutPhase()) {
+      if (this.isFinalDone()) return false;
+      // Pode gerar quando não há matches (primeira rodada) ou
+      // quando a rodada atual está decidida (próxima rodada).
+      if (this.matches().length === 0) return true;
+      return this.isCurrentRoundDone();
+    }
     return this.matches().length === 0;
+  });
+
+  protected readonly bracketHref = computed(() => {
+    const t = this.tournament();
+    const p = this.phase();
+    return t && p ? `/tournaments/${t.id}/phases/${p.id}/bracket` : null;
+  });
+
+  protected readonly standingsHref = computed(() => {
+    const t = this.tournament();
+    const p = this.phase();
+    return t && p ? `/tournaments/${t.id}/phases/${p.id}/standings` : null;
+  });
+
+  protected readonly finalizeHref = computed(() => {
+    return this.isKnockoutPhase()
+      ? this.bracketHref()
+      : this.standingsHref();
   });
 
   protected readonly generateLabel = computed(() => {
@@ -264,6 +360,20 @@ export class PhaseMatchesComponent implements OnInit {
     this.selectedGroupId.set(groupId);
   }
 
+  /** Rótulo amigável da rodada: usa "Oitavas/Quartas/..." em mata-mata. */
+  protected roundLabel(round: number): string {
+    const p = this.phase();
+    if (p?.phaseType === 'KNOCKOUT') {
+      return knockoutRoundLabel(round, p.teamCount);
+    }
+    return `Rodada ${round}`;
+  }
+
+  /** Tem pênaltis lançados? */
+  protected hasPenalties(match: IMatchResponse): boolean {
+    return match.homePenalties !== null && match.awayPenalties !== null;
+  }
+
   protected matchDetailLink(match: IMatchResponse): unknown[] {
     const tid = this.tournament()?.id;
     const pid = this.phase()?.id;
@@ -309,6 +419,15 @@ export class PhaseMatchesComponent implements OnInit {
           this.phase.set(phase);
           this.matches.set(matches);
           this.loading.set(false);
+          if (phase.phaseType === 'KNOCKOUT' && matches.length > 0) {
+            this._bracketService
+              .get(tid, pid)
+              .pipe(takeUntilDestroyed(this._destroyRef))
+              .subscribe({
+                next: (b) => this.bracket.set(b),
+                error: () => this.bracket.set(null),
+              });
+          }
         },
         error: (err: unknown) => {
           this.loading.set(false);

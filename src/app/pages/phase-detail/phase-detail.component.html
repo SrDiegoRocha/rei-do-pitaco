@@ -46,6 +46,16 @@
       </div>
     </article>
 
+    @if (finalizedAtLabel(); as fa) {
+      <article class="phase-detail__finalized" role="status">
+        <lucide-icon [img]="checkIcon" [size]="18" aria-hidden="true" />
+        <div class="phase-detail__finalized-body">
+          <strong>Fase finalizada</strong>
+          <span>em {{ fa }} — times classificados foram movidos para a próxima fase.</span>
+        </div>
+      </article>
+    }
+
     <article class="phase-detail__card">
       <header class="phase-detail__card-header">
         <h3 class="phase-detail__card-title">Configurações</h3>
@@ -60,10 +70,6 @@
           <dd>{{ genLabel() }}</dd>
         </div>
         @if (p.phaseType === 'GROUPS') {
-          <div class="phase-detail__spec">
-            <dt>Classif. por grupo</dt>
-            <dd>{{ p.qualifiersPerGroup ?? '—' }}</dd>
-          </div>
           <div class="phase-detail__spec">
             <dt>Jogos só dentro do grupo</dt>
             <dd>{{ p.playsInsideGroupOnly ? 'Sim' : 'Não' }}</dd>
@@ -130,30 +136,32 @@
           />
         </a>
       }
-      <a
-        class="phase-detail__quick-link"
-        [routerLink]="[
-          '/tournaments',
-          tournament()?.id,
-          'phases',
-          p.id,
-          'zones'
-        ]"
-      >
-        <span class="phase-detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="workflowIcon" [size]="20" />
-        </span>
-        <div class="phase-detail__quick-info">
-          <span class="phase-detail__quick-label-strong">Zonas</span>
-          <span class="phase-detail__quick-label">Regras de avanço</span>
-        </div>
-        <lucide-icon
-          class="phase-detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
+      @if (!isKnockout()) {
+        <a
+          class="phase-detail__quick-link"
+          [routerLink]="[
+            '/tournaments',
+            tournament()?.id,
+            'phases',
+            p.id,
+            'zones'
+          ]"
+        >
+          <span class="phase-detail__quick-icon" aria-hidden="true">
+            <lucide-icon [img]="workflowIcon" [size]="20" />
+          </span>
+          <div class="phase-detail__quick-info">
+            <span class="phase-detail__quick-label-strong">Zonas</span>
+            <span class="phase-detail__quick-label">Regras de avanço</span>
+          </div>
+          <lucide-icon
+            class="phase-detail__quick-chevron"
+            [img]="chevronRightIcon"
+            [size]="18"
+            aria-hidden="true"
+          />
+        </a>
+      }
       <a
         class="phase-detail__quick-link"
         [routerLink]="[
@@ -178,32 +186,29 @@
           aria-hidden="true"
         />
       </a>
-      <a
-        class="phase-detail__quick-link"
-        [routerLink]="[
-          '/tournaments',
-          tournament()?.id,
-          'phases',
-          p.id,
-          'standings'
-        ]"
-      >
-        <span class="phase-detail__quick-icon" aria-hidden="true">
-          <lucide-icon [img]="trophyIcon" [size]="20" />
-        </span>
-        <div class="phase-detail__quick-info">
-          <span class="phase-detail__quick-label-strong">Classificação</span>
-          <span class="phase-detail__quick-label">
-            Tabela e finalização da fase
+      @if (standingsRouterLink(); as srl) {
+        <a class="phase-detail__quick-link" [routerLink]="srl">
+          <span class="phase-detail__quick-icon" aria-hidden="true">
+            @if (isKnockout()) {
+              <lucide-icon [img]="crownIcon" [size]="20" />
+            } @else {
+              <lucide-icon [img]="trophyIcon" [size]="20" />
+            }
           </span>
-        </div>
-        <lucide-icon
-          class="phase-detail__quick-chevron"
-          [img]="chevronRightIcon"
-          [size]="18"
-          aria-hidden="true"
-        />
-      </a>
+          <div class="phase-detail__quick-info">
+            <span class="phase-detail__quick-label-strong">{{ standingsTitle() }}</span>
+            <span class="phase-detail__quick-label">
+              {{ standingsSubtitle() }}
+            </span>
+          </div>
+          <lucide-icon
+            class="phase-detail__quick-chevron"
+            [img]="chevronRightIcon"
+            [size]="18"
+            aria-hidden="true"
+          />
+        </a>
+      }
     </nav>
 
     @if (canEdit()) {

@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { ApiException } from '@core/errors/api-error';
+import { IBracketResponse } from '@core/interfaces/bracket.interface';
 import {
   IMatchResponse,
   IUpdateMatchRequest,
@@ -19,6 +20,7 @@ import { IPhaseGroupResponse } from '@core/interfaces/phase-group.interface';
 import { IPhaseTeamResponse } from '@core/interfaces/phase-team.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
+import { BracketService } from '@core/services/bracket.service';
 import { MatchesService } from '@core/services/matches.service';
 import { PhaseGroupsService } from '@core/services/phase-groups.service';
 import { PhaseTeamsService } from '@core/services/phase-teams.service';
@@ -46,6 +48,7 @@ export class EditMatchComponent implements OnInit {
   private readonly _phaseTeamsService = inject(PhaseTeamsService);
   private readonly _phaseGroupsService = inject(PhaseGroupsService);
   private readonly _matchesService = inject(MatchesService);
+  private readonly _bracketService = inject(BracketService);
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
@@ -58,6 +61,8 @@ export class EditMatchComponent implements OnInit {
   protected readonly phaseTeams = signal<IPhaseTeamResponse[]>([]);
   protected readonly groups = signal<IPhaseGroupResponse[]>([]);
   protected readonly match = signal<IMatchResponse | null>(null);
+  protected readonly existingMatches = signal<IMatchResponse[]>([]);
+  protected readonly bracket = signal<IBracketResponse | null>(null);
 
   protected readonly submitting = signal(false);
   protected readonly serverError = signal<string | null>(null);
@@ -106,6 +111,7 @@ export class EditMatchComponent implements OnInit {
       round: payload.round,
       groupId: payload.groupId,
       scheduledAt: payload.scheduledAt,
+      matchType: payload.matchType,
     };
 
     this._matchesService
@@ -164,6 +170,7 @@ export class EditMatchComponent implements OnInit {
       phase: this._phasesService.getById(tid, pid),
       teams: this._phaseTeamsService.list(tid, pid),
       match: this._matchesService.getById(tid, pid, mid),
+      matches: this._matchesService.list(tid, pid),
     })
       .pipe(
         switchMap((base) => {
@@ -177,12 +184,30 @@ export class EditMatchComponent implements OnInit {
         takeUntilDestroyed(this._destroyRef),
       )
       .subscribe({
-        next: ({ tournament, phase, teams, match, groups }) => {
+        next: ({ tournament, phase, teams, match, matches, groups }) => {
           this.tournament.set(tournament);
           this.phase.set(phase);
           this.phaseTeams.set(teams);
           this.match.set(match);
+          this.existingMatches.set(matches);
           this.groups.set(groups);
+
+          if (phase.phaseType === 'KNOCKOUT' && matches.length > 0) {
+            this._bracketService
+              .get(tid, pid)
+              .pipe(takeUntilDestroyed(this._destroyRef))
+              .subscribe({
+                next: (b) => {
+                  this.bracket.set(b);
+                  this.loading.set(false);
+                },
+                error: () => {
+                  this.loading.set(false);
+                },
+              });
+            return;
+          }
+
           this.loading.set(false);
         },
         error: (err: unknown) => {

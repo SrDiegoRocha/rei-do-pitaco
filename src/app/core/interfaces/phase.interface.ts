@@ -11,11 +11,11 @@ export interface IPhaseResponse {
   phaseType: TournamentPhaseType;
   matchLegMode: MatchLegMode;
   matchGenerationMode: MatchGenerationMode;
-  qualifiersPerGroup: number | null;
   playsInsideGroupOnly: boolean | null;
   hasThirdPlace: boolean;
   groupCount: number;
   teamCount: number;
+  finalizedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,7 +25,6 @@ export interface ICreatePhaseRequest {
   phaseType: TournamentPhaseType;
   matchLegMode: MatchLegMode;
   matchGenerationMode: MatchGenerationMode;
-  qualifiersPerGroup?: number | null;
   playsInsideGroupOnly?: boolean | null;
   hasThirdPlace?: boolean | null;
 }

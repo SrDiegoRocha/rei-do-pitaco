@@ -103,6 +103,7 @@ export type TiebreakCriteria =
   | 'FEWEST_LOSSES';
 
 export type MatchStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+export type MatchType = 'REGULAR' | 'THIRD_PLACE';
 export type ZoneSelectionMode = 'ALL' | 'BEST_RANKED';
 ```
 
@@ -153,7 +154,7 @@ Endpoints abertos (sem token). Retornam `AuthResponse` em sucesso.
 
 ```ts
 export interface AuthResponse {
-  accessToken: string;        // JWT HS256, vida curta (15min)
+  accessToken: string;        // JWT HS256, vida média (60min)
   refreshToken: string;       // JWT HS256, vida longa (7d)
   tokenType: 'Bearer';
   expiresIn: number;          // TTL do accessToken em segundos
@@ -206,10 +207,18 @@ export interface RefreshTokenRequest {
 }
 ```
 
-Retorna novo par. O refresh token antigo continua válido até expirar — não há revogação. O endpoint só aceita tokens com claim `type=REFRESH`.
+Retorna novo par. **Rotação**: o refresh token apresentado é revogado nesta chamada — só vale **uma vez**. O endpoint só aceita tokens com claim `type=REFRESH`.
 
 Erros:
-- **401** `Invalid or expired token`
+- **401** `Invalid or expired token` (inclui token já usado/rotacionado ou revogado por logout)
+
+### `POST /api/auth/logout` → 204
+
+```ts
+export interface RefreshTokenRequest { refreshToken: string; }   // mesmo payload do refresh
+```
+
+Revoga o refresh token informado (entra na denylist). Idempotente e lenient: mesmo um token inválido/expirado retorna **204**. Não precisa de access token. O access token atual continua válido até expirar (≤ 60 min) — logout no cliente também descarta o access token.
 
 ### Estratégia de cliente recomendada
 
@@ -217,6 +226,35 @@ Erros:
 2. Interceptor HTTP injeta `Authorization: Bearer <accessToken>` em toda request `/api/**` exceto `/api/auth/**`.
 3. Interceptor de resposta detecta 401, tenta `POST /api/auth/refresh`; se sucesso, refaz a request original; se falhar, logout e redireciona pra login.
 4. Decodificar o JWT no client é seguro (não é segredo) — útil pra exibir `name` antes de fazer outra chamada.
+
+---
+
+## 5.1 Perfil do usuário (`/api/users`)
+
+Todos exigem access token. O usuário é resolvido pelo token (não há `{id}` na rota).
+
+```ts
+export interface UpdateProfileRequest {
+  name: string;           // 2–120 chars
+  avatarUrl?: string | null;   // URL válida, ≤ 500
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;    // 8–100 chars
+}
+```
+
+| Método | Path                     | Status | Body                    | Retorno        |
+| ------ | ------------------------ | ------ | ----------------------- | -------------- |
+| GET    | `/api/users/me`          | 200    | —                       | `UserResponse` |
+| PUT    | `/api/users/me`          | 200    | `UpdateProfileRequest`  | `UserResponse` |
+| PUT    | `/api/users/me/password` | 204    | `ChangePasswordRequest` | —              |
+
+- `UserResponse` é o mesmo objeto `user` do `AuthResponse` (`id`, `name`, `email`, `avatarUrl`, `role`, `createdAt`).
+- Email e role não são editáveis aqui.
+- `PUT /me/password` com `currentPassword` errado → **400** `Current password is incorrect`.
+- Trocar a senha **não** invalida refresh tokens já emitidos (sem "logout de todos os dispositivos" ainda).
 
 ---
 
@@ -282,7 +320,7 @@ export interface TournamentResponse {
   id: string;                                 // UUID público
   name: string;
   description: string | null;
-  inviteCode: string;                         // 8 chars alfanuméricos
+  inviteCode: string;                         // 6 chars alfanuméricos
   privacy: TournamentPrivacy;
   status: TournamentStatus;
   maxParticipants: number | null;
@@ -384,7 +422,7 @@ Qualquer outra (`OPEN → DRAFT`, `DRAFT → IN_PROGRESS`, etc.) → **409** `Ca
 
 ### `POST /api/tournaments/{id}/invite-code/regenerate` → 200
 
-Gera novo `inviteCode` de 8 chars. Owner-only. O código anterior **deixa de funcionar imediatamente**.
+Gera novo `inviteCode` de 6 chars. Owner-only. O código anterior **deixa de funcionar imediatamente**.
 
 ### `DELETE /api/tournaments/{id}` → 204
 
@@ -396,7 +434,7 @@ Entra como participante via código de convite. Funciona em torneios `OPEN` ou `
 
 ```ts
 export interface JoinTournamentRequest {
-  inviteCode: string;         // 8 chars
+  inviteCode: string;         // 6 chars
 }
 ```
 
@@ -499,15 +537,17 @@ export interface PhaseResponse {
   phaseType: TournamentPhaseType;
   matchLegMode: MatchLegMode;
   matchGenerationMode: MatchGenerationMode;
-  qualifiersPerGroup: number | null;     // só relevante em GROUPS
   playsInsideGroupOnly: boolean | null;  // só relevante em GROUPS
   hasThirdPlace: boolean;                // só relevante em KNOCKOUT
   groupCount: number;
   teamCount: number;
+  finalizedAt: string | null;            // ISO instant; null = fase ainda não finalizada
   createdAt: string;
   updatedAt: string;
 }
 ```
+
+`finalizedAt` é preenchido quando a fase passa pelo `POST .../finalize` com sucesso (e re-escrito se o finalize rodar de novo). Use-o para distinguir "pronta pra finalizar" de "já finalizada": esconder o botão de finalizar, mostrar banner "Fase finalizada em {data}", e travar criação/geração de partidas na UI.
 
 ### `POST /api/tournaments/{tournamentId}/phases` → 201
 
@@ -519,7 +559,6 @@ export interface CreatePhaseRequest {
   phaseType: TournamentPhaseType;
   matchLegMode: MatchLegMode;
   matchGenerationMode: MatchGenerationMode;
-  qualifiersPerGroup?: number | null;            // ≥ 1, só usado em GROUPS
   playsInsideGroupOnly?: boolean | null;         // só usado em GROUPS
   hasThirdPlace?: boolean | null;                // só usado em KNOCKOUT
 }
@@ -731,11 +770,14 @@ export interface MatchResponse {
   groupName: string | null;
   round: number;
   tieId: string;              // UUID que agrupa pernas de ida e volta
+  matchType: MatchType;       // REGULAR | THIRD_PLACE
   homeTeam: TeamRef;
   awayTeam: TeamRef;
   scheduledAt: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  homePenalties: number | null;   // só preenchido em disputa de pênaltis (KNOCKOUT)
+  awayPenalties: number | null;
   status: MatchStatus;
   createdAt: string;
   updatedAt: string;
@@ -746,8 +788,12 @@ export interface TeamRef {
   name: string;
   shortName: string | null;
   badgeUrl: string | null;
+  primaryColor: string | null;    // hex, ex. "#10B981"
+  secondaryColor: string | null;
 }
 ```
+
+> `TeamRef` é usado em `MatchResponse.homeTeam/awayTeam`, nas pernas do bracket (`BracketTie.legs`) e no `BracketTie.homeTeam/awayTeam/winner`. As cores vêm do `Team` (mesmas do CRUD de times).
 
 ### `POST /api/tournaments/{tid}/phases/{pid}/matches` → 201
 
@@ -759,6 +805,7 @@ export interface CreateMatchRequest {
   groupId?: string | null;        // obrigatório em GROUPS phase; proibido fora
   tieId?: string | null;          // opcional; sistema gera se omitido
   scheduledAt?: string | null;    // ISO instant; opcional
+  matchType?: MatchType | null;   // default REGULAR; THIRD_PLACE só em KNOCKOUT
 }
 ```
 
@@ -772,6 +819,7 @@ Validações cruzadas (todas retornam **409**):
 - `tie legs must have inverted home/away teams`
 - `tie legs must be in different rounds`
 - `a tie can have at most two legs`
+- `THIRD_PLACE matches are only allowed in KNOCKOUT phases`
 
 ### `GET /api/tournaments/{tid}/phases/{pid}/matches` → 200 `MatchResponse[]`
 
@@ -794,6 +842,7 @@ export interface UpdateMatchRequest {
   round: number;
   groupId?: string | null;
   scheduledAt?: string | null;
+  matchType?: MatchType | null;   // default REGULAR; THIRD_PLACE só em KNOCKOUT
 }
 ```
 
@@ -807,14 +856,20 @@ Lança ou edita o resultado. Após salvar, **recalcula pontos de todos os palpit
 export interface SetMatchResultRequest {
   homeScore: number;          // ≥ 0
   awayScore: number;          // ≥ 0
+  homePenalties?: number | null;   // pênaltis: opcional, ambos juntos, ≥ 0 e diferentes
+  awayPenalties?: number | null;
 }
 ```
+
+**Pênaltis** (desempate de mata-mata):
+- Só em phase `KNOCKOUT` (**409** `Penalties only apply to KNOCKOUT phases`).
+- Vêm em par (**409** `Both penalty scores must be provided together`) e não empatam (**409** `Penalty shootout cannot end in a draw`).
+- Só decidem o confronto quando o **agregado está empatado** (em TWO_LEGGED, lançar na perna decisiva). Sem regra de gol fora de casa. Refletem no `winner` do bracket e destravam a geração da próxima rodada de KO.
 
 Validações:
 - **409** `Results can only be set while tournament is IN_PROGRESS`
 - **409** `Cannot set result on a cancelled match`
-- **409** `Match has no scheduled time; set it before lançar result`
-- **409** `Results can only be set after the prediction deadline (scheduledAt)` — `now < scheduledAt`
+- **409** `Results can only be set after the prediction deadline (scheduledAt)` — **só quando a partida tem `scheduledAt`** e `now < scheduledAt`. Partida **sem** `scheduledAt` pode ter o resultado lançado a qualquer momento (lançar é o que fecha a janela de palpites). Não é mais obrigatório marcar data antes de lançar o resultado.
 
 ### `PUT /api/tournaments/{tid}/phases/{pid}/matches/{matchId}/cancel` → 200
 
@@ -823,6 +878,25 @@ Marca como `CANCELLED` e zera placares. Os palpites do match perdem todos os pon
 ### `DELETE /api/tournaments/{tid}/phases/{pid}/matches/{matchId}` → 204
 
 Hard delete. Bloqueado em torneio `FINISHED`.
+
+### `GET /api/tournaments/{tournamentId}/matches` → 200 `MatchResponse[]`
+
+> **Atenção ao path**: nível **torneio**, sem `/phases/{pid}`. Lista **todas** as partidas atravessando todas as `TournamentPhase`s do torneio.
+
+Sem paginação, sem filtros (`round`/`groupId` não se aplicam aqui — use o endpoint por phase pra filtrar).
+
+Ordenação aplicada no banco:
+
+1. `phase.position` ASC — fase 1 antes da fase 2, etc.
+2. Dentro de cada fase: `COALESCE(scheduledAt, createdAt)` ASC. Match com horário marcado entra no fluxo cronológico; sem horário, o `createdAt` segura o lugar.
+3. Tie-break por `createdAt` ASC pra estabilidade.
+
+Acesso: aplica o controle de visibilidade do torneio (owner, member ACTIVE, ou PUBLIC não-DRAFT). Mesmo padrão de `GET /ranking` e do list por phase.
+
+Erros:
+- **404** `Tournament not found` — torneio inexistente, soft-deletado, ou inacessível para o requester.
+
+Útil pra telas tipo "calendário do torneio" ou "todas as partidas em ordem", sem precisar paginar por phase no cliente.
 
 ---
 
@@ -862,7 +936,7 @@ Owner-only. Sem body.
 ```ts
 export interface StandingsResponse {
   phaseId: string;
-  groups: GroupStandings[];   // 1 entrada em ROUND_ROBIN/KNOCKOUT; N em GROUPS
+  groups: GroupStandings[];   // 1 entrada em ROUND_ROBIN; N em GROUPS
 }
 
 export interface GroupStandings {
@@ -885,6 +959,12 @@ export interface StandingRow {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+  // Desfecho da zona de avanço para esta posição (enriquecido pelo backend):
+  zoneId: string | null;        // null se nenhuma zona cobre a posição
+  zoneName: string | null;      // ex.: "Classificado", "Repescagem", "Eliminado"
+  nextPhaseId: string | null;   // destino do avanço; null = zona de descarte (não avança)
+  nextPhaseName: string | null;
+  qualifies: boolean;           // true = o time avança (resolve BEST_RANKED de forma autoritativa)
 }
 ```
 
@@ -894,9 +974,56 @@ Calculado **on-demand** a partir dos matches `COMPLETED` da phase, aplicando `wi
 
 Matches `SCHEDULED` ou `CANCELLED` não contam.
 
+**Enriquecimento por zona**: cada linha já vem com o desfecho da sua posição em relação às `TournamentZone` da fase, então o front não precisa cruzar standings + zonas nem reproduzir a lógica de "melhores N". Para zonas `ALL`, `qualifies` é true quando a posição cai numa zona com `nextPhase`. Para zonas `BEST_RANKED` (ex.: 8 melhores 3ºs), o backend ranqueia os candidatos entre os grupos e marca `qualifies` só nos selecionados — é uma **projeção provisória** enquanto a fase não terminou (recalcula a cada chamada conforme os resultados entram). Posição sem zona → todos os campos de zona `null`/`false`.
+
+Válido apenas para `ROUND_ROBIN` e `GROUPS`. Em phase `KNOCKOUT` retorna **409** `Standings are not available for KNOCKOUT phases; use /bracket` — tabela de liga não faz sentido em mata-mata; use o bracket abaixo.
+
+Acesso: aplica o controle de visibilidade do torneio (owner, member ACTIVE, ou PUBLIC não-DRAFT); senão **404**.
+
+### `BracketResponse`
+
+```ts
+export interface BracketResponse {
+  phaseId: string;
+  phaseName: string;
+  rounds: BracketRound[];     // ordenadas da primeira rodada do mata-mata até a final
+}
+
+export interface BracketRound {
+  round: number;              // ordinal sequencial (1 = primeira rodada)
+  name: string;               // rótulo derivado: "Final", "Semifinals", "Quarterfinals", "Round of 16", ...
+  ties: BracketTie[];
+}
+
+export interface BracketTie {
+  tieId: string;
+  homeTeam: TeamRef | null;
+  awayTeam: TeamRef | null;
+  homeAggregate: number;      // soma das pernas COMPLETED, orientada ao mandante da 1ª perna
+  awayAggregate: number;
+  homePenalties: number | null;   // só preenchido se o confronto foi a pênaltis
+  awayPenalties: number | null;
+  winner: TeamRef | null;     // null enquanto não houver vencedor (jogos pendentes ou empate sem pênaltis)
+  complete: boolean;          // true quando todas as pernas estão resolvidas (sem SCHEDULED)
+  thirdPlace: boolean;        // true se for a disputa de 3º lugar
+  legs: MatchResponse[];      // 1 perna em SINGLE, 2 em TWO_LEGGED (ordenadas por round)
+}
+```
+
+### `GET /api/tournaments/{tid}/phases/{pid}/bracket` → 200 `BracketResponse`
+
+Exclusivo de phase `KNOCKOUT`. Monta a árvore de confrontos a partir dos matches da phase, agrupando as pernas por `tieId`, calculando o placar agregado e o vencedor de cada confronto. As rodadas são ordenadas da primeira (oitavas, por ex.) até a final.
+
+- `winner` fica `null` enquanto o confronto não tiver desfecho: pernas pendentes, ou empate no agregado **sem pênaltis lançados**. Para desempatar, o owner lança os pênaltis no `setResult` (ver §14).
+- Quando a phase tem `hasThirdPlace`, a última rodada contém dois confrontos: a final e a disputa de 3º lugar (`thirdPlace: true`). O flag vem do `matchType` persistido da partida — sempre confiável. A final aparece antes do 3º lugar.
+- Phase sem matches retorna `rounds: []`.
+- Em phase `ROUND_ROBIN`/`GROUPS` retorna **409** `Bracket is only available for KNOCKOUT phases; use /standings`.
+
+Acesso: aplica o controle de visibilidade do torneio (owner, member ACTIVE, ou PUBLIC não-DRAFT); senão **404**. Mesmo padrão de `/standings` e `/ranking`.
+
 ### `POST /api/tournaments/{tid}/phases/{pid}/finalize` → 200 `StandingsResponse`
 
-Owner-only. Processa as zones da phase e materializa os times classificados como `PhaseTeam` na `nextPhase` apontada por cada zone.
+Owner-only. Processa as zones da phase e materializa os times classificados como `PhaseTeam` na `nextPhase` apontada por cada zone. Em caso de sucesso, marca `phase.finalizedAt = now` (visível no `PhaseResponse`).
 
 **Pré-condições** (todos retornam **409**):
 - Todos os matches resolvidos (`COMPLETED` ou `CANCELLED`, sem `SCHEDULED`): `Phase has N unfinished matches`.
@@ -921,13 +1048,15 @@ export interface PredictionResponse {
   matchId: string;
   userId: string;
   userName: string;
-  homeScore: number;
-  awayScore: number;
-  points: number;             // recomputado quando o resultado do match muda
+  homeScore: number | null;   // redigido (null) enquanto não puder ser revelado
+  awayScore: number | null;   // idem
+  points: number | null;      // idem; recomputado quando o resultado do match muda
   createdAt: string;
   updatedAt: string;
 }
 ```
+
+> Os campos `homeScore`, `awayScore` e `points` podem vir `null` no listing público (`GET .../predictions`) quando os palpites ainda não foram liberados — ver regra abaixo. Em `PUT /predictions/me` (palpite do próprio user) e `GET /predictions/me` (meus palpites) eles **sempre** vêm preenchidos.
 
 ### `PUT /api/tournaments/{tid}/matches/{mid}/predictions/me` → 200
 
@@ -940,28 +1069,72 @@ export interface PlacePredictionRequest {
 }
 ```
 
-Validações (todos 409 exceto onde indicado):
+**Janela de palpite** (depende de a partida ter ou não horário):
+- **Com `scheduledAt`**: pode palpitar até o horário marcado. Quando `now >= scheduledAt` → **409** `Predictions are locked for this match`.
+- **Sem `scheduledAt`**: pode palpitar até o resultado real ser lançado (match vira `COMPLETED`). Depois → **409** `Predictions are locked: the match result has already been set`. (Não precisa mais marcar data para poder palpitar.)
+
+Demais validações (todos 409 exceto onde indicado):
 - `Predictions are only accepted while tournament is IN_PROGRESS` — torneio fora de IN_PROGRESS.
 - `Match is cancelled`
-- `Match has no scheduled time`
-- `Predictions are locked for this match` — `now >= scheduledAt`.
 - **403** `You are not an active member of this tournament`
 
 ### `DELETE /api/tournaments/{tid}/matches/{mid}/predictions/me` → 204
 
-Remove meu palpite. Bloqueado após a deadline.
+Remove meu palpite. Sujeito à mesma janela de palpite acima (bloqueado depois do `scheduledAt`, ou depois do resultado lançado quando não há data).
 
 ### `GET /api/tournaments/{tid}/matches/{mid}/predictions` → 200 `PredictionResponse[]`
 
-Lista todos os palpites do match.
+Lista todos os palpites do match. **Nunca falha por janela de tempo** — owner e members ACTIVE chamam livremente a qualquer momento. A redação acontece no DTO.
 
-**Visibilidade**:
-- Owner do torneio: sempre vê.
-- Member ACTIVE: só vê depois que `now >= match.scheduledAt`. Antes disso → **409** `Predictions become visible only after the match deadline`.
+**Acesso** (403 se faltar):
+- Owner do torneio: ok.
+- Member ACTIVE: ok.
+- Demais usuários autenticados (incluindo members `LEFT`/`BANNED`): **403** `You are not an active member of this tournament`.
+
+**Redação dos campos `homeScore`/`awayScore`/`points`** (aplicada uniformemente — owner não tem mais privilégio aqui):
+
+| Estado do match | Scores e pontos retornados |
+| --------------- | -------------------------- |
+| `scheduledAt != null` e `now < scheduledAt` | `null` (palpite escondido) |
+| `scheduledAt != null` e `now >= scheduledAt` | preenchidos |
+| `scheduledAt == null` e `status != COMPLETED` | `null` (palpite escondido até resultado final) |
+| `scheduledAt == null` e `status == COMPLETED` | preenchidos |
+
+Campos `id`, `matchId`, `userId`, `userName`, `createdAt`, `updatedAt` vêm sempre — dá pra mostrar "X usuários já palpitaram" antes do jogo sem vazar conteúdo.
+
+### `GET /api/tournaments/{tid}/matches/{mid}/predictions/stats` → 200 `PredictionStatsResponse`
+
+Distribuição agregada dos palpites do match (mandante / empate / visitante), **sem expor palpites individuais** — serve pro card "Previsão da Galera" mesmo antes do jogo, quando os placares individuais ainda vêm redigidos no listing.
+
+```ts
+export interface PredictionStatsResponse {
+  totalVotes: number;
+  homeWin: number;      // palpites com homeScore > awayScore
+  draw: number;         // homeScore == awayScore
+  awayWin: number;      // homeScore < awayScore
+  homeWinPct: number;   // 0–100, arredondado no servidor (os três somam 100)
+  drawPct: number;
+  awayWinPct: number;
+}
+```
+
+- **Nunca falha por janela de tempo** — pode ser chamado a qualquer momento (antes ou depois do jogo).
+- Percentuais arredondados no servidor pelo método do maior resto (somam exatamente 100). `totalVotes === 0` → todos os pct = 0.
+- **Acesso**: owner ou member ACTIVE; senão **403** `You are not an active member of this tournament`. Match inexistente no torneio → **404**.
 
 ### `GET /api/tournaments/{tid}/predictions/me` → 200 `PredictionResponse[]`
 
-Meus palpites no torneio inteiro. Acessível pra qualquer member ACTIVE (incluindo owner).
+Meus palpites no torneio inteiro. Acessível pra qualquer member ACTIVE (incluindo owner). Não redige nada — são os seus próprios palpites.
+
+### `GET /api/tournaments/{tid}/predictions?userId={userId}` → 200 `PredictionResponse[]`
+
+Palpites de **um participante específico** no torneio inteiro (todas as partidas em que palpitou). Use para a aba "Palpites" da tela de um participante.
+
+- `userId` (query param, **obrigatório**) — `publicId` do participante.
+- **Acesso**: owner ou member ACTIVE; senão **403** `You are not an active member of this tournament`.
+- **Redação por partida** (igual ao listing por match): `homeScore`/`awayScore`/`points` só vêm preenchidos quando o palpite já pode ser revelado naquela partida (após `scheduledAt`, ou após o resultado quando não há data); senão `null`. Preserva a privacidade dos palpites futuros do participante.
+- `userId` inexistente / sem palpites → `[]` (lista vazia).
+- Ordenação não garantida — o front junta com os dados das partidas.
 
 ---
 
@@ -987,7 +1160,7 @@ export interface RankingRowResponse {
 
 Calculado on-demand. Ordenado por `totalPoints` desc → `exactScoreHits` desc → `winnerHits` desc → `wrongs` asc → nome asc.
 
-Sem paginação por enquanto — array completo. Qualquer usuário autenticado pode chamar.
+Sem paginação por enquanto — array completo. Acesso: aplica o controle de visibilidade do torneio (owner, member ACTIVE, ou PUBLIC não-DRAFT); torneio `PRIVATE` não vaza ranking para quem não participa (**404**).
 
 ---
 

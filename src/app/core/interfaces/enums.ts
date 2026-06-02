@@ -18,4 +18,5 @@ export type TiebreakCriteria =
   | 'FEWEST_LOSSES';
 
 export type MatchStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+export type MatchType = 'REGULAR' | 'THIRD_PLACE';
 export type ZoneSelectionMode = 'ALL' | 'BEST_RANKED';

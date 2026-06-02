@@ -42,17 +42,80 @@
       }
     </app-empty-state>
   } @else {
-    @if (canGenerate() && isKnockoutPhase()) {
+    @if (isFinalized()) {
+      <article class="finalized-banner" role="status">
+        <lucide-icon [img]="checkIcon" [size]="18" aria-hidden="true" />
+        <span>Fase finalizada — não há novas partidas a adicionar.</span>
+      </article>
+    } @else if (isKnockoutPhase() && isFinalDone()) {
+      <article class="ko-complete">
+        <div class="ko-complete__body">
+          <lucide-icon
+            class="ko-complete__icon"
+            [img]="flagIcon"
+            [size]="18"
+            aria-hidden="true"
+          />
+          <div class="ko-complete__text">
+            <strong>Mata-mata concluído.</strong>
+            <span>Todos os confrontos foram decididos, incluindo a final. Finalize a fase para materializar os classificados.</span>
+          </div>
+        </div>
+        @if (isOwner() && bracketHref(); as href) {
+          <a class="ko-complete__btn" [routerLink]="href">
+            <lucide-icon [img]="flagIcon" [size]="16" />
+            Finalizar fase
+          </a>
+        }
+      </article>
+    } @else if (
+      isKnockoutPhase() &&
+      canGenerateNextRound() &&
+      nextRoundFriendlyLabel() &&
+      currentRoundFriendlyLabel()
+    ) {
+      <article class="next-round">
+        <div class="next-round__body">
+          <lucide-icon
+            class="next-round__icon"
+            [img]="sparklesIcon"
+            [size]="18"
+            aria-hidden="true"
+          />
+          <div class="next-round__text">
+            <strong>{{ currentRoundFriendlyLabel() }} concluída.</strong>
+            <span>
+              Pronto para gerar
+              <strong>{{ nextRoundFriendlyLabel() }}</strong>
+              com os times que avançaram.
+            </span>
+          </div>
+        </div>
+        @if (canGenerate()) {
+          <app-button
+            variant="primary"
+            size="md"
+            (buttonClick)="openGenerateDialog()"
+          >
+            Gerar {{ nextRoundFriendlyLabel() }}
+          </app-button>
+        }
+      </article>
+    } @else if (
+      isKnockoutPhase() &&
+      canGenerate() &&
+      matches().length === 0
+    ) {
       <div class="generate-banner">
         <p class="generate-banner__text">
-          Pronto para gerar a próxima rodada do mata-mata.
+          Pronto para gerar o chaveamento inicial.
         </p>
         <app-button
           variant="primary"
           size="md"
           (buttonClick)="openGenerateDialog()"
         >
-          {{ generateLabel() }}
+          Gerar chaveamento
         </app-button>
       </div>
     }
@@ -78,7 +141,7 @@
             [attr.aria-selected]="selectedRound() === round"
             (click)="selectRound(round)"
           >
-            Rodada {{ round + 1 }}
+            {{ roundLabel(round) }}
           </button>
         }
       </div>
@@ -122,7 +185,7 @@
         @for (entry of matchesByRound(); track entry.round) {
           <section class="round">
             <header class="round__header">
-              <h2 class="round__title">Rodada {{ entry.round + 1 }}</h2>
+              <h2 class="round__title">{{ roundLabel(entry.round) }}</h2>
               <span class="round__count">
                 {{ entry.matches.length }}
                 {{ entry.matches.length === 1 ? 'partida' : 'partidas' }}
@@ -173,26 +236,39 @@
                         @if (
                           match.homeScore !== null && match.awayScore !== null
                         ) {
-                          <span>{{ match.homeScore }}</span>
+                          <span class="match-card__score-val">
+                            {{ match.homeScore }}
+                          </span>
                           <span class="match-card__score-sep">×</span>
-                          <span>{{ match.awayScore }}</span>
+                          <span class="match-card__score-val">
+                            {{ match.awayScore }}
+                          </span>
                         } @else {
                           <span class="match-card__score-placeholder">vs</span>
                         }
                       </div>
 
                       <div class="match-card__side match-card__side--away">
+                        <span class="match-card__team">
+                          {{ match.awayTeam.name }}
+                        </span>
                         <app-team-badge
                           [name]="match.awayTeam.name"
                           [shortName]="match.awayTeam.shortName"
                           [badgeUrl]="match.awayTeam.badgeUrl"
                           [size]="36"
                         />
-                        <span class="match-card__team">
-                          {{ match.awayTeam.name }}
-                        </span>
                       </div>
                     </div>
+
+                    @if (hasPenalties(match)) {
+                      <p class="match-card__pen-line" aria-label="Pênaltis">
+                        Pênaltis:
+                        <strong>
+                          {{ match.homePenalties }} × {{ match.awayPenalties }}
+                        </strong>
+                      </p>
+                    }
                   </a>
                 </li>
               }

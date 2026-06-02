@@ -43,6 +43,14 @@
         </a>
       }
     </div>
+
+    <app-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [totalElements]="totalElements()"
+      [disabled]="loading()"
+      (pageChange)="goToPage($event)"
+    />
   }
 </section>
 

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   IPlacePredictionRequest,
   IPredictionResponse,
+  IPredictionStatsResponse,
 } from '@core/interfaces/prediction.interface';
 import { API_BASE_URL } from '@core/services/api-config';
 
@@ -32,6 +33,15 @@ export class PredictionsService {
     );
   }
 
+  public stats(
+    tournamentId: string,
+    matchId: string,
+  ): Observable<IPredictionStatsResponse> {
+    return this._http.get<IPredictionStatsResponse>(
+      `${this._baseUrl}/api/tournaments/${tournamentId}/matches/${matchId}/predictions/stats`,
+    );
+  }
+
   public listForMatch(
     tournamentId: string,
     matchId: string,
@@ -46,6 +56,17 @@ export class PredictionsService {
   ): Observable<IPredictionResponse[]> {
     return this._http.get<IPredictionResponse[]>(
       `${this._baseUrl}/api/tournaments/${tournamentId}/predictions/me`,
+    );
+  }
+
+  /** Palpites de um participante específico no torneio (sujeito à redação). */
+  public listForUserInTournament(
+    tournamentId: string,
+    userId: string,
+  ): Observable<IPredictionResponse[]> {
+    return this._http.get<IPredictionResponse[]>(
+      `${this._baseUrl}/api/tournaments/${tournamentId}/predictions`,
+      { params: { userId } },
     );
   }
 }

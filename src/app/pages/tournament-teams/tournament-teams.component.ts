@@ -135,7 +135,6 @@ export class TournamentTeamsComponent implements OnInit {
           this.availableTeams.update((list) =>
             list.filter((t) => t.id !== team.id),
           );
-          this._toast.success(`"${team.name}" vinculado.`);
           if (this.availableTeams().length === 0) {
             this.addSheetOpen.set(false);
           }

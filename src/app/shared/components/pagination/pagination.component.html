@@ -1,0 +1,77 @@
+@if (!isHidden()) {
+  <nav class="pg" aria-label="Paginação">
+    <button
+      type="button"
+      class="pg__btn pg__btn--nav"
+      [disabled]="disabled() || isFirst()"
+      [attr.aria-label]="'Página anterior'"
+      (click)="goPrev()"
+    >
+      <lucide-icon [img]="chevronLeft" [size]="16" aria-hidden="true" />
+      <span class="pg__btn-label">Anterior</span>
+    </button>
+
+    <div class="pg__pages" role="group" aria-label="Lista de páginas">
+      @if (showFirstEllipsis()) {
+        <button
+          type="button"
+          class="pg__btn pg__btn--num"
+          [disabled]="disabled()"
+          [attr.aria-label]="'Ir para a página 1'"
+          (click)="goFirst()"
+        >
+          1
+        </button>
+        <span class="pg__ellipsis" aria-hidden="true">…</span>
+      }
+
+      @for (page of visiblePages(); track page) {
+        <button
+          type="button"
+          class="pg__btn pg__btn--num"
+          [class.pg__btn--active]="page === currentPage()"
+          [disabled]="disabled()"
+          [attr.aria-current]="page === currentPage() ? 'page' : null"
+          [attr.aria-label]="'Ir para a página ' + (page + 1)"
+          (click)="goTo(page)"
+        >
+          {{ page + 1 }}
+        </button>
+      }
+
+      @if (showLastEllipsis()) {
+        <span class="pg__ellipsis" aria-hidden="true">…</span>
+        <button
+          type="button"
+          class="pg__btn pg__btn--num"
+          [disabled]="disabled()"
+          [attr.aria-label]="'Ir para a página ' + totalPages()"
+          (click)="goLast()"
+        >
+          {{ totalPages() }}
+        </button>
+      }
+    </div>
+
+    <span class="pg__counter" aria-live="polite">
+      Página <strong>{{ currentPage() + 1 }}</strong> de
+      <strong>{{ totalPages() }}</strong>
+      @if (totalElements() !== null) {
+        <span class="pg__counter-total">
+          · {{ totalElements() }} {{ totalElements() === 1 ? 'item' : 'itens' }}
+        </span>
+      }
+    </span>
+
+    <button
+      type="button"
+      class="pg__btn pg__btn--nav"
+      [disabled]="disabled() || isLast()"
+      [attr.aria-label]="'Próxima página'"
+      (click)="goNext()"
+    >
+      <span class="pg__btn-label">Próxima</span>
+      <lucide-icon [img]="chevronRight" [size]="16" aria-hidden="true" />
+    </button>
+  </nav>
+}
