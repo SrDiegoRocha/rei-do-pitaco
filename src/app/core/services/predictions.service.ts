@@ -59,7 +59,7 @@ export class PredictionsService {
     );
   }
 
-  /** Palpites de um participante específico no torneio (sujeito à redação). */
+  /** Pitacos de um participante específico no torneio (sujeito à redação). */
   public listForUserInTournament(
     tournamentId: string,
     userId: string,

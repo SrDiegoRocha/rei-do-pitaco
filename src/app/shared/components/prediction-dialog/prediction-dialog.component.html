@@ -28,7 +28,7 @@
               type="button"
               class="stepper__btn"
               [disabled]="submitting() || homeScore() <= 0"
-              [attr.aria-label]="'Diminuir palpite de ' + m.homeTeam.name"
+              [attr.aria-label]="'Diminuir pitaco de ' + m.homeTeam.name"
               (click)="decHome()"
             >
               <lucide-icon [img]="minusIcon" [size]="18" />
@@ -41,14 +41,14 @@
               max="99"
               [value]="homeScore()"
               [disabled]="submitting()"
-              [attr.aria-label]="'Palpite de ' + m.homeTeam.name"
+              [attr.aria-label]="'Pitaco de ' + m.homeTeam.name"
               (input)="onHomeInput($event)"
             />
             <button
               type="button"
               class="stepper__btn"
               [disabled]="submitting() || homeScore() >= 99"
-              [attr.aria-label]="'Aumentar palpite de ' + m.homeTeam.name"
+              [attr.aria-label]="'Aumentar pitaco de ' + m.homeTeam.name"
               (click)="incHome()"
             >
               <lucide-icon [img]="plusIcon" [size]="18" />
@@ -71,7 +71,7 @@
               type="button"
               class="stepper__btn"
               [disabled]="submitting() || awayScore() <= 0"
-              [attr.aria-label]="'Diminuir palpite de ' + m.awayTeam.name"
+              [attr.aria-label]="'Diminuir pitaco de ' + m.awayTeam.name"
               (click)="decAway()"
             >
               <lucide-icon [img]="minusIcon" [size]="18" />
@@ -84,14 +84,14 @@
               max="99"
               [value]="awayScore()"
               [disabled]="submitting()"
-              [attr.aria-label]="'Palpite de ' + m.awayTeam.name"
+              [attr.aria-label]="'Pitaco de ' + m.awayTeam.name"
               (input)="onAwayInput($event)"
             />
             <button
               type="button"
               class="stepper__btn"
               [disabled]="submitting() || awayScore() >= 99"
-              [attr.aria-label]="'Aumentar palpite de ' + m.awayTeam.name"
+              [attr.aria-label]="'Aumentar pitaco de ' + m.awayTeam.name"
               (click)="incAway()"
             >
               <lucide-icon [img]="plusIcon" [size]="18" />

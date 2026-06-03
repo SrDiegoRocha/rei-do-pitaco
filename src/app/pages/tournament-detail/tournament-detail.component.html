@@ -418,8 +418,8 @@
         @if (myPredictionsRows().length === 0) {
           <app-empty-state
             [icon]="sparklesIcon"
-            title="Sem palpites ainda"
-            description="Seus palpites neste torneio aparecem aqui."
+            title="Sem pitacos ainda"
+            description="Seus pitacos neste torneio aparecem aqui."
           />
         } @else {
           <div class="pred-list">
@@ -668,7 +668,7 @@
     <app-confirm-dialog
       [open]="leaveDialogOpen()"
       title="Sair do torneio?"
-      description="Você deixará de participar e seus palpites não pontuarão mais. Pode voltar depois usando o código de convite."
+      description="Você deixará de participar e seus pitacos não pontuarão mais. Pode voltar depois usando o código de convite."
       confirmLabel="Sair do torneio"
       variant="destructive"
       [loading]="leaving()"

@@ -1,0 +1,10 @@
+# Arquivos que controlam o app e o service worker: sempre revalidar,
+# pra atualização do PWA ser detectada sem ficar presa em cache do CDN.
+/index.html
+  Cache-Control: no-cache
+/ngsw-worker.js
+  Cache-Control: no-cache
+/ngsw.json
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache

@@ -1,6 +1,6 @@
 <section class="page">
   <app-page-header
-    title="Próximos palpites"
+    title="Próximos pitacos"
     subtitle="Partidas com deadline em até 7 dias"
     backTo="/tournaments"
   />
@@ -13,7 +13,7 @@
     </div>
   } @else if (loadError(); as err) {
     <app-error-state
-      title="Não foi possível carregar os próximos palpites"
+      title="Não foi possível carregar os próximos pitacos"
       [message]="err"
       [canRetry]="true"
       [retrying]="loading()"
@@ -29,7 +29,7 @@
     <div class="summary">
       <span class="summary__value">{{ pendingCount() }}</span>
       <span class="summary__label">
-        partida{{ pendingCount() === 1 ? '' : 's' }} sem palpite
+        partida{{ pendingCount() === 1 ? '' : 's' }} sem pitaco
       </span>
     </div>
 

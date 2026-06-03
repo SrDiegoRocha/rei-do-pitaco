@@ -109,7 +109,7 @@ export class ParticipantDetailComponent implements OnInit {
     () => this.userId() === this._authState.user()?.id,
   );
 
-  /** Aproveitamento: % de acertos sobre os palpites já resolvidos. */
+  /** Aproveitamento: % de acertos sobre os pitacos já resolvidos. */
   protected readonly accuracy = computed(() => this._accuracyOf(this.participant()));
 
   protected readonly resolvedCount = computed(() => {
@@ -155,7 +155,7 @@ export class ParticipantDetailComponent implements OnInit {
         suffix: '%',
       },
       {
-        label: 'Palpites',
+        label: 'Pitacos',
         a: a.totalPredictions,
         b: b.totalPredictions,
       },

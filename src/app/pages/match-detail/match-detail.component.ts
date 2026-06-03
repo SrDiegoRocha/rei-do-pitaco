@@ -226,7 +226,7 @@ export class MatchDetailComponent implements OnInit {
 
   protected readonly cancelledNote = computed(() =>
     this.match()?.status === 'CANCELLED'
-      ? 'Esta partida foi cancelada. Palpites associados não pontuam.'
+      ? 'Esta partida foi cancelada. Pitacos associados não pontuam.'
       : null,
   );
 
@@ -241,7 +241,7 @@ export class MatchDetailComponent implements OnInit {
     () => this.isOwner() && this.tournament()?.status !== 'FINISHED',
   );
 
-  // "Previsão da Galera" — agregado dos palpites antes do jogo começar.
+  // "Previsão da Galera" — agregado dos pitacos antes do jogo começar.
   protected readonly predictionStats =
     signal<IPredictionStatsResponse | null>(null);
 
@@ -345,13 +345,13 @@ export class MatchDetailComponent implements OnInit {
   protected readonly cancelDescription = computed(() => {
     const m = this.match();
     const teams = m ? `${m.homeTeam.name} × ${m.awayTeam.name}` : 'esta partida';
-    return `Cancelar ${teams} zera os placares e remove os pontos dos palpites associados. Os palpites são mantidos para histórico.`;
+    return `Cancelar ${teams} zera os placares e remove os pontos dos pitacos associados. Os pitacos são mantidos para histórico.`;
   });
 
   protected readonly deleteDescription = computed(() => {
     const m = this.match();
     const teams = m ? `${m.homeTeam.name} × ${m.awayTeam.name}` : 'esta partida';
-    return `Excluir ${teams} é permanente e remove a partida junto com palpites associados.`;
+    return `Excluir ${teams} é permanente e remove a partida junto com pitacos associados.`;
   });
 
   protected readonly canPredict = computed(() => {
@@ -373,28 +373,28 @@ export class MatchDetailComponent implements OnInit {
     const m = this.match();
     if (!t || !m) return null;
     if (t.status === 'DRAFT' || t.status === 'OPEN') {
-      return 'Palpites abrem quando o torneio começa.';
+      return 'Pitacos abrem quando o torneio começa.';
     }
     if (t.status === 'FINISHED') {
-      return 'Torneio encerrado — palpites estão congelados.';
+      return 'Torneio encerrado — pitacos estão congelados.';
     }
     if (m.status === 'CANCELLED') {
-      return 'Partida cancelada não aceita palpites.';
+      return 'Partida cancelada não aceita pitacos.';
     }
     if (m.scheduledAt) {
       if (new Date(m.scheduledAt).getTime() <= Date.now()) {
-        return 'Palpites encerrados (a partida começou).';
+        return 'Pitacos encerrados (a partida começou).';
       }
       return null;
     }
     if (m.status === 'COMPLETED') {
-      return 'Palpites encerrados (resultado lançado).';
+      return 'Pitacos encerrados (resultado lançado).';
     }
     return null;
   });
 
   protected readonly predictionActionLabel = computed(() =>
-    this.myPrediction() ? 'Editar palpite' : 'Lançar palpite',
+    this.myPrediction() ? 'Editar pitaco' : 'Lançar pitaco',
   );
 
   protected readonly canRevealScores = computed(() => {
@@ -570,7 +570,7 @@ export class MatchDetailComponent implements OnInit {
           const message =
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível salvar o palpite.';
+              : 'Não foi possível salvar o pitaco.';
           this.predictionError.set(message);
           this._toast.error(message);
         },
@@ -607,14 +607,14 @@ export class MatchDetailComponent implements OnInit {
               list.filter((p) => p.id !== removedId),
             );
           }
-          this._toast.success('Palpite removido.');
+          this._toast.success('Pitaco removido.');
         },
         error: (err: unknown) => {
           this.removePredictionSubmitting.set(false);
           this._toast.error(
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível remover o palpite.',
+              : 'Não foi possível remover o pitaco.',
           );
         },
       });

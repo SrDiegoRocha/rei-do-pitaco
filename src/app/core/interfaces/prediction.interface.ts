@@ -16,7 +16,7 @@ export interface IPlacePredictionRequest {
 }
 
 /**
- * Agregado dos palpites de uma partida (sem revelar palpites individuais).
+ * Agregado dos pitacos de uma partida (sem revelar pitacos individuais).
  * Usado na "Previsão da Galera".
  */
 export interface IPredictionStatsResponse {

@@ -125,7 +125,7 @@ export class MatchRowComponent {
     if (m.scheduledAt) {
       const t = new Date(m.scheduledAt).getTime();
       if (Number.isNaN(t)) return null;
-      if (t <= Date.now()) return { label: 'Sem palpite', kind: 'locked' };
+      if (t <= Date.now()) return { label: 'Sem pitaco', kind: 'locked' };
       return { label: 'Palpitar', kind: 'pending' };
     }
     return { label: 'Palpitar', kind: 'pending' };

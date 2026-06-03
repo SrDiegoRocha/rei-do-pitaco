@@ -148,7 +148,7 @@ export class UpcomingPredictionsComponent implements OnInit {
           this.loadError.set(
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível carregar os próximos palpites.',
+              : 'Não foi possível carregar os próximos pitacos.',
           );
         },
       });

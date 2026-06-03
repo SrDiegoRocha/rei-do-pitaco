@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "futbet": {
+    "rei-do-pitaco": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -77,10 +77,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "futbet:build:production"
+              "buildTarget": "rei-do-pitaco:build:production"
             },
             "development": {
-              "buildTarget": "futbet:build:development"
+              "buildTarget": "rei-do-pitaco:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -28,7 +28,6 @@ import {
 } from '@core/interfaces/match.interface';
 import { IPhaseGroupResponse } from '@core/interfaces/phase-group.interface';
 import { IPhaseTeamResponse } from '@core/interfaces/phase-team.interface';
-import { expectedKnockoutRounds } from '@core/utils/knockout-state';
 import {
   IRoundOption,
   knockoutRoundLabel,

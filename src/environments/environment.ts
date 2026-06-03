@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'http://localhost:8080',
+  // apiBaseUrl: 'https://rei-do-pitaco-api.onrender.com', server antigo
+  apiBaseUrl: 'https://api.pitaco.dpdns.org',
 };

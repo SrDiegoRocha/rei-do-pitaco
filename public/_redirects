@@ -1,0 +1,2 @@
+# SPA fallback: qualquer rota não-arquivo cai no index.html (roteamento do Angular)
+/*    /index.html    200

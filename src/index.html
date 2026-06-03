@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>FutBet</title>
+  <title>Rei do Pitaco</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Crie torneios de futebol e palpite com seus amigos">
@@ -13,8 +13,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FutBet">
+  <meta name="apple-mobile-web-app-title" content="Rei do Pitaco">
 
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
@@ -25,8 +26,79 @@
     rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
   >
+
+  <style>
+    /* Splash / placeholder exibido até o Angular inicializar (PWA cold start).
+       O conteúdo dentro de <app-root> é substituído quando o app é montado. */
+    .app-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: #0A0F0A;
+      color: #F8FAF9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      z-index: 9999;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .app-splash__logo {
+      width: 112px;
+      height: 112px;
+      animation: app-splash-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .app-splash__name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .app-splash__name b { color: #10B981; }
+    .app-splash__spinner {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.18);
+      border-top-color: #10B981;
+      animation: app-splash-spin 720ms linear infinite;
+    }
+    @keyframes app-splash-spin { to { transform: rotate(360deg); } }
+    @keyframes app-splash-pop {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-color-scheme: light) {
+      .app-splash { background: #F4FBF7; color: #0A1F14; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .app-splash__logo, .app-splash__spinner { animation: none; }
+    }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="app-splash" role="status" aria-label="Carregando Rei do Pitaco">
+      <svg class="app-splash__logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="32" cy="42" r="17" fill="#10B981"/>
+        <g stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <polygon points="32,35 38.7,39.8 36.1,47.7 27.9,47.7 25.3,39.8"/>
+          <line x1="32" y1="35" x2="32" y2="28.5"/>
+          <line x1="38.7" y1="39.8" x2="45.5" y2="37"/>
+          <line x1="36.1" y1="47.7" x2="40.5" y2="53.5"/>
+          <line x1="27.9" y1="47.7" x2="23.5" y2="53.5"/>
+          <line x1="25.3" y1="39.8" x2="18.5" y2="37"/>
+        </g>
+        <path d="M16 26 L16 15 L23 21 L32 11 L41 21 L48 15 L48 26 Z" fill="#F5B301" stroke="#F5B301" stroke-width="1.2" stroke-linejoin="round"/>
+        <rect x="15" y="25" width="34" height="5.5" rx="2" fill="#F5B301"/>
+        <circle cx="16" cy="14.5" r="2.2" fill="#10B981"/>
+        <circle cx="32" cy="10.5" r="2.4" fill="#10B981"/>
+        <circle cx="48" cy="14.5" r="2.2" fill="#10B981"/>
+      </svg>
+      <div class="app-splash__name">Rei do <b>Pitaco</b></div>
+      <div class="app-splash__spinner"></div>
+    </div>
+  </app-root>
 </body>
 </html>

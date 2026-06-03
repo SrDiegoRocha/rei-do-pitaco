@@ -14,7 +14,7 @@ export const routes: Routes = [
           import(
             '@pages/authentication/sign-in/sign-in.component'
           ).then((m) => m.SignInComponent),
-        title: 'Entrar · FutBet',
+        title: 'Entrar · Rei do Pitaco',
         data: { animation: 'signIn' },
       },
       {
@@ -23,7 +23,7 @@ export const routes: Routes = [
           import(
             '@pages/authentication/sign-up/sign-up.component'
           ).then((m) => m.SignUpComponent),
-        title: 'Cadastro · FutBet',
+        title: 'Cadastro · Rei do Pitaco',
         data: { animation: 'signUp' },
       },
       { path: '', pathMatch: 'full', redirectTo: 'signin' },
@@ -45,7 +45,7 @@ export const routes: Routes = [
           import('@pages/my-tournaments/my-tournaments.component').then(
             (m) => m.MyTournamentsComponent,
           ),
-        title: 'Meus torneios · FutBet',
+        title: 'Meus torneios · Rei do Pitaco',
       },
       {
         path: 'tournaments/public',
@@ -53,7 +53,7 @@ export const routes: Routes = [
           import(
             '@pages/public-tournaments/public-tournaments.component'
           ).then((m) => m.PublicTournamentsComponent),
-        title: 'Torneios públicos · FutBet',
+        title: 'Torneios públicos · Rei do Pitaco',
       },
       {
         path: 'tournaments/new',
@@ -61,7 +61,7 @@ export const routes: Routes = [
           import(
             '@pages/create-tournament/create-tournament.component'
           ).then((m) => m.CreateTournamentComponent),
-        title: 'Novo torneio · FutBet',
+        title: 'Novo torneio · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/edit',
@@ -69,7 +69,7 @@ export const routes: Routes = [
           import(
             '@pages/edit-tournament/edit-tournament.component'
           ).then((m) => m.EditTournamentComponent),
-        title: 'Editar torneio · FutBet',
+        title: 'Editar torneio · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/members',
@@ -77,7 +77,7 @@ export const routes: Routes = [
           import(
             '@pages/tournament-members/tournament-members.component'
           ).then((m) => m.TournamentMembersComponent),
-        title: 'Membros · FutBet',
+        title: 'Membros · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/participants/:userId',
@@ -85,7 +85,7 @@ export const routes: Routes = [
           import(
             '@pages/participant-detail/participant-detail.component'
           ).then((m) => m.ParticipantDetailComponent),
-        title: 'Participante · FutBet',
+        title: 'Participante · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/predictions/me',
@@ -103,7 +103,7 @@ export const routes: Routes = [
           import(
             '@pages/tournament-teams/tournament-teams.component'
           ).then((m) => m.TournamentTeamsComponent),
-        title: 'Times do torneio · FutBet',
+        title: 'Times do torneio · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases',
@@ -112,7 +112,7 @@ export const routes: Routes = [
           import(
             '@pages/tournament-phases/tournament-phases.component'
           ).then((m) => m.TournamentPhasesComponent),
-        title: 'Gerenciar fases · FutBet',
+        title: 'Gerenciar fases · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/new',
@@ -120,7 +120,7 @@ export const routes: Routes = [
           import('@pages/create-phase/create-phase.component').then(
             (m) => m.CreatePhaseComponent,
           ),
-        title: 'Nova fase · FutBet',
+        title: 'Nova fase · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/edit',
@@ -128,7 +128,7 @@ export const routes: Routes = [
           import('@pages/edit-phase/edit-phase.component').then(
             (m) => m.EditPhaseComponent,
           ),
-        title: 'Editar fase · FutBet',
+        title: 'Editar fase · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/teams',
@@ -136,7 +136,7 @@ export const routes: Routes = [
           import('@pages/phase-teams/phase-teams.component').then(
             (m) => m.PhaseTeamsComponent,
           ),
-        title: 'Times da fase · FutBet',
+        title: 'Times da fase · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/groups',
@@ -144,7 +144,7 @@ export const routes: Routes = [
           import('@pages/phase-groups/phase-groups.component').then(
             (m) => m.PhaseGroupsComponent,
           ),
-        title: 'Grupos da fase · FutBet',
+        title: 'Grupos da fase · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/zones',
@@ -153,7 +153,7 @@ export const routes: Routes = [
           import('@pages/phase-zones/phase-zones.component').then(
             (m) => m.PhaseZonesComponent,
           ),
-        title: 'Zonas da fase · FutBet',
+        title: 'Zonas da fase · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/zones/new',
@@ -161,7 +161,7 @@ export const routes: Routes = [
           import('@pages/create-zone/create-zone.component').then(
             (m) => m.CreateZoneComponent,
           ),
-        title: 'Nova zona · FutBet',
+        title: 'Nova zona · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/zones/:zid/edit',
@@ -169,7 +169,7 @@ export const routes: Routes = [
           import('@pages/edit-zone/edit-zone.component').then(
             (m) => m.EditZoneComponent,
           ),
-        title: 'Editar zona · FutBet',
+        title: 'Editar zona · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/matches',
@@ -178,7 +178,7 @@ export const routes: Routes = [
           import('@pages/phase-matches/phase-matches.component').then(
             (m) => m.PhaseMatchesComponent,
           ),
-        title: 'Partidas · FutBet',
+        title: 'Partidas · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/standings',
@@ -186,7 +186,7 @@ export const routes: Routes = [
           import('@pages/phase-standings/phase-standings.component').then(
             (m) => m.PhaseStandingsComponent,
           ),
-        title: 'Classificação · FutBet',
+        title: 'Classificação · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/bracket',
@@ -194,7 +194,7 @@ export const routes: Routes = [
           import('@pages/phase-bracket/phase-bracket.component').then(
             (m) => m.PhaseBracketComponent,
           ),
-        title: 'Chaveamento · FutBet',
+        title: 'Chaveamento · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/matches/new',
@@ -202,7 +202,7 @@ export const routes: Routes = [
           import('@pages/create-match/create-match.component').then(
             (m) => m.CreateMatchComponent,
           ),
-        title: 'Nova partida · FutBet',
+        title: 'Nova partida · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/matches/:mid/edit',
@@ -210,7 +210,7 @@ export const routes: Routes = [
           import('@pages/edit-match/edit-match.component').then(
             (m) => m.EditMatchComponent,
           ),
-        title: 'Editar partida · FutBet',
+        title: 'Editar partida · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid/matches/:mid',
@@ -219,7 +219,7 @@ export const routes: Routes = [
           import('@pages/match-detail/match-detail.component').then(
             (m) => m.MatchDetailComponent,
           ),
-        title: 'Partida · FutBet',
+        title: 'Partida · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id/phases/:pid',
@@ -228,7 +228,7 @@ export const routes: Routes = [
           import('@pages/phase-detail/phase-detail.component').then(
             (m) => m.PhaseDetailComponent,
           ),
-        title: 'Fase · FutBet',
+        title: 'Fase · Rei do Pitaco',
       },
       {
         path: 'tournaments/:id',
@@ -237,7 +237,7 @@ export const routes: Routes = [
           import(
             '@pages/tournament-detail/tournament-detail.component'
           ).then((m) => m.TournamentDetailComponent),
-        title: 'Torneio · FutBet',
+        title: 'Torneio · Rei do Pitaco',
       },
       {
         path: 'join',
@@ -245,7 +245,7 @@ export const routes: Routes = [
           import(
             '@pages/join-tournament/join-tournament.component'
           ).then((m) => m.JoinTournamentComponent),
-        title: 'Entrar em torneio · FutBet',
+        title: 'Entrar em torneio · Rei do Pitaco',
       },
       {
         path: 'teams',
@@ -254,7 +254,7 @@ export const routes: Routes = [
           import('@pages/my-teams/my-teams.component').then(
             (m) => m.MyTeamsComponent,
           ),
-        title: 'Meus times · FutBet',
+        title: 'Meus times · Rei do Pitaco',
       },
       {
         path: 'teams/new',
@@ -262,7 +262,7 @@ export const routes: Routes = [
           import('@pages/create-team/create-team.component').then(
             (m) => m.CreateTeamComponent,
           ),
-        title: 'Novo time · FutBet',
+        title: 'Novo time · Rei do Pitaco',
       },
       {
         path: 'teams/:id',
@@ -270,7 +270,7 @@ export const routes: Routes = [
           import('@pages/edit-team/edit-team.component').then(
             (m) => m.EditTeamComponent,
           ),
-        title: 'Editar time · FutBet',
+        title: 'Editar time · Rei do Pitaco',
       },
       {
         path: 'settings',
@@ -278,7 +278,7 @@ export const routes: Routes = [
           import('@pages/settings/settings.component').then(
             (m) => m.SettingsComponent,
           ),
-        title: 'Configurações · FutBet',
+        title: 'Configurações · Rei do Pitaco',
       },
       {
         path: 'profile',
@@ -286,7 +286,7 @@ export const routes: Routes = [
           import('@pages/profile/profile.component').then(
             (m) => m.ProfileComponent,
           ),
-        title: 'Perfil · FutBet',
+        title: 'Perfil · Rei do Pitaco',
       },
       {
         path: 'predictions/upcoming',
@@ -294,7 +294,7 @@ export const routes: Routes = [
           import(
             '@pages/upcoming-predictions/upcoming-predictions.component'
           ).then((m) => m.UpcomingPredictionsComponent),
-        title: 'Próximos palpites · FutBet',
+        title: 'Próximos pitacos · Rei do Pitaco',
       },
       { path: '', pathMatch: 'full', redirectTo: 'tournaments' },
     ],

@@ -124,7 +124,7 @@ const STATUS_ACTION_CONTEXT: Record<
   OPEN: {
     title: 'Iniciar torneio?',
     description:
-      'Ao iniciar, a privacidade não poderá mais ser alterada e os palpites começam a contar pontos.',
+      'Ao iniciar, a privacidade não poderá mais ser alterada e os pitacos começam a contar pontos.',
     confirmLabel: 'Iniciar',
     variant: 'default',
     buttonLabel: 'Iniciar torneio',
@@ -133,7 +133,7 @@ const STATUS_ACTION_CONTEXT: Record<
   IN_PROGRESS: {
     title: 'Encerrar torneio?',
     description:
-      'Após encerrar, nada mais pode ser modificado: resultados, palpites e configurações ficam congelados.',
+      'Após encerrar, nada mais pode ser modificado: resultados, pitacos e configurações ficam congelados.',
     confirmLabel: 'Encerrar',
     variant: 'destructive',
     buttonLabel: 'Encerrar torneio',
@@ -377,7 +377,7 @@ export class TournamentDetailComponent implements OnInit {
       })),
     ];
     if (this.isActiveMember()) {
-      list.push({ id: TAB_MY_PREDICTIONS, label: 'Meus palpites' });
+      list.push({ id: TAB_MY_PREDICTIONS, label: 'Meus pitacos' });
     }
     list.push({ id: TAB_INFO, label: 'Detalhes' });
     return list;
@@ -759,7 +759,7 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   protected accuracyLabel(row: IRankingRowResponse): string {
-    if (row.totalPredictions === 0) return 'sem palpites';
+    if (row.totalPredictions === 0) return 'sem pitacos';
     const evaluated = row.exactScoreHits + row.winnerHits + row.wrongs;
     if (evaluated === 0) return 'aguardando resultados';
     return `${row.exactScoreHits} exato${row.exactScoreHits === 1 ? '' : 's'}`;
@@ -804,7 +804,7 @@ export class TournamentDetailComponent implements OnInit {
     },
   );
 
-  /** Abre o modal de palpite direto na listagem (sem navegar). */
+  /** Abre o modal de pitaco direto na listagem (sem navegar). */
   protected openPredictionFor(match: IMatchResponse): void {
     this.predictionError.set(null);
     this.predictionMatch.set(match);
@@ -834,7 +834,7 @@ export class TournamentDetailComponent implements OnInit {
         next: (prediction) => {
           this.predictionSubmitting.set(false);
           this.predictionMatch.set(null);
-          // Atualiza a lista local de palpites pra refletir o chip na hora.
+          // Atualiza a lista local de pitacos pra refletir o chip na hora.
           this.myPredictions.update((list) => {
             const next = list ? [...list] : [];
             const idx = next.findIndex((p) => p.id === prediction.id);
@@ -848,7 +848,7 @@ export class TournamentDetailComponent implements OnInit {
           const message =
             err instanceof ApiException
               ? err.message
-              : 'Não foi possível salvar o palpite.';
+              : 'Não foi possível salvar o pitaco.';
           this.predictionError.set(message);
           this._toast.error(message);
         },

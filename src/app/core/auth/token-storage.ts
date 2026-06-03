@@ -4,9 +4,9 @@ import {
   IUserSummary,
 } from '@core/interfaces/auth.interface';
 
-const ACCESS_TOKEN_KEY = 'futbet.accessToken';
-const REFRESH_TOKEN_KEY = 'futbet.refreshToken';
-const USER_KEY = 'futbet.user';
+const ACCESS_TOKEN_KEY = 'reidopitaco.accessToken';
+const REFRESH_TOKEN_KEY = 'reidopitaco.refreshToken';
+const USER_KEY = 'reidopitaco.user';
 
 @Injectable({ providedIn: 'root' })
 export class TokenStorage {

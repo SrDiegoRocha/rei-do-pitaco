@@ -12,7 +12,7 @@ export type LogoVariant = 'lockup' | 'icon' | 'wordmark';
 export class LogoComponent {
   public readonly size = input<number>(40);
   public readonly variant = input<LogoVariant>('lockup');
-  public readonly ariaLabel = input<string>('FutBet');
+  public readonly ariaLabel = input<string>('Rei do Pitaco');
 
   protected readonly showIcon = computed(
     () => this.variant() === 'icon' || this.variant() === 'lockup',

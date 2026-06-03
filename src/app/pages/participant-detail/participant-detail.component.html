@@ -52,7 +52,7 @@
         [attr.aria-selected]="activeTab() === 'predictions'"
         (click)="setTab('predictions')"
       >
-        Palpites
+        Pitacos
       </button>
     </nav>
 
@@ -92,16 +92,16 @@
             </div>
             <div class="stat">
               <span class="stat__value">{{ p.totalPredictions }}</span>
-              <span class="stat__label">Palpites</span>
+              <span class="stat__label">Pitacos</span>
             </div>
             <div class="stat">
               <span class="stat__value">{{ pointsPerPrediction() }}</span>
-              <span class="stat__label">Pts / palpite</span>
+              <span class="stat__label">Pts / pitaco</span>
             </div>
           </div>
           <p class="stats__hint">
             Aproveitamento = acertos (exato + vencedor) sobre os
-            {{ resolvedCount() }} palpites já resolvidos.
+            {{ resolvedCount() }} pitacos já resolvidos.
           </p>
         </article>
 
@@ -180,14 +180,14 @@
         @if (predictionsError()) {
           <app-empty-state
             [icon]="sparklesIcon"
-            title="Palpites indisponíveis"
-            description="Não foi possível carregar os palpites deste participante agora."
+            title="Pitacos indisponíveis"
+            description="Não foi possível carregar os pitacos deste participante agora."
           />
         } @else if (predictionRows().length === 0) {
           <app-empty-state
             [icon]="sparklesIcon"
-            title="Nenhum palpite ainda"
-            description="Os palpites deste participante aparecem aqui."
+            title="Nenhum pitaco ainda"
+            description="Os pitacos deste participante aparecem aqui."
           />
         } @else {
           <div class="preds">

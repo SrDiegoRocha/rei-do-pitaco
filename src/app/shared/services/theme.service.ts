@@ -10,7 +10,7 @@ import {
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
-const STORAGE_KEY = 'futbet.theme';
+const STORAGE_KEY = 'reidopitaco.theme';
 const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
 @Injectable({ providedIn: 'root' })

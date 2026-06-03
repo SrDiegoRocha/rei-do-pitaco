@@ -1,6 +1,6 @@
-# FutBet API — Guia de integração
+# Rei do Pitaco API — Guia de integração
 
-Documento de referência para integrar o frontend Angular com a API FutBet. Cobre **todos** os endpoints, payloads, tipagens TypeScript, validações, regras de negócio relevantes pro cliente, status codes e fluxos.
+Documento de referência para integrar o frontend Angular com a API Rei do Pitaco. Cobre **todos** os endpoints, payloads, tipagens TypeScript, validações, regras de negócio relevantes pro cliente, status codes e fluxos.
 
 ---
 
@@ -159,7 +159,7 @@ Endpoints abertos (sem token). Retornam `AuthResponse` em sucesso.
 
 ```ts
 export interface AuthResponse {
-  accessToken: string;        // JWT HS256, vida média (60min)
+  accessToken: string;        // JWT HS256, validade 7 dias (10080 min)
   refreshToken: string;       // JWT HS256, vida longa (7d)
   tokenType: 'Bearer';
   expiresIn: number;          // TTL do accessToken em segundos
@@ -224,7 +224,7 @@ Erros:
 export interface RefreshTokenRequest { refreshToken: string; }   // mesmo payload do refresh
 ```
 
-Revoga o refresh token informado (entra na denylist). Idempotente e lenient: mesmo um token inválido/expirado retorna **204**. Não precisa de access token. O access token atual continua válido até expirar (≤ 60 min) — logout no cliente também descarta o access token.
+Revoga o refresh token informado (entra na denylist). Idempotente e lenient: mesmo um token inválido/expirado retorna **204**. Não precisa de access token. O access token atual continua válido até expirar (até 7 dias) — logout no cliente também descarta o access token.
 
 ### Estratégia de cliente recomendada
 

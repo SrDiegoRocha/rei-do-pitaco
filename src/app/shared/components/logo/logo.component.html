@@ -9,8 +9,10 @@
 >
   @if (showIcon()) {
     <!--
-      Placeholder logo symbol. Substitua o SVG abaixo pelo arquivo final mantendo
-      o atributo class="logo__symbol" e o viewBox 0 0 64 64 para o sizing continuar.
+      Logo "Rei do Pitaco": coroa sobre uma bola de futebol.
+      A bola usa var(--brand)/var(--text-on-brand) para se adaptar ao tema;
+      a coroa é dourada (fixa) para destacar em dark e light. Mantenha o
+      viewBox 0 0 64 64 e a class="logo__symbol" para o sizing continuar.
     -->
     <svg
       class="logo__symbol"
@@ -19,25 +21,42 @@
       aria-hidden="true"
       focusable="false"
     >
-      <circle cx="32" cy="32" r="30" fill="var(--brand)" />
-      <polygon
-        points="32,17 44,26 40,40 24,40 20,26"
-        fill="var(--text-on-brand)"
-      />
-      <path
-        d="M32 6 L32 17 M44 26 L54 19 M40 40 L48 50 M24 40 L16 50 M20 26 L10 19"
+      <!-- Bola de futebol -->
+      <circle cx="32" cy="42" r="17" fill="var(--brand)" />
+      <g
         stroke="var(--text-on-brand)"
-        stroke-width="2.5"
+        stroke-width="1.6"
         stroke-linecap="round"
+        stroke-linejoin="round"
         fill="none"
+      >
+        <polygon points="32,35 38.7,39.8 36.1,47.7 27.9,47.7 25.3,39.8" />
+        <line x1="32" y1="35" x2="32" y2="28.5" />
+        <line x1="38.7" y1="39.8" x2="45.5" y2="37" />
+        <line x1="36.1" y1="47.7" x2="40.5" y2="53.5" />
+        <line x1="27.9" y1="47.7" x2="23.5" y2="53.5" />
+        <line x1="25.3" y1="39.8" x2="18.5" y2="37" />
+      </g>
+
+      <!-- Coroa -->
+      <path
+        d="M16 26 L16 15 L23 21 L32 11 L41 21 L48 15 L48 26 Z"
+        fill="#F5B301"
+        stroke="#F5B301"
+        stroke-width="1.2"
+        stroke-linejoin="round"
       />
+      <rect x="15" y="25" width="34" height="5.5" rx="2" fill="#F5B301" />
+      <circle cx="16" cy="14.5" r="2.2" fill="var(--brand)" />
+      <circle cx="32" cy="10.5" r="2.4" fill="var(--brand)" />
+      <circle cx="48" cy="14.5" r="2.2" fill="var(--brand)" />
     </svg>
   }
   @if (showWordmark()) {
     <span class="logo__wordmark" aria-hidden="true">
-      <span class="logo__wordmark-fut">Fut</span><span
-        class="logo__wordmark-bet"
-        >Bet</span
+      <span class="logo__wordmark-rei">Rei do </span><span
+        class="logo__wordmark-pitaco"
+        >Pitaco</span
       >
     </span>
   }

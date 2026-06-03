@@ -114,7 +114,7 @@
         [attr.aria-selected]="activeTab() === 'predictions'"
         (click)="setTab('predictions')"
       >
-        Palpites
+        Pitacos
       </button>
       @if (showInfoTab()) {
         <button
@@ -138,7 +138,7 @@
               <h3 class="crowd__title">Previsão da Galera</h3>
               <span class="crowd__sub">
                 {{ stats.totalVotes }}
-                {{ stats.totalVotes === 1 ? 'palpite' : 'palpites' }}
+                {{ stats.totalVotes === 1 ? 'pitaco' : 'pitacos' }}
               </span>
             </header>
             <div class="crowd__bubbles">
@@ -224,7 +224,7 @@
         } @else if (isActiveMember() && myPrediction(); as mine) {
           <article class="my-pred">
             <header class="my-pred__top">
-              <h3 class="my-pred__title">Meu palpite</h3>
+              <h3 class="my-pred__title">Meu pitaco</h3>
               @if (m.status === 'COMPLETED') {
                 <span
                   class="my-pred__pts"
@@ -276,7 +276,7 @@
               <lucide-icon [img]="sparklesIcon" [size]="20" />
             </div>
             <div class="cta__body">
-              <h3 class="cta__title">Sem palpite</h3>
+              <h3 class="cta__title">Sem pitaco</h3>
               <p class="cta__desc">{{ predictionBlockReason() }}</p>
             </div>
           </article>
@@ -284,11 +284,11 @@
 
         <article class="predictions">
           <header class="predictions__header">
-            <h3 class="predictions__title">Palpites do torneio</h3>
+            <h3 class="predictions__title">Pitacos do torneio</h3>
             @if (sortedPredictions().length > 0) {
               <span class="predictions__count">
                 {{ sortedPredictions().length }}
-                {{ sortedPredictions().length === 1 ? 'palpite' : 'palpites' }}
+                {{ sortedPredictions().length === 1 ? 'pitaco' : 'pitacos' }}
               </span>
             }
           </header>
@@ -435,7 +435,7 @@
                   <div class="action-item__text">
                     <span class="action-item__title">Cancelar partida</span>
                     <span class="action-item__desc">
-                      Zera placares e remove pontos dos palpites.
+                      Zera placares e remove pontos dos pitacos.
                     </span>
                   </div>
                   <lucide-icon
@@ -458,7 +458,7 @@
                   <div class="action-item__text">
                     <span class="action-item__title">Excluir partida</span>
                     <span class="action-item__desc">
-                      Remove permanentemente a partida e palpites associados.
+                      Remove permanentemente a partida e pitacos associados.
                     </span>
                   </div>
                   <lucide-icon
@@ -522,9 +522,9 @@
 
 <app-confirm-dialog
   [open]="removePredictionDialogOpen()"
-  title="Remover palpite?"
-  description="Seu palpite atual será apagado. Você pode lançar um novo até o prazo da partida."
-  confirmLabel="Remover palpite"
+  title="Remover pitaco?"
+  description="Seu pitaco atual será apagado. Você pode lançar um novo até o prazo da partida."
+  confirmLabel="Remover pitaco"
   cancelLabel="Voltar"
   variant="destructive"
   [loading]="removePredictionSubmitting()"

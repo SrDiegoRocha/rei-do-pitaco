@@ -48,11 +48,11 @@ export class PredictionDialogComponent {
   protected readonly awayScore = signal(0);
 
   protected readonly title = computed(() =>
-    this.current() ? 'Editar palpite' : 'Novo palpite',
+    this.current() ? 'Editar pitaco' : 'Novo pitaco',
   );
 
   protected readonly confirmLabel = computed(() =>
-    this.current() ? 'Salvar palpite' : 'Lançar palpite',
+    this.current() ? 'Salvar pitaco' : 'Lançar pitaco',
   );
 
   constructor() {

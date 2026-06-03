@@ -1,11 +1,11 @@
-# Especificação Técnica: Telas de Autenticação (Login & Cadastro) - FutBet
+# Especificação Técnica: Telas de Autenticação (Login & Cadastro) - Rei do Pitaco
 
 Este documento detalha as especificações para a implementação das telas de **Login** e **Cadastro** no framework **Angular 21**, seguindo uma arquitetura componentizada, dinâmica e escalável.
 
 ---
 
 ## 1. Visão Geral
-- **Objetivo**: Implementar o fluxo inicial de acesso ao app FutBet.
+- **Objetivo**: Implementar o fluxo inicial de acesso ao app Rei do Pitaco.
 - **Plataforma**: PWA Mobile-first (Angular 21).
 - **Referências Visuais**:
   - Login: `{{DATA:SCREEN:SCREEN_14}}`

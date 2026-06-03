@@ -1,4 +1,4 @@
-# FutBet — Design System
+# Rei do Pitaco — Design System
 
 Documento de design para alimentar geração de UI (Stitch / IA de design). Cobre tokens, componentes base, layouts e cada tela do app. Plataforma alvo: **Angular 21 PWA mobile-first** (Chrome/Opera Android, Safari iOS) com suporte completo a desktop. Temas claro e escuro com cor primária verde.
 
@@ -582,8 +582,8 @@ Componente específico do app, central nas experiências:
 
 ```json
 {
-  "name": "FutBet",
-  "short_name": "FutBet",
+  "name": "Rei do Pitaco",
+  "short_name": "Rei do Pitaco",
   "description": "Crie torneios de futebol e palpite com seus amigos",
   "start_url": "/",
   "display": "standalone",
@@ -609,7 +609,7 @@ Imagem com fundo `#0A0F0A` (dark) ou `#10B981` (acento), logo centralizado 25% d
 
 ### 13.3 Install banner
 
-Custom prompt no primeiro retorno do usuário (não na primeira visita), via `beforeinstallprompt`. Card com texto curto "Instale o FutBet" + botão primário "Instalar" + ghost "Agora não". Persistir dismiss.
+Custom prompt no primeiro retorno do usuário (não na primeira visita), via `beforeinstallprompt`. Card com texto curto "Instale o Rei do Pitaco" + botão primário "Instalar" + ghost "Agora não". Persistir dismiss.
 
 ---
 
@@ -639,13 +639,13 @@ Padrão em todas as listagens:
 
 ### 16.1 Splash / Inicial
 
-Mostra logo central + nome "FutBet" + tagline curta ("Seu bolão com os amigos"). Fundo verde escuro `--green-950` em dark / `--green-50` em light. Animação simples de fade-in 300ms. Permanece até first paint do roteador.
+Mostra logo central + nome "Rei do Pitaco" + tagline curta ("Seu bolão com os amigos"). Fundo verde escuro `--green-950` em dark / `--green-50` em light. Animação simples de fade-in 300ms. Permanece até first paint do roteador.
 
 ### 16.2 Signin
 
 ```
 [ ← back (opcional) ]
-                              FutBet (logo)
+                              Rei do Pitaco (logo)
                                 
                    Entre na sua conta
                    
@@ -678,7 +678,7 @@ Mesma estrutura do signin com mais campos: nome, email, senha (com força visual
 ### 16.4 Home / Dashboard
 
 ```
-Top bar: "FutBet" (logo + nome) | [tema toggle] [bell] [avatar]
+Top bar: "Rei do Pitaco" (logo + nome) | [tema toggle] [bell] [avatar]
 
 ┌─ Card de boas-vindas (saudação + nome) ─┐
 │ Olá, Gustavo 👋                          │
@@ -952,7 +952,7 @@ Centro da tela:
 │         [avatar 80px]           │
 │                                 │
 │         Gustavo Silva           │
-│         gustavo@futbet.com      │
+│         gustavo@reidopitaco.com      │
 │                                 │
 │  ┌───────┐ ┌───────┐ ┌───────┐ │
 │  │   12  │ │   85  │ │   3   │ │
@@ -1199,7 +1199,7 @@ Colocar em `src/styles/tokens.css` e importar no `styles.scss` principal.
 ## 19. Logo e identidade
 
 - **Símbolo**: bola de futebol estilizada (pentágonos) com um corte verde sutil indicando movimento.
-- **Wordmark**: "FutBet" em Inter ExtraBold, com o "B" levemente customizado (sugestão: ponto verde no lugar do contra-form interno).
+- **Wordmark**: "Rei do Pitaco" em Inter ExtraBold, com o "B" levemente customizado (sugestão: ponto verde no lugar do contra-form interno).
 - **Versões**: ícone só, wordmark só, lockup (ícone + wordmark).
 - **Espaço de respiro mínimo**: 1× a altura do símbolo em todas as direções.
 
