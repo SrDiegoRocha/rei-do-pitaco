@@ -277,23 +277,53 @@
                     {{ group.label }}
                   </span>
                 </header>
-                <div class="match-group__list">
-                  @for (match of group.matches; track match.id) {
-                    <a
-                      class="match-row-link"
-                      [id]="'match-' + match.id"
-                      [routerLink]="matchLink(match)"
-                    >
-                      <app-match-row
-                        [match]="match"
-                        [myPrediction]="myPredictionFor(match.id)"
-                        [isActiveMember]="isActiveMember()"
-                        [tournamentInProgress]="tournamentInProgress()"
-                        (predictClick)="openPredictionFor($event)"
-                      />
-                    </a>
-                  }
-                </div>
+                @if (roundSubgroups(group); as subgroups) {
+                  <div class="match-group__subgroups">
+                    @for (sub of subgroups; track sub.id) {
+                      <div class="subgroup">
+                        <header class="subgroup__header">
+                          <span class="subgroup__dot" aria-hidden="true"></span>
+                          Grupo {{ sub.name }}
+                        </header>
+                        <div class="match-group__list">
+                          @for (match of sub.matches; track match.id) {
+                            <a
+                              class="match-row-link"
+                              [id]="'match-' + match.id"
+                              [routerLink]="matchLink(match)"
+                            >
+                              <app-match-row
+                                [match]="match"
+                                [myPrediction]="myPredictionFor(match.id)"
+                                [isActiveMember]="isActiveMember()"
+                                [tournamentInProgress]="tournamentInProgress()"
+                                (predictClick)="openPredictionFor($event)"
+                              />
+                            </a>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="match-group__list">
+                    @for (match of group.matches; track match.id) {
+                      <a
+                        class="match-row-link"
+                        [id]="'match-' + match.id"
+                        [routerLink]="matchLink(match)"
+                      >
+                        <app-match-row
+                          [match]="match"
+                          [myPrediction]="myPredictionFor(match.id)"
+                          [isActiveMember]="isActiveMember()"
+                          [tournamentInProgress]="tournamentInProgress()"
+                          (predictClick)="openPredictionFor($event)"
+                        />
+                      </a>
+                    }
+                  </div>
+                }
               </section>
             }
           </div>
@@ -392,88 +422,16 @@
             description="Seus palpites neste torneio aparecem aqui."
           />
         } @else {
-          <ul class="my-pred-list">
+          <div class="pred-list">
             @for (row of myPredictionsRows(); track row.prediction.id) {
-              <li>
-                <a class="my-pred" [routerLink]="matchLink(row.match)">
-                  <header class="my-pred__top">
-                    <span class="my-pred__phase">{{ row.phaseName }}</span>
-                    <span class="my-pred__time">
-                      {{ scheduledLabel(row.match.scheduledAt) }}
-                    </span>
-                  </header>
-                  <div class="my-pred__teams">
-                    <div class="my-pred__side">
-                      <app-team-badge
-                        [name]="row.match.homeTeam.name"
-                        [shortName]="row.match.homeTeam.shortName"
-                        [badgeUrl]="row.match.homeTeam.badgeUrl"
-                        [size]="24"
-                      />
-                      <span>{{ row.match.homeTeam.name }}</span>
-                    </div>
-                    <div class="my-pred__scores">
-                      <div class="my-pred__score my-pred__score--mine">
-                        <span class="my-pred__score-label">Meu</span>
-                        <span class="my-pred__score-val">
-                          {{ row.prediction.homeScore }}
-                          ×
-                          {{ row.prediction.awayScore }}
-                        </span>
-                      </div>
-                      <div class="my-pred__score">
-                        <span class="my-pred__score-label">Real</span>
-                        @if (
-                          row.match.homeScore !== null &&
-                          row.match.awayScore !== null &&
-                          row.match.status !== 'CANCELLED'
-                        ) {
-                          <span class="my-pred__score-val">
-                            {{ row.match.homeScore }} × {{ row.match.awayScore }}
-                          </span>
-                        } @else if (row.match.status === 'CANCELLED') {
-                          <span class="my-pred__score-val my-pred__score-val--muted">
-                            CANC
-                          </span>
-                        } @else {
-                          <span class="my-pred__score-val my-pred__score-val--muted">
-                            —
-                          </span>
-                        }
-                      </div>
-                    </div>
-                    <div class="my-pred__side my-pred__side--away">
-                      <app-team-badge
-                        [name]="row.match.awayTeam.name"
-                        [shortName]="row.match.awayTeam.shortName"
-                        [badgeUrl]="row.match.awayTeam.badgeUrl"
-                        [size]="24"
-                      />
-                      <span>{{ row.match.awayTeam.name }}</span>
-                    </div>
-                  </div>
-                  <footer class="my-pred__footer">
-                    @if (row.match.status === 'COMPLETED') {
-                      <span
-                        class="my-pred__pts"
-                        [class.my-pred__pts--zero]="row.prediction.points === 0"
-                      >
-                        +{{ row.prediction.points }} pts
-                      </span>
-                    } @else if (row.match.status === 'CANCELLED') {
-                      <span class="my-pred__pts my-pred__pts--zero">
-                        Cancelada
-                      </span>
-                    } @else {
-                      <span class="my-pred__pts my-pred__pts--pending">
-                        Aguardando
-                      </span>
-                    }
-                  </footer>
-                </a>
-              </li>
+              <app-prediction-card
+                [match]="row.match"
+                [prediction]="row.prediction"
+                [context]="row.phaseName"
+                [tournamentId]="tournament()?.id ?? null"
+              />
             }
-          </ul>
+          </div>
         }
       }
 

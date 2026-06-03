@@ -3,7 +3,14 @@
   [style.--team-badge-size]="sizePx()"
   [style.--team-badge-font]="fontPx()"
 >
-  @if (resolvedBadgeUrl(); as url) {
+  @if (useFlag()) {
+    <span
+      class="team-badge__flag"
+      role="img"
+      [attr.aria-label]="name() ?? ''"
+      [style.--flag-url]="flagUrl()"
+    ></span>
+  } @else if (resolvedBadgeUrl(); as url) {
     <img
       class="team-badge__image"
       [src]="url"

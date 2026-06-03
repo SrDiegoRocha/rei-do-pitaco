@@ -27,6 +27,52 @@
   margin: 0;
 }
 
+.page__tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.page__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.page__tab {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+[data-theme='dark'] .page__tab {
+  background-color: var(--bg-elevated);
+}
+
+.page__tab:hover {
+  color: var(--text-primary);
+}
+
+.page__tab--active {
+  background-color: var(--brand);
+  color: var(--text-on-brand);
+  border-color: var(--brand);
+}
+
+.page__card-static {
+  display: block;
+}
+
 .page__grid {
   display: grid;
   gap: var(--space-3);

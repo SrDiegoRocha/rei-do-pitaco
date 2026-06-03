@@ -190,69 +190,15 @@
             description="Os palpites deste participante aparecem aqui."
           />
         } @else {
-          <ul class="preds" [@listStagger]="predictionRows().length">
+          <div class="preds">
             @for (row of predictionRows(); track row.prediction.id) {
-              <li class="pred">
-                <div class="pred__top">
-                  <span class="pred__phase">
-                    {{ predictionPhaseLabel(row.match) }}
-                  </span>
-                  @if (matchResultRevealed(row.match)) {
-                    <span class="pred__pts" [class.pred__pts--zero]="row.prediction.points === 0">
-                      +{{ row.prediction.points }} pts
-                    </span>
-                  } @else {
-                    <span class="pred__pending">Aguardando</span>
-                  }
-                </div>
-
-                <div class="pred__row">
-                  <div class="pred__team">
-                    <app-team-badge
-                      [name]="row.match.homeTeam.name"
-                      [shortName]="row.match.homeTeam.shortName"
-                      [badgeUrl]="row.match.homeTeam.badgeUrl"
-                      [primaryColor]="row.match.homeTeam.primaryColor ?? '#10B981'"
-                      [size]="24"
-                    />
-                    <span class="pred__team-name">
-                      {{ row.match.homeTeam.shortName ?? row.match.homeTeam.name }}
-                    </span>
-                  </div>
-
-                  <div class="pred__scores">
-                    @if (predScoreHidden(row)) {
-                      <span class="pred__guess pred__guess--hidden" title="Oculto até o início">
-                        ? × ?
-                      </span>
-                    } @else {
-                      <span class="pred__guess">
-                        {{ row.prediction.homeScore }} × {{ row.prediction.awayScore }}
-                      </span>
-                    }
-                    @if (matchResultRevealed(row.match)) {
-                      <span class="pred__actual">
-                        Resultado: {{ row.match.homeScore }} × {{ row.match.awayScore }}
-                      </span>
-                    }
-                  </div>
-
-                  <div class="pred__team pred__team--right">
-                    <span class="pred__team-name">
-                      {{ row.match.awayTeam.shortName ?? row.match.awayTeam.name }}
-                    </span>
-                    <app-team-badge
-                      [name]="row.match.awayTeam.name"
-                      [shortName]="row.match.awayTeam.shortName"
-                      [badgeUrl]="row.match.awayTeam.badgeUrl"
-                      [primaryColor]="row.match.awayTeam.primaryColor ?? '#6366F1'"
-                      [size]="24"
-                    />
-                  </div>
-                </div>
-              </li>
+              <app-prediction-card
+                [match]="row.match"
+                [prediction]="row.prediction"
+                [tournamentId]="tournament()?.id ?? null"
+              />
             }
-          </ul>
+          </div>
         }
       }
     </div>

@@ -20,11 +20,10 @@ import { MatchesService } from '@core/services/matches.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { RankingService } from '@core/services/ranking.service';
 import { TournamentsService } from '@core/services/tournaments.service';
-import { listStagger } from '@shared/animations/animations';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
-import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
 import {
   ArrowLeftRight,
   Crown,
@@ -59,13 +58,12 @@ interface ICompareMetric {
     LucideAngularModule,
     PageHeaderComponent,
     AvatarComponent,
-    TeamBadgeComponent,
+    PredictionCardComponent,
     EmptyStateComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './participant-detail.component.html',
   styleUrl: './participant-detail.component.scss',
-  animations: [listStagger],
 })
 export class ParticipantDetailComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
@@ -210,23 +208,6 @@ export class ParticipantDetailComponent implements OnInit {
     if (metric.a === metric.b) return false;
     const aWins = higherIsBetter ? metric.a > metric.b : metric.a < metric.b;
     return side === 'a' ? aWins : !aWins;
-  }
-
-  protected predScoreHidden(row: IPredictionRow): boolean {
-    return row.prediction.homeScore === null || row.prediction.awayScore === null;
-  }
-
-  protected matchResultRevealed(match: IMatchResponse): boolean {
-    return (
-      match.status === 'COMPLETED' &&
-      match.homeScore !== null &&
-      match.awayScore !== null
-    );
-  }
-
-  protected predictionPhaseLabel(match: IMatchResponse): string {
-    if (match.groupName) return `Grupo ${match.groupName}`;
-    return `Rodada ${match.round}`;
   }
 
   private _accuracyOf(row: IRankingRowResponse | null): number {

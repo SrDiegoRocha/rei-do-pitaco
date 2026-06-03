@@ -10,8 +10,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ApiException } from '@core/errors/api-error';
+import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
-import { TeamsService } from '@core/services/teams.service';
+import { ITeamListParams, TeamsService } from '@core/services/teams.service';
 import { listStagger } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -22,6 +23,19 @@ import { Plus, Shield } from 'lucide-angular';
 
 const PAGE_SIZE = 24;
 const SORT = 'name,asc';
+
+type TeamGroup = 'mine' | 'national' | 'clubs';
+
+interface IGroupQuery {
+  scope: TeamScope;
+  type?: TeamType;
+}
+
+const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
+  mine: { scope: 'mine' },
+  national: { scope: 'system', type: 'NATIONAL_TEAM' },
+  clubs: { scope: 'system', type: 'CLUB' },
+};
 
 @Component({
   selector: 'app-my-teams',
@@ -46,12 +60,15 @@ export class MyTeamsComponent implements OnInit {
   protected readonly shieldIcon = Shield;
   protected readonly plusIcon = Plus;
 
+  protected readonly group = signal<TeamGroup>('mine');
   protected readonly loading = signal(true);
   protected readonly items = signal<ITeamResponse[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly currentPage = signal(0);
   protected readonly totalPages = signal(1);
   protected readonly totalElements = signal(0);
+
+  protected readonly isMineGroup = computed(() => this.group() === 'mine');
 
   protected readonly isEmpty = computed(
     () =>
@@ -61,6 +78,14 @@ export class MyTeamsComponent implements OnInit {
   );
 
   public ngOnInit(): void {
+    this._load();
+  }
+
+  protected setGroup(next: TeamGroup): void {
+    if (this.group() === next) return;
+    this.group.set(next);
+    this.items.set([]);
+    this.currentPage.set(0);
     this._load();
   }
 
@@ -80,12 +105,16 @@ export class MyTeamsComponent implements OnInit {
   private _load(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
+    const query = GROUP_QUERY[this.group()];
+    const params: ITeamListParams = {
+      page: this.currentPage(),
+      size: PAGE_SIZE,
+      sort: SORT,
+      scope: query.scope,
+      type: query.type,
+    };
     this._service
-      .list({
-        page: this.currentPage(),
-        size: PAGE_SIZE,
-        sort: SORT,
-      })
+      .list(params)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (page) => {

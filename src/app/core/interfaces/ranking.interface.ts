@@ -2,7 +2,7 @@ export interface IRankingRowResponse {
   position: number;
   userId: string;
   name: string;
-  avatarUrl: string | null;
+  avatarUrl: string;
   totalPoints: number;
   exactScoreHits: number;
   winnerHits: number;

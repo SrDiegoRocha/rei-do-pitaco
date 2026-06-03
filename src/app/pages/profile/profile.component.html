@@ -132,14 +132,7 @@
           autocomplete="name"
           [required]="true"
           [errorText]="nameError()"
-        />
-        <app-input
-          formControlName="avatarUrl"
-          type="url"
-          label="URL do avatar (opcional)"
-          placeholder="https://..."
-          autocomplete="off"
-          helper="Cole um link de imagem. Deixe em branco para usar a inicial."
+          helper="Seu avatar é gerado automaticamente a partir do nome."
         />
 
         @if (editProfileError(); as err) {

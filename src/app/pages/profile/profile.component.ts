@@ -89,7 +89,6 @@ export class ProfileComponent implements OnInit {
         Validators.maxLength(120),
       ],
     }),
-    avatarUrl: this._fb.nonNullable.control(''),
   });
 
   protected readonly passwordForm = this._fb.group({
@@ -117,6 +116,7 @@ export class ProfileComponent implements OnInit {
   protected readonly userName = computed(() => this.user()?.name ?? '');
   protected readonly userEmail = computed(() => this.user()?.email ?? '');
   protected readonly userAvatar = computed(() => this.user()?.avatarUrl ?? null);
+  // Mantém compatível com avatar component (aceita string | null).
   protected readonly userRoleLabel = computed(() => {
     const role = this.user()?.role;
     if (role === 'ADMIN') return 'Administrador';
@@ -152,7 +152,6 @@ export class ProfileComponent implements OnInit {
     if (!u) return;
     this.profileForm.reset({
       name: u.name,
-      avatarUrl: u.avatarUrl ?? '',
     });
     this.editProfileError.set(null);
     this.editProfileOpen.set(true);
@@ -171,7 +170,6 @@ export class ProfileComponent implements OnInit {
       return;
     }
     const raw = this.profileForm.getRawValue();
-    const trimmedAvatar = raw.avatarUrl.trim();
 
     this.editProfileSubmitting.set(true);
     this.editProfileError.set(null);
@@ -179,7 +177,6 @@ export class ProfileComponent implements OnInit {
     this._usersService
       .updateMe({
         name: raw.name.trim(),
-        avatarUrl: trimmedAvatar.length > 0 ? trimmedAvatar : null,
       })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({

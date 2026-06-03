@@ -9,7 +9,10 @@
       "Bash(npm start *)",
       "Bash(grep -n \"result\\\\|cancel\\\\|Result\" \"C:\\\\\\\\Users\\\\\\\\diego\\\\\\\\WebstormProjects\\\\\\\\futbet\\\\\\\\API.md\")",
       "Read(//mnt/c/Users/diego/WebstormProjects/**)",
-      "Bash(grep -rn \"backTo\" src/app/pages/tournament-members/tournament-members.component.* src/app/pages/tournament-teams/tournament-teams.component.* src/app/pages/tournament-phases/tournament-phases.component.*)"
+      "Bash(grep -rn \"backTo\" src/app/pages/tournament-members/tournament-members.component.* src/app/pages/tournament-teams/tournament-teams.component.* src/app/pages/tournament-phases/tournament-phases.component.*)",
+      "Bash(sed -n '1,60p' \"src/app/pages/tournament-teams/tournament-teams.component.ts\")",
+      "Bash(sed -n '1,40p' \"src/app/core/http/query-params.ts\")",
+      "Bash(grep -E \"^\\(br|ar|gb-eng|gb-sct|sa|za|us\\)\\\\.svg$\")"
     ]
   }
 }

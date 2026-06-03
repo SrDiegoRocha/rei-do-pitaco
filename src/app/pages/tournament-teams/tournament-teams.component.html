@@ -55,6 +55,8 @@
             [badgeUrl]="t.badgeUrl"
             [primaryColor]="t.primaryColor"
             [secondaryColor]="t.secondaryColor"
+            [teamType]="t.teamType"
+            [countryCode]="t.countryCode"
             [size]="72"
           />
           <div class="ttcard__body">
@@ -99,6 +101,39 @@
         </button>
       </header>
 
+      <div class="sheet__tabs" role="tablist" aria-label="Grupo de times">
+        <button
+          type="button"
+          role="tab"
+          class="sheet__tab"
+          [class.sheet__tab--active]="availableGroup() === 'mine'"
+          [attr.aria-selected]="availableGroup() === 'mine'"
+          (click)="setAvailableGroup('mine')"
+        >
+          Meus times
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="sheet__tab"
+          [class.sheet__tab--active]="availableGroup() === 'national'"
+          [attr.aria-selected]="availableGroup() === 'national'"
+          (click)="setAvailableGroup('national')"
+        >
+          Seleções
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="sheet__tab"
+          [class.sheet__tab--active]="availableGroup() === 'clubs'"
+          [attr.aria-selected]="availableGroup() === 'clubs'"
+          (click)="setAvailableGroup('clubs')"
+        >
+          Clubes
+        </button>
+      </div>
+
       @if (loadingAvailable()) {
         <div class="sheet__loading">
           @for (i of [1, 2, 3]; track i) {
@@ -107,17 +142,27 @@
         </div>
       } @else if (availableTeams().length === 0) {
         <div class="sheet__empty">
-          <p class="sheet__empty-text">
-            Todos os seus times já estão vinculados, ou você ainda não
-            cadastrou nenhum.
-          </p>
-          <a
-            routerLink="/teams/new"
-            class="sheet__cta"
-            (click)="closeAddSheet()"
-          >
-            Cadastrar novo time
-          </a>
+          @if (availableGroup() === 'mine') {
+            <p class="sheet__empty-text">
+              Todos os seus times já estão vinculados, ou você ainda não
+              cadastrou nenhum.
+            </p>
+            <a
+              routerLink="/teams/new"
+              class="sheet__cta"
+              (click)="closeAddSheet()"
+            >
+              Cadastrar novo time
+            </a>
+          } @else if (availableGroup() === 'national') {
+            <p class="sheet__empty-text">
+              Todas as seleções disponíveis já estão vinculadas.
+            </p>
+          } @else {
+            <p class="sheet__empty-text">
+              Nenhum clube do sistema disponível por enquanto.
+            </p>
+          }
         </div>
       } @else {
         <ul class="sheet__list">
@@ -136,6 +181,8 @@
                   [badgeUrl]="team.badgeUrl"
                   [primaryColor]="team.primaryColor"
                   [secondaryColor]="team.secondaryColor"
+                  [teamType]="team.teamType"
+                  [countryCode]="team.countryCode"
                   [size]="44"
                 />
                 <div class="sheet__team-info">

@@ -1,3 +1,5 @@
+import { TeamType } from '@core/interfaces/enums';
+
 export type StandingZoneStyle = 'qualified' | 'eliminated' | 'none';
 
 export interface IStandingRow {
@@ -6,6 +8,8 @@ export interface IStandingRow {
   teamName: string;
   shortName: string | null;
   badgeUrl: string | null;
+  teamType: TeamType;
+  countryCode: string | null;
   played: number;
   wins: number;
   draws: number;

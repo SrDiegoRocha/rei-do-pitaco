@@ -12,10 +12,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
+import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
 import { ITournamentTeamResponse } from '@core/interfaces/tournament-team.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
-import { TeamsService } from '@core/services/teams.service';
+import { ITeamListParams, TeamsService } from '@core/services/teams.service';
 import { TournamentTeamsService } from '@core/services/tournament-teams.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import {
@@ -30,6 +31,14 @@ import { PageHeaderComponent } from '@shared/components/page-header/page-header.
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ToastService } from '@shared/services/toast.service';
 import { LucideAngularModule, Plus, Trash2, Trophy, X } from 'lucide-angular';
+
+type TeamGroup = 'mine' | 'national' | 'clubs';
+
+const GROUP_QUERY: Record<TeamGroup, { scope: TeamScope; type?: TeamType }> = {
+  mine: { scope: 'mine' },
+  national: { scope: 'system', type: 'NATIONAL_TEAM' },
+  clubs: { scope: 'system', type: 'CLUB' },
+};
 
 @Component({
   selector: 'app-tournament-teams',
@@ -71,6 +80,7 @@ export class TournamentTeamsComponent implements OnInit {
   protected readonly loadingAvailable = signal(false);
   protected readonly availableTeams = signal<ITeamResponse[]>([]);
   protected readonly attachingTeamId = signal<string | null>(null);
+  protected readonly availableGroup = signal<TeamGroup>('mine');
 
   protected readonly confirmDetach = signal<ITournamentTeamResponse | null>(
     null,
@@ -118,6 +128,13 @@ export class TournamentTeamsComponent implements OnInit {
 
   protected closeAddSheet(): void {
     this.addSheetOpen.set(false);
+  }
+
+  protected setAvailableGroup(group: TeamGroup): void {
+    if (this.availableGroup() === group) return;
+    this.availableGroup.set(group);
+    this.availableTeams.set([]);
+    this._loadAvailable();
   }
 
   protected attach(team: ITeamResponse): void {
@@ -225,8 +242,16 @@ export class TournamentTeamsComponent implements OnInit {
 
   private _loadAvailable(): void {
     this.loadingAvailable.set(true);
+    const query = GROUP_QUERY[this.availableGroup()];
+    const params: ITeamListParams = {
+      page: 0,
+      size: 100,
+      sort: 'name,asc',
+      scope: query.scope,
+      type: query.type,
+    };
     this._teamsService
-      .list({ page: 0, size: 100, sort: 'name,asc' })
+      .list(params)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (page) => {
@@ -238,7 +263,7 @@ export class TournamentTeamsComponent implements OnInit {
         },
         error: () => {
           this.loadingAvailable.set(false);
-          this._toast.error('Não foi possível carregar seus times.');
+          this._toast.error('Não foi possível carregar os times.');
         },
       });
   }

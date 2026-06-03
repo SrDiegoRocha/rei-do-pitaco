@@ -429,6 +429,11 @@ export class MatchDetailComponent implements OnInit {
     });
   });
 
+  protected participantLink(userId: string): unknown[] | null {
+    const t = this.tournament();
+    return t ? ['/tournaments', t.id, 'participants', userId] : null;
+  }
+
   protected setTab(tab: MatchTab): void {
     this.activeTab.set(tab);
   }

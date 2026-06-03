@@ -1,4 +1,4 @@
-import { MatchStatus, MatchType } from '@core/interfaces/enums';
+import { MatchStatus, MatchType, TeamType } from '@core/interfaces/enums';
 
 export interface ITeamRef {
   id: string;
@@ -7,6 +7,8 @@ export interface ITeamRef {
   badgeUrl: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  teamType?: TeamType | null;
+  countryCode?: string | null;
 }
 
 export interface IMatchResponse {

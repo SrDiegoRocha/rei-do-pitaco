@@ -184,6 +184,44 @@
   margin: 0;
 }
 
+/* Segmented control de largura total — nunca estoura nem corta */
+.sheet__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--bg-muted);
+  border-radius: 999px;
+}
+
+.sheet__tab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--space-2) var(--space-1);
+  background-color: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.sheet__tab:hover:not(.sheet__tab--active) {
+  color: var(--text-primary);
+}
+
+.sheet__tab--active {
+  background-color: var(--brand);
+  color: var(--text-on-brand);
+  font-weight: var(--font-semibold);
+}
+
 .sheet__close {
   display: inline-flex;
   align-items: center;

@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { toHttpParams } from '@core/http/query-params';
 import { IPage, IPageParams } from '@core/interfaces/api.interface';
+import { TeamScope, TeamType } from '@core/interfaces/enums';
 import {
   ICreateTeamRequest,
   ITeamResponse,
@@ -10,12 +11,17 @@ import {
 } from '@core/interfaces/team.interface';
 import { API_BASE_URL } from '@core/services/api-config';
 
+export interface ITeamListParams extends IPageParams {
+  scope?: TeamScope;
+  type?: TeamType;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TeamsService {
   private readonly _http = inject(HttpClient);
   private readonly _baseUrl = inject(API_BASE_URL);
 
-  public list(params?: IPageParams): Observable<IPage<ITeamResponse>> {
+  public list(params?: ITeamListParams): Observable<IPage<ITeamResponse>> {
     return this._http.get<IPage<ITeamResponse>>(`${this._baseUrl}/api/teams`, {
       params: toHttpParams(params ?? null),
     });

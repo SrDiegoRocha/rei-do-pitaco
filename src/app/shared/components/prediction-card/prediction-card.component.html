@@ -1,0 +1,79 @@
+@let m = match();
+<a
+  class="pcard"
+  [class.pcard--link]="link() !== null"
+  [routerLink]="link()"
+>
+  <header class="pcard__head">
+    <span class="pcard__ctx">{{ contextLabel() }}</span>
+    @if (statusKind() === 'done') {
+      @if (points() !== null) {
+        <span class="pcard__pts" [class.pcard__pts--zero]="points() === 0">
+          +{{ points() }} pts
+        </span>
+      } @else {
+        <span class="pcard__tag">Encerrada</span>
+      }
+    } @else if (statusKind() === 'cancelled') {
+      <span class="pcard__tag pcard__tag--danger">Cancelada</span>
+    } @else if (dateLabel(); as d) {
+      <span class="pcard__when">{{ d }}</span>
+    } @else {
+      <span class="pcard__when">A definir</span>
+    }
+  </header>
+
+  <div class="pcard__body">
+    <div class="pcard__team" [class.pcard__team--loser]="loserSide() === 'home'">
+      <app-team-badge
+        [name]="m.homeTeam.name"
+        [shortName]="m.homeTeam.shortName"
+        [badgeUrl]="m.homeTeam.badgeUrl"
+        [primaryColor]="m.homeTeam.primaryColor ?? '#10B981'"
+        [teamType]="m.homeTeam.teamType"
+        [countryCode]="m.homeTeam.countryCode"
+        [size]="26"
+      />
+      <span class="pcard__team-name">
+        {{ m.homeTeam.shortName ?? m.homeTeam.name }}
+      </span>
+    </div>
+
+    <div class="pcard__center">
+      @if (hasGuess()) {
+        <span class="pcard__guess">
+          {{ prediction()!.homeScore }}
+          <span class="pcard__guess-sep">×</span>
+          {{ prediction()!.awayScore }}
+        </span>
+      } @else {
+        <span class="pcard__guess pcard__guess--hidden">? × ?</span>
+      }
+      @if (resultRevealed()) {
+        <span class="pcard__actual">
+          resultado {{ m.homeScore }}×{{ m.awayScore }}
+        </span>
+      } @else {
+        <span class="pcard__guess-label">palpite</span>
+      }
+    </div>
+
+    <div
+      class="pcard__team pcard__team--right"
+      [class.pcard__team--loser]="loserSide() === 'away'"
+    >
+      <span class="pcard__team-name">
+        {{ m.awayTeam.shortName ?? m.awayTeam.name }}
+      </span>
+      <app-team-badge
+        [name]="m.awayTeam.name"
+        [shortName]="m.awayTeam.shortName"
+        [badgeUrl]="m.awayTeam.badgeUrl"
+        [primaryColor]="m.awayTeam.primaryColor ?? '#6366F1'"
+        [teamType]="m.awayTeam.teamType"
+        [countryCode]="m.awayTeam.countryCode"
+        [size]="26"
+      />
+    </div>
+  </div>
+</a>

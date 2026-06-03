@@ -67,7 +67,7 @@ export interface FieldError {
 | 200  | GET / PUT / POST de operação que retorna recurso |
 | 201  | POST que cria recurso |
 | 204  | DELETE bem-sucedido (sem body) |
-| 400  | Payload inválido — `fieldErrors` populado |
+| 400  | Payload inválido (`fieldErrors` populado), **ou** query/path param inválido (ex. `?scope=xpto`, UUID malformado) → `message` = `Invalid value for parameter 'X'` |
 | 401  | Token ausente/inválido/expirado, credenciais erradas |
 | 403  | Rota autenticada sem token, ou caller sem permissão (ex. não é owner do torneio) |
 | 404  | Recurso não existe ou caller não tem acesso a ele (ex. time de outro dono) |
@@ -105,7 +105,12 @@ export type TiebreakCriteria =
 export type MatchStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 export type MatchType = 'REGULAR' | 'THIRD_PLACE';
 export type ZoneSelectionMode = 'ALL' | 'BEST_RANKED';
+
+export type TeamType = 'CLUB' | 'NATIONAL_TEAM';
+export type TeamScope = 'mine' | 'system' | 'all';   // query param de GET /api/teams
 ```
+
+> No **corpo (JSON)** os enums vêm sempre em MAIÚSCULAS como acima. Em **query/path params** a conversão é **case-insensitive** (`?scope=mine` ou `?scope=MINE`, `?type=national_team` ou `?type=NATIONAL_TEAM` — tanto faz). Valor inexistente → **400** `Invalid value for parameter 'X'`.
 
 ---
 
@@ -165,11 +170,13 @@ export interface UserSummary {
   id: string;                 // UUID público do usuário
   name: string;
   email: string;
-  avatarUrl: string | null;
+  avatarUrl: string;          // gerado pelo backend (DiceBear) a partir do nome — ver nota abaixo
   role: Role;
   createdAt: string;          // ISO instant
 }
 ```
+
+> **Avatar (`avatarUrl`)**: o backend **gera** essa URL automaticamente a partir do **nome** do usuário (DiceBear). O usuário **não escolhe** avatar — mudou o nome, muda o avatar. O front só renderiza a URL como `<img src="...">`. Não é mais um campo de entrada. Sempre vem preenchido (não é mais `null`).
 
 ### `POST /api/auth/signup` → 201
 
@@ -180,7 +187,6 @@ export interface SignUpRequest {
   name: string;               // 2–120 chars
   email: string;              // formato válido, normalizado pra lowercase, único
   password: string;           // 8–100 chars
-  avatarUrl?: string | null;  // URL válida até 500 chars
 }
 ```
 
@@ -235,8 +241,7 @@ Todos exigem access token. O usuário é resolvido pelo token (não há `{id}` n
 
 ```ts
 export interface UpdateProfileRequest {
-  name: string;           // 2–120 chars
-  avatarUrl?: string | null;   // URL válida, ≤ 500
+  name: string;           // 2–120 chars (único campo editável; muda o avatar junto)
 }
 
 export interface ChangePasswordRequest {
@@ -245,14 +250,16 @@ export interface ChangePasswordRequest {
 }
 ```
 
+> Não há mais campo de avatar no perfil — o `avatarUrl` é derivado do nome (DiceBear). Ao editar o nome, o `avatarUrl` retornado já vem atualizado.
+
 | Método | Path                     | Status | Body                    | Retorno        |
 | ------ | ------------------------ | ------ | ----------------------- | -------------- |
 | GET    | `/api/users/me`          | 200    | —                       | `UserResponse` |
 | PUT    | `/api/users/me`          | 200    | `UpdateProfileRequest`  | `UserResponse` |
 | PUT    | `/api/users/me/password` | 204    | `ChangePasswordRequest` | —              |
 
-- `UserResponse` é o mesmo objeto `user` do `AuthResponse` (`id`, `name`, `email`, `avatarUrl`, `role`, `createdAt`).
-- Email e role não são editáveis aqui.
+- `UserResponse` é o mesmo objeto `user` do `AuthResponse` (`id`, `name`, `email`, `avatarUrl`, `role`, `createdAt`). `avatarUrl` é a URL DiceBear derivada do nome.
+- Email e role não são editáveis aqui; avatar não é editável (derivado do nome).
 - `PUT /me/password` com `currentPassword` errado → **400** `Current password is incorrect`.
 - Trocar a senha **não** invalida refresh tokens já emitidos (sem "logout de todos os dispositivos" ainda).
 
@@ -260,7 +267,9 @@ export interface ChangePasswordRequest {
 
 ## 6. Times (`/api/teams`)
 
-Todos os endpoints exigem auth. **Visibilidade**: cada usuário só vê os próprios times.
+Todos os endpoints exigem auth. Há dois tipos de time:
+- **Times do usuário** — criados por ele, editáveis/deletáveis só por ele.
+- **Times do sistema** (`system: true`) — pré-cadastrados (ex.: as 48 seleções da Copa 2026), visíveis a **todos**, **não editáveis nem deletáveis**. O usuário pode usá-los nos torneios.
 
 ### `TeamResponse`
 
@@ -268,14 +277,21 @@ Todos os endpoints exigem auth. **Visibilidade**: cada usuário só vê os próp
 export interface TeamResponse {
   id: string;                 // UUID público
   name: string;
-  shortName: string | null;   // 2–5 chars
-  badgeUrl: string | null;
+  shortName: string | null;   // 2–5 chars (nas seleções = sigla FIFA, ex. "BRA")
+  badgeUrl: string | null;    // escudo (times de usuário / clubes); null nas seleções do sistema
   primaryColor: string;       // #RRGGBB
   secondaryColor: string;     // #RRGGBB
+  system: boolean;            // true = time padrão do sistema (read-only)
+  teamType: TeamType;         // 'CLUB' | 'NATIONAL_TEAM'
+  countryCode: string | null; // código flagicons (ex. "br", "gb-eng"); preenchido nas seleções
   createdAt: string;
   updatedAt: string;
 }
+
+export type TeamType = 'CLUB' | 'NATIONAL_TEAM';
 ```
+
+> **Imagem do time**: para `teamType === 'NATIONAL_TEAM'` use `countryCode` com o flagicons (`https://flagicons.lipis.dev`), ex. `<span class="fi fi-br"></span>` ou `.../flags/4x3/br.svg`. Para os demais (clubes/times de usuário) use `badgeUrl`.
 
 ### `POST /api/teams` → 201
 
@@ -293,21 +309,31 @@ Erros:
 - **400** com `fieldErrors` — payload inválido.
 - **409** `You already have a team with this name` — nome já em uso pelo mesmo dono (case-insensitive). Note: outro usuário pode ter time com o mesmo nome.
 
+Times criados pelo usuário nascem com `system: false` e `teamType: 'CLUB'`.
+
 ### `GET /api/teams` → 200 `Page<TeamResponse>`
 
-Lista paginada dos meus times. Aceita `page`, `size`, `sort`.
+Lista paginada. Aceita `page`, `size`, `sort` e dois filtros:
+
+- `scope` (opcional): `mine` (padrão) = meus times; `system` = só os do sistema; `all` = meus + sistema.
+- `type` (opcional): `CLUB` ou `NATIONAL_TEAM`.
+
+Exemplos para os 3 grupos do front:
+- Meus times: `GET /api/teams` (ou `?scope=mine`).
+- Seleções do sistema: `GET /api/teams?scope=system&type=NATIONAL_TEAM`.
+- Clubes do sistema: `GET /api/teams?scope=system&type=CLUB` (vazio por enquanto — só seleções foram cadastradas).
 
 ### `GET /api/teams/{id}` → 200 `TeamResponse`
 
-`{id}` é o `publicId` (UUID). **404** se não existe ou pertence a outro usuário (não diferenciamos os dois — não vazar existência alheia).
+`{id}` é o `publicId` (UUID). Times do sistema são acessíveis por qualquer usuário; times de usuário, só pelo dono. **404** se não existe ou é de outro usuário (não vazamos existência alheia).
 
 ### `PUT /api/teams/{id}` → 200 `TeamResponse`
 
-Body = `CreateTeamRequest` (mesma estrutura para Update). Verificação de duplicidade só dispara se o nome mudou. **404** se não é dono.
+Body = `CreateTeamRequest` (mesma estrutura para Update). Verificação de duplicidade só dispara se o nome mudou. **404** se não é dono. **403** `System teams cannot be modified or deleted` se for um time do sistema.
 
 ### `DELETE /api/teams/{id}` → 204
 
-Soft delete (`active=false`). O time desaparece das listagens mas continua no banco. Permite recriar outro time com o mesmo nome depois.
+Soft delete (`active=false`). **404** se não é dono; **403** se for time do sistema. Times do sistema não podem ser deletados.
 
 ---
 
@@ -459,7 +485,7 @@ Outros erros:
 export interface TournamentMemberResponse {
   userId: string;             // UUID público
   name: string;
-  avatarUrl: string | null;
+  avatarUrl: string;          // DiceBear, derivado do nome
   role: TournamentMemberRole;
   status: TournamentMemberStatus;
   joinedAt: string;
@@ -501,6 +527,9 @@ export interface TournamentTeamResponse {
   badgeUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
+  system: boolean;            // true = time do sistema
+  teamType: TeamType;         // 'CLUB' | 'NATIONAL_TEAM'
+  countryCode: string | null; // flagicons; preenchido nas seleções
   addedAt: string;
 }
 ```
@@ -509,10 +538,10 @@ export interface TournamentTeamResponse {
 
 ### `POST /api/tournaments/{tournamentId}/teams/{teamId}` → 201
 
-Vincula um time do **próprio owner** ao torneio. Owner-only.
+Vincula ao torneio um time do **próprio owner** **ou** um **time do sistema** (seleção/clube padrão). Owner-only.
 
 Erros:
-- **403** `You can only add your own teams to a tournament` — tentou vincular time de outro usuário.
+- **403** `You can only add your own teams to a tournament` — tentou vincular time de **outro usuário** (times do sistema são permitidos).
 - **409** `Team is already part of this tournament` — duplicado.
 - **409** `Tournament is full: max teams reached` — atingiu `maxTeams`.
 - **409** `Cannot modify tournament in status IN_PROGRESS/FINISHED: teams can only be changed in DRAFT or OPEN`.
@@ -657,6 +686,8 @@ export interface PhaseTeamResponse {
   badgeUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
+  teamType: TeamType;         // 'CLUB' | 'NATIONAL_TEAM'
+  countryCode: string | null; // flagicons; preenchido nas seleções
   groupId: string | null;     // UUID do PhaseGroup; null em ROUND_ROBIN/KNOCKOUT
   groupName: string | null;
   addedAt: string;
@@ -790,6 +821,8 @@ export interface TeamRef {
   badgeUrl: string | null;
   primaryColor: string | null;    // hex, ex. "#10B981"
   secondaryColor: string | null;
+  teamType: TeamType;             // 'CLUB' | 'NATIONAL_TEAM'
+  countryCode: string | null;     // flagicons (ex. "br"); preenchido nas seleções
 }
 ```
 
@@ -951,6 +984,8 @@ export interface StandingRow {
   teamName: string;
   shortName: string | null;
   badgeUrl: string | null;
+  teamType: TeamType;         // 'CLUB' | 'NATIONAL_TEAM'
+  countryCode: string | null; // flagicons; preenchido nas seleções
   played: number;
   wins: number;
   draws: number;
@@ -1147,7 +1182,7 @@ export interface RankingRowResponse {
   position: number;           // 1-indexed
   userId: string;
   name: string;
-  avatarUrl: string | null;
+  avatarUrl: string;          // DiceBear, derivado do nome
   totalPoints: number;
   exactScoreHits: number;     // palpites com placar exato em matches COMPLETED
   winnerHits: number;         // acertou só o vencedor

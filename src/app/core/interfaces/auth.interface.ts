@@ -4,7 +4,7 @@ export interface IUserSummary {
   id: string;
   name: string;
   email: string;
-  avatarUrl: string | null;
+  avatarUrl: string;
   role: Role;
   createdAt: string;
 }
@@ -21,7 +21,6 @@ export interface ISignUpRequest {
   name: string;
   email: string;
   password: string;
-  avatarUrl?: string | null;
 }
 
 export interface ISignInRequest {
@@ -35,7 +34,6 @@ export interface IRefreshTokenRequest {
 
 export interface IUpdateProfileRequest {
   name: string;
-  avatarUrl?: string | null;
 }
 
 export interface IChangePasswordRequest {

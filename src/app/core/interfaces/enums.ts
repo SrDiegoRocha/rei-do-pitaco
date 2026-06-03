@@ -20,3 +20,6 @@ export type TiebreakCriteria =
 export type MatchStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 export type MatchType = 'REGULAR' | 'THIRD_PLACE';
 export type ZoneSelectionMode = 'ALL' | 'BEST_RANKED';
+
+export type TeamType = 'CLUB' | 'NATIONAL_TEAM';
+export type TeamScope = 'mine' | 'system' | 'all';

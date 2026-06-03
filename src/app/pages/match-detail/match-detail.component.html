@@ -37,6 +37,8 @@
             [name]="m.homeTeam.name"
             [shortName]="m.homeTeam.shortName"
             [badgeUrl]="m.homeTeam.badgeUrl"
+            [teamType]="m.homeTeam.teamType"
+            [countryCode]="m.homeTeam.countryCode"
             [size]="72"
           />
           <span class="hero__team-name">{{ m.homeTeam.name }}</span>
@@ -84,6 +86,8 @@
             [name]="m.awayTeam.name"
             [shortName]="m.awayTeam.shortName"
             [badgeUrl]="m.awayTeam.badgeUrl"
+            [teamType]="m.awayTeam.teamType"
+            [countryCode]="m.awayTeam.countryCode"
             [size]="72"
           />
           <span class="hero__team-name">{{ m.awayTeam.name }}</span>
@@ -152,6 +156,8 @@
                   [shortName]="m.homeTeam.shortName"
                   [badgeUrl]="m.homeTeam.badgeUrl"
                   [primaryColor]="homeTeamColor()"
+                  [teamType]="m.homeTeam.teamType"
+                  [countryCode]="m.homeTeam.countryCode"
                   [size]="30"
                 />
                 <span class="crowd__pct">{{ stats.homeWinPct }}%</span>
@@ -184,6 +190,8 @@
                   [shortName]="m.awayTeam.shortName"
                   [badgeUrl]="m.awayTeam.badgeUrl"
                   [primaryColor]="awayTeamColor()"
+                  [teamType]="m.awayTeam.teamType"
+                  [countryCode]="m.awayTeam.countryCode"
                   [size]="30"
                 />
                 <span class="crowd__pct">{{ stats.awayWinPct }}%</span>
@@ -308,34 +316,43 @@
             }
             <ul class="pred-list">
               @for (p of sortedPredictions(); track p.id) {
-                <li
-                  class="pred-row"
-                  [class.pred-row--mine]="p.id === myPrediction()?.id"
-                >
-                  <app-avatar [name]="p.userName" [size]="32" />
-                  <span class="pred-row__name">
-                    {{ p.userName }}
-                    @if (p.id === myPrediction()?.id) {
-                      <span class="pred-row__tag">você</span>
+                <li>
+                  <a
+                    class="pred-row"
+                    [class.pred-row--mine]="p.id === myPrediction()?.id"
+                    [routerLink]="participantLink(p.userId)"
+                  >
+                    <app-avatar [name]="p.userName" [size]="32" />
+                    <span class="pred-row__name">
+                      {{ p.userName }}
+                      @if (p.id === myPrediction()?.id) {
+                        <span class="pred-row__tag">você</span>
+                      }
+                    </span>
+                    @if (canRevealScores()) {
+                      <span class="pred-row__score">
+                        {{ p.homeScore }}<span class="pred-row__sep">×</span>{{ p.awayScore }}
+                      </span>
+                    } @else {
+                      <span class="pred-row__score pred-row__score--muted">
+                        ?<span class="pred-row__sep">×</span>?
+                      </span>
                     }
-                  </span>
-                  @if (canRevealScores()) {
-                    <span class="pred-row__score">
-                      {{ p.homeScore }}<span class="pred-row__sep">×</span>{{ p.awayScore }}
-                    </span>
-                  } @else {
-                    <span class="pred-row__score pred-row__score--muted">
-                      ?<span class="pred-row__sep">×</span>?
-                    </span>
-                  }
-                  @if (m.status === 'COMPLETED' && canRevealScores()) {
-                    <span
-                      class="pred-row__pts"
-                      [class.pred-row__pts--zero]="p.points === 0"
-                    >
-                      +{{ p.points }}
-                    </span>
-                  }
+                    @if (m.status === 'COMPLETED' && canRevealScores()) {
+                      <span
+                        class="pred-row__pts"
+                        [class.pred-row__pts--zero]="p.points === 0"
+                      >
+                        +{{ p.points }}
+                      </span>
+                    }
+                    <lucide-icon
+                      class="pred-row__chev"
+                      [img]="chevronRightIcon"
+                      [size]="14"
+                      aria-hidden="true"
+                    />
+                  </a>
                 </li>
               }
             </ul>

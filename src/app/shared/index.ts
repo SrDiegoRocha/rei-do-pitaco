@@ -19,6 +19,7 @@ export * from './components/match-result-dialog/match-result-dialog.component';
 export * from './components/match-row/match-row.component';
 export * from './components/page-header/page-header.component';
 export * from './components/pagination/pagination.component';
+export * from './components/prediction-card/prediction-card.component';
 export * from './components/phase-form/phase-form.component';
 export * from './components/prediction-dialog/prediction-dialog.component';
 export * from './components/sidebar/sidebar.component';

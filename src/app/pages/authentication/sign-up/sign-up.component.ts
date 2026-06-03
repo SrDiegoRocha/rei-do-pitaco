@@ -19,10 +19,7 @@ import { AuthService } from '@core/services/auth.service';
 import { AuthLayoutComponent } from '@shared/components/auth-layout/auth-layout.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { InputComponent } from '@shared/components/input/input.component';
-import { Image, Lock, Mail, User } from 'lucide-angular';
-
-const URL_REGEX =
-  /^https?:\/\/[\w-]+(\.[\w-]+)+([\w\-._~:/?#[\]@!$&'()*+,;=%]*)?$/i;
+import { Lock, Mail, User } from 'lucide-angular';
 
 function passwordsMatchValidator(
   control: AbstractControl,
@@ -55,7 +52,6 @@ export class SignUpComponent {
   protected readonly userIcon = User;
   protected readonly mailIcon = Mail;
   protected readonly lockIcon = Lock;
-  protected readonly imageIcon = Image;
 
   protected readonly form = this._fb.nonNullable.group(
     {
@@ -63,7 +59,6 @@ export class SignUpComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(100)]],
       confirmPassword: ['', [Validators.required]],
-      avatarUrl: ['', [Validators.maxLength(500), Validators.pattern(URL_REGEX)]],
     },
     { validators: passwordsMatchValidator },
   );
@@ -129,14 +124,6 @@ export class SignUpComponent {
     return null;
   }
 
-  protected avatarError(): string | null {
-    const c = this.form.controls.avatarUrl;
-    if (!c.touched || c.valid || !c.value) return null;
-    if (c.hasError('pattern')) return 'URL inválida';
-    if (c.hasError('maxlength')) return 'Máximo de 500 caracteres';
-    return null;
-  }
-
   protected submit(): void {
     if (this.submitting()) return;
     this.formError.set(null);
@@ -151,7 +138,6 @@ export class SignUpComponent {
       name: raw.name.trim(),
       email: raw.email.trim(),
       password: raw.password,
-      avatarUrl: raw.avatarUrl.trim() || null,
     };
 
     this.submitting.set(true);

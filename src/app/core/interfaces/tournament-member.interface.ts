@@ -6,7 +6,7 @@ import {
 export interface ITournamentMemberResponse {
   userId: string;
   name: string;
-  avatarUrl: string | null;
+  avatarUrl: string;
   role: TournamentMemberRole;
   status: TournamentMemberStatus;
   joinedAt: string;

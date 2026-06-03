@@ -45,12 +45,12 @@ import { ErrorStateComponent } from '@shared/components/error-state/error-state.
 import { BracketViewComponent, BracketViewMode } from '@shared/components/bracket-view/bracket-view.component';
 import { MatchRowComponent } from '@shared/components/match-row/match-row.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
 import {
   IPredictionPayload,
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import { StandingsTableComponent } from '@shared/components/standings-table/standings-table.component';
-import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ToastService } from '@shared/services/toast.service';
 import {
   CalendarDays,
@@ -188,7 +188,6 @@ const PHASE_TAB_PREFIX = 'phase-';
     LucideAngularModule,
     PageHeaderComponent,
     AvatarComponent,
-    TeamBadgeComponent,
     ButtonComponent,
     ConfirmDialogComponent,
     EmptyStateComponent,
@@ -197,6 +196,7 @@ const PHASE_TAB_PREFIX = 'phase-';
     StandingsTableComponent,
     BracketViewComponent,
     PredictionDialogComponent,
+    PredictionCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tournament-detail.component.html',
@@ -539,6 +539,33 @@ export class TournamentDetailComponent implements OnInit {
 
   protected selectMatchesGroup(groupId: string | null): void {
     this.selectedMatchesGroupId.set(groupId);
+  }
+
+  /**
+   * Subdivide as partidas de um card de rodada por grupo (fase de grupos).
+   * Retorna `null` quando não há subdivisão útil (fora de grupos, ou só um
+   * grupo presente) — aí o card renderiza a lista achatada.
+   */
+  protected roundSubgroups(
+    group: IMatchGroup,
+  ): { id: string; name: string; matches: IMatchResponse[] }[] | null {
+    const buckets = new Map<
+      string,
+      { id: string; name: string; matches: IMatchResponse[] }
+    >();
+    for (const m of group.matches) {
+      if (!m.groupId || !m.groupName) return null;
+      let bucket = buckets.get(m.groupId);
+      if (!bucket) {
+        bucket = { id: m.groupId, name: m.groupName, matches: [] };
+        buckets.set(m.groupId, bucket);
+      }
+      bucket.matches.push(m);
+    }
+    if (buckets.size <= 1) return null;
+    return Array.from(buckets.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
   }
 
   private _bucketKind(

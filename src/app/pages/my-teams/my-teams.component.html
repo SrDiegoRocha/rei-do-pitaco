@@ -1,8 +1,41 @@
 <section class="page">
   <header class="page__header">
-    <h1 class="page__title">Meus times</h1>
-    <p class="page__subtitle">Times cadastrados pra usar nos torneios</p>
+    <h1 class="page__title">Times</h1>
+    <p class="page__subtitle">Seus times e os times do sistema</p>
   </header>
+
+  <div class="page__tabs" role="tablist" aria-label="Grupo de times">
+    <button
+      type="button"
+      role="tab"
+      class="page__tab"
+      [class.page__tab--active]="group() === 'mine'"
+      [attr.aria-selected]="group() === 'mine'"
+      (click)="setGroup('mine')"
+    >
+      Meus times
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="page__tab"
+      [class.page__tab--active]="group() === 'national'"
+      [attr.aria-selected]="group() === 'national'"
+      (click)="setGroup('national')"
+    >
+      Seleções
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="page__tab"
+      [class.page__tab--active]="group() === 'clubs'"
+      [attr.aria-selected]="group() === 'clubs'"
+      (click)="setGroup('clubs')"
+    >
+      Clubes
+    </button>
+  </div>
 
   @if (loading()) {
     <div class="page__grid">
@@ -13,34 +46,50 @@
   } @else if (errorMessage(); as err) {
     <div class="page__error" role="alert">
       <p class="page__error-text">{{ err }}</p>
-      <app-button
-        variant="brand-outline"
-        size="md"
-        (buttonClick)="retry()"
-      >
+      <app-button variant="brand-outline" size="md" (buttonClick)="retry()">
         Tentar novamente
       </app-button>
     </div>
   } @else if (isEmpty()) {
-    <app-empty-state
-      [icon]="shieldIcon"
-      title="Você ainda não cadastrou nenhum time"
-      description="Cadastre times para depois vinculá-los aos seus torneios."
-    >
-      <a class="page__empty-cta" routerLink="/teams/new">
-        Cadastrar primeiro time
-      </a>
-    </app-empty-state>
+    @if (group() === 'mine') {
+      <app-empty-state
+        [icon]="shieldIcon"
+        title="Você ainda não cadastrou nenhum time"
+        description="Cadastre times para depois vinculá-los aos seus torneios."
+      >
+        <a class="page__empty-cta" routerLink="/teams/new">
+          Cadastrar primeiro time
+        </a>
+      </app-empty-state>
+    } @else if (group() === 'national') {
+      <app-empty-state
+        [icon]="shieldIcon"
+        title="Sem seleções disponíveis"
+        description="As seleções do sistema aparecem aqui."
+      />
+    } @else {
+      <app-empty-state
+        [icon]="shieldIcon"
+        title="Sem clubes do sistema"
+        description="Clubes pré-cadastrados aparecerão aqui em breve."
+      />
+    }
   } @else {
     <div class="page__grid" [@listStagger]="items().length">
       @for (t of items(); track t.id) {
-        <a
-          class="page__card-link"
-          [routerLink]="['/teams', t.id]"
-          [attr.aria-label]="'Editar time ' + t.name"
-        >
-          <app-team-card [team]="t" />
-        </a>
+        @if (t.system) {
+          <div class="page__card-static">
+            <app-team-card [team]="t" />
+          </div>
+        } @else {
+          <a
+            class="page__card-link"
+            [routerLink]="['/teams', t.id]"
+            [attr.aria-label]="'Editar time ' + t.name"
+          >
+            <app-team-card [team]="t" />
+          </a>
+        }
       }
     </div>
 

@@ -1,3 +1,5 @@
+import { TeamType } from '@core/interfaces/enums';
+
 export interface ITeamResponse {
   id: string;
   name: string;
@@ -5,6 +7,9 @@ export interface ITeamResponse {
   badgeUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
+  system: boolean;
+  teamType: TeamType;
+  countryCode: string | null;
   createdAt: string;
   updatedAt: string;
 }
