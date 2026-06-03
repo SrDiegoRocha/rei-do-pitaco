@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "deploy": "ng build && npx wrangler pages deploy dist/rei-do-pitaco/browser --project-name=rei-do-pitaco --branch=main --commit-dirty=true"
   },
   "private": true,
   "packageManager": "npm@10.9.0",
