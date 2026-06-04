@@ -1,7 +1,12 @@
 <div class="layout">
   <app-sidebar />
   <app-app-bar />
-  <main class="layout__main">
+  <main
+    class="layout__main"
+    appSwipeNav
+    (next)="onSwipe(1)"
+    (prev)="onSwipe(-1)"
+  >
     <div class="layout__inner" [@routeSections]="getRouteState()">
       <app-install-banner />
       <router-outlet />

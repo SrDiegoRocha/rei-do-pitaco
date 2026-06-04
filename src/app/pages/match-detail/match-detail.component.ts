@@ -38,7 +38,7 @@ import {
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
-import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { tabSlide } from '@shared/animations/animations';
 import { ThemeService } from '@shared/services/theme.service';
 import { ToastService } from '@shared/services/toast.service';
@@ -77,7 +77,6 @@ type MatchTab = 'predictions' | 'info';
     MatchResultDialogComponent,
     PredictionDialogComponent,
     ConfirmDialogComponent,
-    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-detail.component.html',
@@ -96,6 +95,7 @@ export class MatchDetailComponent implements OnInit {
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
 
   protected readonly calendarIcon = CalendarDays;
   protected readonly arrowLeftRightIcon = ArrowLeftRight;
@@ -687,6 +687,10 @@ export class MatchDetailComponent implements OnInit {
   }
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeToTab(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
+
     const tid = this._route.snapshot.paramMap.get('id');
     const pid = this._route.snapshot.paramMap.get('pid');
     const mid = this._route.snapshot.paramMap.get('mid');

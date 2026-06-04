@@ -14,8 +14,8 @@ import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
 import { listStagger, tabSlide } from '@shared/animations/animations';
-import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
 import { SectionPagerService } from '@shared/services/section-pager.service';
+import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
@@ -49,7 +49,6 @@ const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
     FabComponent,
     PaginationComponent,
     RouterLink,
-    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-teams.component.html',
@@ -59,6 +58,7 @@ const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
 export class MyTeamsComponent implements OnInit {
   private readonly _service = inject(TeamsService);
   private readonly _sectionPager = inject(SectionPagerService);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly shieldIcon = Shield;
@@ -82,6 +82,9 @@ export class MyTeamsComponent implements OnInit {
   );
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeGroup(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
     this._load();
   }
 

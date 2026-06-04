@@ -75,13 +75,7 @@
       </div>
     </nav>
 
-    <div
-      class="tab-body"
-      appSwipeNav
-      (next)="swipeToTab(1)"
-      (prev)="swipeToTab(-1)"
-      [@tabSlide]="activeTabIndex()"
-    >
+    <div class="tab-body" [@tabSlide]="activeTabIndex()">
       @if (activeTab() === 'ranking') {
         @if (ranking().length === 0) {
           <app-empty-state

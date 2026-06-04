@@ -23,7 +23,7 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
-import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { tabSlide } from '@shared/animations/animations';
 import {
   ArrowLeftRight,
@@ -60,7 +60,6 @@ interface ICompareMetric {
     AvatarComponent,
     PredictionCardComponent,
     EmptyStateComponent,
-    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './participant-detail.component.html',
@@ -75,6 +74,7 @@ export class ParticipantDetailComponent implements OnInit {
   private readonly _authState = inject(AuthState);
   private readonly _route = inject(ActivatedRoute);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
 
   protected readonly trophyIcon = Trophy;
   protected readonly targetIcon = Target;
@@ -179,6 +179,10 @@ export class ParticipantDetailComponent implements OnInit {
   });
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeToTab(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
+
     const tid = this._route.snapshot.paramMap.get('id');
     const uid = this._route.snapshot.paramMap.get('userId');
     if (!tid || !uid) {

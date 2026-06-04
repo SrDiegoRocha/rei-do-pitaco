@@ -71,7 +71,7 @@ export class SwipeNavDirective implements OnDestroy {
       this._tracking = false;
       return;
     }
-    if (this._startsInHorizontalScroller(e.target as HTMLElement | null)) {
+    if (this._shouldIgnore(e.target as HTMLElement | null)) {
       this._tracking = false;
       return;
     }
@@ -121,6 +121,14 @@ export class SwipeNavDirective implements OnDestroy {
     const dy = touch.clientY - this._startY;
     if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
     this._zone.run(() => (dx < 0 ? this.next.emit() : this.prev.emit()));
+  }
+
+  /** Gestos que a navegação por swipe deve ignorar. */
+  private _shouldIgnore(target: HTMLElement | null): boolean {
+    // Dentro de um modal/overlay: não navegar por baixo dele.
+    if (target?.closest('[role="dialog"]')) return true;
+    // Áreas com scroll horizontal próprio (chips, chaveamento, tabelas).
+    return this._startsInHorizontalScroller(target);
   }
 
   /** O gesto começou dentro de um elemento com scroll horizontal próprio? */

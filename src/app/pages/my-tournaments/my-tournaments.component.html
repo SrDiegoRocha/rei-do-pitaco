@@ -27,13 +27,7 @@
     </button>
   </div>
 
-  <div
-    class="page__pager"
-    appSwipeNav
-    (next)="swipeTab(1)"
-    (prev)="swipeTab(-1)"
-    [@tabSlide]="tabIndex()"
-  >
+  <div class="page__pager" [@tabSlide]="tabIndex()">
   @if (loading()) {
     <div class="page__grid">
       @for (i of [1, 2, 3, 4]; track i) {

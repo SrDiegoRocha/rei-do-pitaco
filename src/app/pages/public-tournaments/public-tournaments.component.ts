@@ -17,8 +17,8 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TournamentCardComponent } from '@shared/components/tournament-card/tournament-card.component';
-import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
 import { SectionPagerService } from '@shared/services/section-pager.service';
+import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { Globe } from 'lucide-angular';
 
 const PAGE_SIZE = 12;
@@ -33,7 +33,6 @@ const SORT = 'createdAt,desc';
     ButtonComponent,
     PaginationComponent,
     RouterLink,
-    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './public-tournaments.component.html',
@@ -43,6 +42,7 @@ const SORT = 'createdAt,desc';
 export class PublicTournamentsComponent implements OnInit {
   private readonly _service = inject(TournamentsService);
   private readonly _sectionPager = inject(SectionPagerService);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly globeIcon = Globe;
@@ -67,6 +67,9 @@ export class PublicTournamentsComponent implements OnInit {
   );
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeSection(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
     this._load();
   }
 

@@ -47,8 +47,8 @@ import {
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import {StandingsTableComponent} from '@shared/components/standings-table/standings-table.component';
-import {SwipeNavDirective} from '@shared/directives/swipe-nav.directive';
 import {CenterActiveTabDirective} from '@shared/directives/center-active-tab.directive';
+import {SwipeNavRegistry} from '@shared/services/swipe-nav-registry.service';
 import {tabSlide} from '@shared/animations/animations';
 import {ToastService} from '@shared/services/toast.service';
 import {
@@ -217,7 +217,6 @@ const PHASE_TAB_PREFIX = 'phase-';
     BracketViewComponent,
     PredictionDialogComponent,
     PredictionCardComponent,
-    SwipeNavDirective,
     CenterActiveTabDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -242,6 +241,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly _scroller = inject(ViewportScroller);
   private readonly _injector = inject(Injector);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
   private _pendingScrollAnchor: string | null = null;
 
   protected readonly trophyIcon = Trophy;
@@ -750,6 +750,10 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeToTab(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
+
     const id = this._route.snapshot.paramMap.get('id');
     if (!id) {
       this.loading.set(false);

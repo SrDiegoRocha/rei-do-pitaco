@@ -13,8 +13,8 @@ import { ApiException } from '@core/errors/api-error';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger, tabSlide } from '@shared/animations/animations';
-import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
 import { SectionPagerService } from '@shared/services/section-pager.service';
+import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
@@ -48,7 +48,6 @@ function readStoredTab(): Tab {
     FabComponent,
     PaginationComponent,
     RouterLink,
-    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-tournaments.component.html',
@@ -58,6 +57,7 @@ function readStoredTab(): Tab {
 export class MyTournamentsComponent implements OnInit {
   private readonly _service = inject(TournamentsService);
   private readonly _sectionPager = inject(SectionPagerService);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly trophyIcon = Trophy;
@@ -84,6 +84,9 @@ export class MyTournamentsComponent implements OnInit {
   protected readonly showJoined = computed(() => this.tab() === 'joined');
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeTab(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
     this._load();
   }
 
