@@ -24,6 +24,17 @@ type Tab = 'mine' | 'joined';
 
 const PAGE_SIZE = 12;
 const SORT = 'createdAt,desc';
+const TAB_STORAGE_KEY = 'reidopitaco.tournamentsTab';
+
+function readStoredTab(): Tab {
+  try {
+    return localStorage.getItem(TAB_STORAGE_KEY) === 'joined'
+      ? 'joined'
+      : 'mine';
+  } catch {
+    return 'mine';
+  }
+}
 
 @Component({
   selector: 'app-my-tournaments',
@@ -50,7 +61,8 @@ export class MyTournamentsComponent implements OnInit {
   protected readonly plusIcon = Plus;
   protected readonly ticketIcon = Ticket;
 
-  protected readonly tab = signal<Tab>('mine');
+  // Inicia no último filtro escolhido pelo usuário (persistido).
+  protected readonly tab = signal<Tab>(readStoredTab());
   protected readonly loading = signal(true);
   protected readonly items = signal<ITournamentResponse[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
@@ -74,9 +86,18 @@ export class MyTournamentsComponent implements OnInit {
   protected setTab(next: Tab): void {
     if (this.tab() === next) return;
     this.tab.set(next);
+    this._persistTab(next);
     this.items.set([]);
     this.currentPage.set(0);
     this._load();
+  }
+
+  private _persistTab(tab: Tab): void {
+    try {
+      localStorage.setItem(TAB_STORAGE_KEY, tab);
+    } catch {
+      // Storage indisponível — só não persiste.
+    }
   }
 
   protected retry(): void {

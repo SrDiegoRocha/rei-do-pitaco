@@ -3,12 +3,19 @@ import { ChildrenOutletContexts, RouterOutlet } from '@angular/router';
 import { routeFade } from '@shared/animations/animations';
 import { AppBarComponent } from '@shared/components/app-bar/app-bar.component';
 import { BottomNavComponent } from '@shared/components/bottom-nav/bottom-nav.component';
+import { InstallBannerComponent } from '@shared/components/install-banner/install-banner.component';
 import { SidebarComponent } from '@shared/components/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, AppBarComponent, BottomNavComponent, SidebarComponent],
+  imports: [
+    RouterOutlet,
+    AppBarComponent,
+    BottomNavComponent,
+    InstallBannerComponent,
+    SidebarComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss',

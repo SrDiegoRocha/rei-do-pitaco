@@ -173,6 +173,8 @@ export class ProfileComponent implements OnInit {
 
     this.editProfileSubmitting.set(true);
     this.editProfileError.set(null);
+    // Usabilidade: trava os campos enquanto a requisição está em voo.
+    this.profileForm.disable();
 
     this._usersService
       .updateMe({
@@ -182,11 +184,13 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: () => {
           this.editProfileSubmitting.set(false);
+          this.profileForm.enable();
           this.editProfileOpen.set(false);
           this._toast.success('Perfil atualizado.');
         },
         error: (err: unknown) => {
           this.editProfileSubmitting.set(false);
+          this.profileForm.enable();
           this.editProfileError.set(
             err instanceof ApiException
               ? err.message
@@ -218,6 +222,8 @@ export class ProfileComponent implements OnInit {
 
     this.changePasswordSubmitting.set(true);
     this.changePasswordError.set(null);
+    // Usabilidade: trava os campos enquanto a requisição está em voo.
+    this.passwordForm.disable();
 
     this._usersService
       .changePassword({
@@ -228,11 +234,13 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: () => {
           this.changePasswordSubmitting.set(false);
+          this.passwordForm.enable();
           this.changePasswordOpen.set(false);
           this._toast.success('Senha alterada com sucesso.');
         },
         error: (err: unknown) => {
           this.changePasswordSubmitting.set(false);
+          this.passwordForm.enable();
           this.changePasswordError.set(
             err instanceof ApiException
               ? err.message

@@ -7,61 +7,10 @@
     <div class="mform__alert" role="alert">{{ err }}</div>
   }
 
-  <section class="mform__section">
-    <header class="mform__section-header">
-      <h2 class="mform__section-title">Times</h2>
-      <p class="mform__section-subtitle">
-        Quem joga em casa e quem visita
-      </p>
-    </header>
-
-    @if (knockoutEligibilityMessage(); as msg) {
-      <div class="mform__hint" role="status">{{ msg }}</div>
-    }
-
-    <div class="mform__field">
-      <label class="mform__label" for="match-home">Mandante</label>
-      <select
-        id="match-home"
-        class="mform__select"
-        formControlName="homeTeamId"
-      >
-        <option value="" disabled>Selecione um time</option>
-        @for (team of homeOptions(); track team.teamId) {
-          <option [value]="team.teamId">
-            {{ team.teamName
-            }}@if (team.shortName) {
-              {{ ' (' + team.shortName + ')' }}
-            }
-          </option>
-        }
-      </select>
-    </div>
-
-    <div class="mform__field">
-      <label class="mform__label" for="match-away">Visitante</label>
-      <select
-        id="match-away"
-        class="mform__select"
-        formControlName="awayTeamId"
-      >
-        <option value="" disabled>Selecione um time</option>
-        @for (team of awayOptions(); track team.teamId) {
-          <option [value]="team.teamId">
-            {{ team.teamName
-            }}@if (team.shortName) {
-              {{ ' (' + team.shortName + ')' }}
-            }
-          </option>
-        }
-      </select>
-    </div>
-
-    @if (teamsError(); as err) {
-      <p class="mform__field-error" role="alert">{{ err }}</p>
-    }
-  </section>
-
+  <!--
+    O contexto (grupo/etapa/rodada) vem antes dos times de propósito:
+    é ele que determina quais times estão disponíveis nos selects.
+  -->
   <section class="mform__section">
     <header class="mform__section-header">
       @if (isKnockoutPhase()) {
@@ -70,9 +19,9 @@
           Em qual etapa do mata-mata este confronto acontece
         </p>
       } @else if (isGroupsPhase()) {
-        <h2 class="mform__section-title">Rodada e grupo</h2>
+        <h2 class="mform__section-title">Grupo e rodada</h2>
         <p class="mform__section-subtitle">
-          Em qual rodada e grupo este confronto acontece
+          Em qual grupo e rodada este confronto acontece
         </p>
       } @else {
         <h2 class="mform__section-title">Rodada</h2>
@@ -83,6 +32,26 @@
     </header>
 
     <div class="mform__grid-2">
+      @if (isGroupsPhase()) {
+        <div class="mform__field">
+          <label class="mform__label" for="match-group">Grupo</label>
+          <select
+            id="match-group"
+            class="mform__select"
+            formControlName="groupId"
+            (change)="onGroupChange()"
+          >
+            <option [ngValue]="null" disabled>Selecione um grupo</option>
+            @for (group of groups(); track group.id) {
+              <option [ngValue]="group.id">{{ group.name }}</option>
+            }
+          </select>
+          @if (groupRequiredError(); as err) {
+            <p class="mform__field-error" role="alert">{{ err }}</p>
+          }
+        </div>
+      }
+
       @if (isKnockoutPhase()) {
         <div class="mform__field">
           <label class="mform__label" for="match-round">Etapa</label>
@@ -125,26 +94,56 @@
           helper="Use 1 para primeira rodada, 2 para segunda, etc."
         />
       }
-
-      @if (isGroupsPhase()) {
-        <div class="mform__field">
-          <label class="mform__label" for="match-group">Grupo</label>
-          <select
-            id="match-group"
-            class="mform__select"
-            formControlName="groupId"
-          >
-            <option [ngValue]="null" disabled>Selecione um grupo</option>
-            @for (group of groups(); track group.id) {
-              <option [ngValue]="group.id">{{ group.name }}</option>
-            }
-          </select>
-          @if (groupRequiredError(); as err) {
-            <p class="mform__field-error" role="alert">{{ err }}</p>
-          }
-        </div>
-      }
     </div>
+  </section>
+
+  <section class="mform__section">
+    <header class="mform__section-header">
+      <h2 class="mform__section-title">Times</h2>
+      <p class="mform__section-subtitle">
+        Quem joga em casa e quem visita
+      </p>
+    </header>
+
+    @if (knockoutEligibilityMessage(); as msg) {
+      <div class="mform__hint" role="status">{{ msg }}</div>
+    }
+
+    @if (groupSelectionHint(); as msg) {
+      <div class="mform__hint" role="status">{{ msg }}</div>
+    }
+
+    <div class="mform__field">
+      <label class="mform__label" for="match-home">Mandante</label>
+      <select
+        id="match-home"
+        class="mform__select"
+        formControlName="homeTeamId"
+      >
+        <option value="" disabled>{{ teamPlaceholder() }}</option>
+        @for (team of homeOptions(); track team.teamId) {
+          <option [value]="team.teamId">{{ teamOptionLabel(team) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="mform__field">
+      <label class="mform__label" for="match-away">Visitante</label>
+      <select
+        id="match-away"
+        class="mform__select"
+        formControlName="awayTeamId"
+      >
+        <option value="" disabled>{{ teamPlaceholder() }}</option>
+        @for (team of awayOptions(); track team.teamId) {
+          <option [value]="team.teamId">{{ teamOptionLabel(team) }}</option>
+        }
+      </select>
+    </div>
+
+    @if (teamsError(); as err) {
+      <p class="mform__field-error" role="alert">{{ err }}</p>
+    }
   </section>
 
   <section class="mform__section">
@@ -164,23 +163,46 @@
   </section>
 
   <div class="mform__actions">
-    <app-button
-      type="button"
-      variant="ghost"
-      size="lg"
-      [disabled]="submitting()"
-      (buttonClick)="onCancel()"
-    >
-      Cancelar
-    </app-button>
-    <app-button
-      type="submit"
-      variant="primary"
-      size="lg"
-      [loading]="submitting()"
-      [disabled]="isLocked()"
-    >
-      {{ submitLabel() }}
-    </app-button>
+    @if (mode() === 'create') {
+      <!-- Cria e mantém na tela, zerando só os times (cadastro em bloco). -->
+      <app-button
+        type="button"
+        variant="brand-outline"
+        size="lg"
+        [loading]="submitting() && pendingNew()"
+        [disabled]="submitting() || isLocked()"
+        (buttonClick)="onSubmitAndNew()"
+      >
+        Salvar e criar outra
+      </app-button>
+      <app-button
+        type="submit"
+        variant="primary"
+        size="lg"
+        [loading]="submitting() && !pendingNew()"
+        [disabled]="submitting() || isLocked()"
+      >
+        Criar e sair
+      </app-button>
+    } @else {
+      <app-button
+        type="button"
+        variant="ghost"
+        size="lg"
+        [disabled]="submitting()"
+        (buttonClick)="onCancel()"
+      >
+        Cancelar
+      </app-button>
+      <app-button
+        type="submit"
+        variant="primary"
+        size="lg"
+        [loading]="submitting()"
+        [disabled]="isLocked()"
+      >
+        {{ submitLabel() }}
+      </app-button>
+    }
   </div>
 </form>

@@ -120,11 +120,6 @@ export class TournamentPhasesComponent implements OnInit {
     return null;
   });
 
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}` : '/tournaments';
-  });
-
   protected readonly newPhaseHref = computed(() => {
     const t = this.tournament();
     return t ? `/tournaments/${t.id}/phases/new` : null;

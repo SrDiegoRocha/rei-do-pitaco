@@ -23,7 +23,9 @@ import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { MatchesService } from '@core/services/matches.service';
 import { PhasesService } from '@core/services/phases.service';
 import { PredictionsService } from '@core/services/predictions.service';
+import { TournamentMembersService } from '@core/services/tournament-members.service';
 import { TournamentsService } from '@core/services/tournaments.service';
+import { ITournamentMemberResponse } from '@core/interfaces/tournament-member.interface';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -31,7 +33,6 @@ import {
   IMatchResultPayload,
   MatchResultDialogComponent,
 } from '@shared/components/match-result-dialog/match-result-dialog.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import {
   IPredictionPayload,
   PredictionDialogComponent,
@@ -68,7 +69,6 @@ type MatchTab = 'predictions' | 'info';
   imports: [
     RouterLink,
     LucideAngularModule,
-    PageHeaderComponent,
     TeamBadgeComponent,
     AvatarComponent,
     ButtonComponent,
@@ -85,6 +85,7 @@ export class MatchDetailComponent implements OnInit {
   private readonly _phasesService = inject(PhasesService);
   private readonly _matchesService = inject(MatchesService);
   private readonly _predictionsService = inject(PredictionsService);
+  private readonly _membersService = inject(TournamentMembersService);
   private readonly _authState = inject(AuthState);
   private readonly _theme = inject(ThemeService);
   private readonly _toast = inject(ToastService);
@@ -128,24 +129,23 @@ export class MatchDetailComponent implements OnInit {
   protected readonly allPredictionsLoading = signal(false);
   protected readonly allPredictionsLocked = signal(false);
 
+  /** Membros do torneio — usados para resolver o avatar de cada pitaco. */
+  private readonly _members = signal<ITournamentMemberResponse[]>([]);
+
+  private readonly _avatarByUserId = computed<Map<string, string>>(() => {
+    const map = new Map<string, string>();
+    for (const member of this._members()) {
+      map.set(member.userId, member.avatarUrl);
+    }
+    return map;
+  });
+
   protected readonly predictionDialogOpen = signal(false);
   protected readonly predictionSubmitting = signal(false);
   protected readonly predictionError = signal<string | null>(null);
 
   protected readonly removePredictionDialogOpen = signal(false);
   protected readonly removePredictionSubmitting = signal(false);
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}` : '/tournaments';
-  });
-
-  protected readonly backQueryParams = computed(() => ({ tab: 'matches' }));
-
-  protected readonly backFragment = computed(() => {
-    const m = this.match();
-    return m ? `match-${m.id}` : null;
-  });
 
   protected readonly statusText = computed(() => {
     const m = this.match();
@@ -393,10 +393,6 @@ export class MatchDetailComponent implements OnInit {
     return null;
   });
 
-  protected readonly predictionActionLabel = computed(() =>
-    this.myPrediction() ? 'Editar pitaco' : 'Lançar pitaco',
-  );
-
   protected readonly canRevealScores = computed(() => {
     const m = this.match();
     if (!m) return false;
@@ -531,6 +527,23 @@ export class MatchDetailComponent implements OnInit {
     if (!this.canPredict()) return;
     this.predictionError.set(null);
     this.predictionDialogOpen.set(true);
+  }
+
+  /** Avatar (DiceBear) do autor de um pitaco, resolvido via membros. */
+  protected avatarUrlFor(userId: string): string | null {
+    return this._avatarByUserId().get(userId) ?? null;
+  }
+
+  /** A row é do próprio usuário e pode virar edição de pitaco? */
+  protected isEditableMyRow(p: IPredictionResponse): boolean {
+    return p.id === this.myPrediction()?.id && this.canPredict();
+  }
+
+  /** "Remover pitaco" acionado de dentro do dialog de edição. */
+  protected onPredictionDialogRemove(): void {
+    if (this.predictionSubmitting()) return;
+    this.predictionDialogOpen.set(false);
+    this.openRemovePredictionDialog();
   }
 
   protected closePredictionDialog(): void {
@@ -712,13 +725,19 @@ export class MatchDetailComponent implements OnInit {
           return of<IPredictionResponse[] | null>([]);
         }),
       ),
+      // Membros: só para resolver avatares na lista de pitacos — falha não
+      // pode derrubar a tela.
+      membersPage: this._membersService.list(tid, { size: 100 }).pipe(
+        catchError(() => of(null)),
+      ),
     })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
-        next: ({ tournament, phase, match, myPredictions }) => {
+        next: ({ tournament, phase, match, myPredictions, membersPage }) => {
           this.tournament.set(tournament);
           this.phase.set(phase);
           this.match.set(match);
+          this._members.set(membersPage?.content ?? []);
           this.isActiveMember.set(myPredictions !== null);
           this.myPrediction.set(
             myPredictions?.find((p) => p.matchId === match.id) ?? null,

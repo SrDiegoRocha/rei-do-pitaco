@@ -65,6 +65,22 @@ export class MatchResultDialogComponent {
     () => this.phaseType() === 'KNOCKOUT',
   );
 
+  /** Data/hora da partida formatada (null quando sem agenda). */
+  protected readonly dateLabel = computed(() => {
+    const iso = this.match()?.scheduledAt;
+    if (!iso) return null;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(iso));
+    } catch {
+      return null;
+    }
+  });
+
   protected readonly aggregateTied = computed(
     () => this.homeScore() === this.awayScore(),
   );
@@ -167,12 +183,6 @@ export class MatchResultDialogComponent {
   }
 
   protected onBackdropClick(): void {
-    if (!this.submitting()) {
-      this.cancelled.emit();
-    }
-  }
-
-  protected onCancel(): void {
     if (!this.submitting()) {
       this.cancelled.emit();
     }

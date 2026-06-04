@@ -13,6 +13,8 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Remove o flash cinza ao tocar em links/botões no iOS/Android. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {

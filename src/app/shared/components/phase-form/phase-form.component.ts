@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnInit,
@@ -155,6 +156,19 @@ export class PhaseFormComponent implements OnInit {
   protected readonly submitLabel = computed(() =>
     this.mode() === 'create' ? 'Criar fase' : 'Salvar alterações',
   );
+
+  constructor() {
+    // Usabilidade: desabilita os campos durante o envio; ao terminar
+    // (sucesso ou erro), reabilita — exceto se o form está travado por
+    // regra de negócio (isLocked).
+    effect(() => {
+      if (this.submitting()) {
+        this.form.disable();
+      } else if (!this.isLocked()) {
+        this.form.enable();
+      }
+    });
+  }
 
   public ngOnInit(): void {
     const init = this.initial();

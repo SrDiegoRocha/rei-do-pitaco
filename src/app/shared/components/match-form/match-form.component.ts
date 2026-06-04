@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnInit,
   output,
+  signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -88,6 +90,8 @@ export class MatchFormComponent implements OnInit {
   public readonly phaseType = input.required<TournamentPhaseType>();
   public readonly phaseTeams = input<IPhaseTeamResponse[]>([]);
   public readonly groups = input<IPhaseGroupResponse[]>([]);
+  /** Se true, o confronto só pode ser entre times do mesmo grupo. */
+  public readonly playsInsideGroupOnly = input<boolean>(false);
   public readonly existingMatches = input<IMatchResponse[]>([]);
   public readonly bracket = input<IBracketResponse | null>(null);
   public readonly hasThirdPlace = input<boolean>(false);
@@ -96,8 +100,14 @@ export class MatchFormComponent implements OnInit {
   public readonly submitting = input<boolean>(false);
   public readonly serverError = input<string | null>(null);
 
+  /** "Criar e sair" / "Salvar alterações" — encerra o fluxo. */
   public readonly saveForm = output<MatchFormPayload>();
+  /** "Salvar e criar outra" — só em modo create; mantém o usuário na tela. */
+  public readonly saveAndNew = output<MatchFormPayload>();
   public readonly cancelForm = output<void>();
+
+  /** Indica qual ação está em voo, para o spinner ir no botão certo. */
+  protected readonly pendingNew = signal(false);
 
   private readonly _fb = inject(FormBuilder);
 
@@ -139,6 +149,10 @@ export class MatchFormComponent implements OnInit {
     this.form.controls.matchType.valueChanges,
     { initialValue: this.form.controls.matchType.value },
   );
+  private readonly _groupValue = toSignal(
+    this.form.controls.groupId.valueChanges,
+    { initialValue: this.form.controls.groupId.value },
+  );
 
   protected readonly isGroupsPhase = computed(
     () => this.phaseType() === 'GROUPS',
@@ -146,6 +160,11 @@ export class MatchFormComponent implements OnInit {
 
   protected readonly isKnockoutPhase = computed(
     () => this.phaseType() === 'KNOCKOUT',
+  );
+
+  /** Os selects de time devem ficar restritos ao grupo selecionado? */
+  protected readonly restrictToGroup = computed(
+    () => this.isGroupsPhase() && this.playsInsideGroupOnly(),
   );
 
   /**
@@ -249,7 +268,17 @@ export class MatchFormComponent implements OnInit {
     const taken = this._teamsInSameRound();
     const currentHome = this.initial()?.homeTeam.id ?? null;
     const eligible = this._eligibleKnockoutTeamIds();
+    const groupId = this._groupValue();
+    // Confronto restrito ao grupo: sem grupo escolhido, sem times.
+    if (this.restrictToGroup() && !groupId) return [];
     return this.phaseTeams().filter((t) => {
+      if (
+        this.restrictToGroup() &&
+        t.groupId !== groupId &&
+        t.teamId !== currentHome
+      ) {
+        return false;
+      }
       if (t.teamId === away) return false;
       if (taken.has(t.teamId) && t.teamId !== currentHome) return false;
       if (eligible !== null && !eligible.has(t.teamId) && t.teamId !== currentHome) {
@@ -264,7 +293,16 @@ export class MatchFormComponent implements OnInit {
     const taken = this._teamsInSameRound();
     const currentAway = this.initial()?.awayTeam.id ?? null;
     const eligible = this._eligibleKnockoutTeamIds();
+    const groupId = this._groupValue();
+    if (this.restrictToGroup() && !groupId) return [];
     return this.phaseTeams().filter((t) => {
+      if (
+        this.restrictToGroup() &&
+        t.groupId !== groupId &&
+        t.teamId !== currentAway
+      ) {
+        return false;
+      }
       if (t.teamId === home) return false;
       if (taken.has(t.teamId) && t.teamId !== currentAway) return false;
       if (eligible !== null && !eligible.has(t.teamId) && t.teamId !== currentAway) {
@@ -272,6 +310,40 @@ export class MatchFormComponent implements OnInit {
       }
       return true;
     });
+  });
+
+  /** Placeholder dos selects de time conforme o contexto. */
+  protected readonly teamPlaceholder = computed(() =>
+    this.restrictToGroup() && !this._groupValue()
+      ? 'Selecione o grupo primeiro'
+      : 'Selecione um time',
+  );
+
+  /** Orientação para os selects de time em fase de grupos restrita. */
+  protected readonly groupSelectionHint = computed<string | null>(() => {
+    if (!this.restrictToGroup()) return null;
+    const groupId = this._groupValue();
+    if (!groupId) {
+      return 'Times deste confronto devem ser do mesmo grupo. Selecione o grupo para listar os disponíveis.';
+    }
+    const group = this.groups().find((g) => g.id === groupId);
+    const groupLabel = group?.name ?? 'o grupo selecionado';
+    const inGroup = this.phaseTeams().filter((t) => t.groupId === groupId);
+    if (inGroup.length < 2) {
+      return `${groupLabel} precisa de pelo menos 2 times para ter uma partida.`;
+    }
+    const taken = this._teamsInSameRound();
+    const init = this.initial();
+    const available = inGroup.filter(
+      (t) =>
+        !taken.has(t.teamId) ||
+        t.teamId === init?.homeTeam.id ||
+        t.teamId === init?.awayTeam.id,
+    );
+    if (available.length < 2) {
+      return `Todos os times de ${groupLabel} já têm partida na rodada ${this._roundValue()}. Escolha outra rodada.`;
+    }
+    return null;
   });
 
   protected readonly koRoundOptions = computed<IRoundOption[]>(() => {
@@ -362,6 +434,19 @@ export class MatchFormComponent implements OnInit {
     return c.value ? null : 'Selecione um grupo';
   });
 
+  constructor() {
+    // Usabilidade: desabilita os campos durante o envio; ao terminar
+    // (sucesso ou erro), reabilita — exceto se o form está travado por
+    // regra de negócio (isLocked).
+    effect(() => {
+      if (this.submitting()) {
+        this.form.disable();
+      } else if (!this.isLocked()) {
+        this.form.enable();
+      }
+    });
+  }
+
   public ngOnInit(): void {
     const init = this.initial();
     if (init) {
@@ -413,6 +498,26 @@ export class MatchFormComponent implements OnInit {
       : `regular:${opt.round}`;
   }
 
+  /**
+   * Trocar o grupo invalida a seleção de times quando o confronto é
+   * restrito ao grupo (os times escolhidos podem ser de outro grupo).
+   */
+  protected onGroupChange(): void {
+    if (!this.restrictToGroup()) return;
+    this.form.controls.homeTeamId.setValue('');
+    this.form.controls.awayTeamId.setValue('');
+  }
+
+  /** Label da option de time; com confronto entre grupos, mostra o grupo. */
+  protected teamOptionLabel(t: IPhaseTeamResponse): string {
+    let label = t.teamName;
+    if (t.shortName) label += ` (${t.shortName})`;
+    if (this.isGroupsPhase() && !this.playsInsideGroupOnly() && t.groupName) {
+      label += ` · ${t.groupName}`;
+    }
+    return label;
+  }
+
   protected roundError(): string | null {
     const c = this.form.controls.round;
     if (!c.touched || c.valid) return null;
@@ -421,23 +526,24 @@ export class MatchFormComponent implements OnInit {
     return null;
   }
 
-  protected onSubmit(): void {
-    if (this.submitting() || this.isLocked()) return;
+  /** Valida e monta o payload; retorna null quando o form está inválido. */
+  private _buildPayload(): MatchFormPayload | null {
+    if (this.submitting() || this.isLocked()) return null;
     void this._formStatus();
 
     if (this.isGroupsPhase() && !this.form.controls.groupId.value) {
       this.form.controls.groupId.markAsTouched();
       this.form.markAllAsTouched();
-      return;
+      return null;
     }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      return;
+      return null;
     }
 
     const raw = this.form.getRawValue();
-    const basePayload: MatchFormPayload = {
+    return {
       homeTeamId: raw.homeTeamId,
       awayTeamId: raw.awayTeamId,
       round: raw.round,
@@ -445,8 +551,33 @@ export class MatchFormComponent implements OnInit {
       scheduledAt: localInputToIso(raw.scheduledAt),
       matchType: this.isKnockoutPhase() ? raw.matchType : null,
     };
+  }
 
-    this.saveForm.emit(basePayload);
+  protected onSubmit(): void {
+    const payload = this._buildPayload();
+    if (!payload) return;
+    this.pendingNew.set(false);
+    this.saveForm.emit(payload);
+  }
+
+  protected onSubmitAndNew(): void {
+    const payload = this._buildPayload();
+    if (!payload) return;
+    this.pendingNew.set(true);
+    this.saveAndNew.emit(payload);
+  }
+
+  /**
+   * Após "Salvar e criar outra": zera só os times, preservando grupo, rodada,
+   * etapa e agendamento — agiliza o cadastro de partidas em bloco.
+   */
+  public resetForNext(): void {
+    this.form.controls.homeTeamId.setValue('');
+    this.form.controls.awayTeamId.setValue('');
+    this.form.controls.homeTeamId.markAsUntouched();
+    this.form.controls.awayTeamId.markAsUntouched();
+    this.form.controls.homeTeamId.markAsPristine();
+    this.form.controls.awayTeamId.markAsPristine();
   }
 
   protected onCancel(): void {

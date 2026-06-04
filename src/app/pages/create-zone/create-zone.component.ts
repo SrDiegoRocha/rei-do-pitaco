@@ -18,14 +18,13 @@ import { PhasesService } from '@core/services/phases.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { ZonesService } from '@core/services/zones.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ZoneFormComponent } from '@shared/components/zone-form/zone-form.component';
 import { ToastService } from '@shared/services/toast.service';
 
 @Component({
   selector: 'app-create-zone',
   standalone: true,
-  imports: [PageHeaderComponent, ZoneFormComponent, ButtonComponent],
+  imports: [ZoneFormComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './create-zone.component.html',
   styleUrl: './create-zone.component.scss',
@@ -52,12 +51,6 @@ export class CreateZoneComponent implements OnInit {
     const current = this.phase();
     if (!current) return [];
     return this.allPhases().filter((p) => p.position > current.position);
-  });
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}/zones` : '/tournaments';
   });
 
   protected readonly tournamentStatus = computed(

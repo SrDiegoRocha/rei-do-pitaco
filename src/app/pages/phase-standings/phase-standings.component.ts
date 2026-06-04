@@ -23,7 +23,6 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger } from '@shared/animations/animations';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { StandingsTableComponent } from '@shared/components/standings-table/standings-table.component';
 import { ToastService } from '@shared/services/toast.service';
 import {
@@ -38,7 +37,6 @@ import {
   standalone: true,
   imports: [
     LucideAngularModule,
-    PageHeaderComponent,
     StandingsTableComponent,
     EmptyStateComponent,
     ConfirmDialogComponent,
@@ -71,12 +69,6 @@ export class PhaseStandingsComponent implements OnInit {
 
   protected readonly finalizeDialogOpen = signal(false);
   protected readonly finalizing = signal(false);
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
-  });
 
   protected readonly isOwner = computed(() => {
     const t = this.tournament();

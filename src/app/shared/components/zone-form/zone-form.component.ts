@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnInit,
@@ -161,6 +162,19 @@ export class ZoneFormComponent implements OnInit {
   protected readonly maxBestRanked = computed(() =>
     Math.max(1, this.groupCount()),
   );
+
+  constructor() {
+    // Usabilidade: desabilita os campos durante o envio; ao terminar
+    // (sucesso ou erro), reabilita — exceto se o form está travado por
+    // regra de negócio (isLocked).
+    effect(() => {
+      if (this.submitting()) {
+        this.form.disable();
+      } else if (!this.isLocked()) {
+        this.form.enable();
+      }
+    });
+  }
 
   public ngOnInit(): void {
     const init = this.initial();

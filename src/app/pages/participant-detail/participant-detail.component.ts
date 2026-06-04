@@ -22,7 +22,6 @@ import { RankingService } from '@core/services/ranking.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
 import {
   ArrowLeftRight,
@@ -56,7 +55,6 @@ interface ICompareMetric {
   standalone: true,
   imports: [
     LucideAngularModule,
-    PageHeaderComponent,
     AvatarComponent,
     PredictionCardComponent,
     EmptyStateComponent,
@@ -93,12 +91,6 @@ export class ParticipantDetailComponent implements OnInit {
   protected readonly activeTab = signal<ParticipantTab>('info');
   protected readonly compareId = signal<string | null>(null);
 
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}` : '/tournaments';
-  });
-
-  protected readonly backQueryParams = computed(() => ({ tab: 'ranking' }));
 
   protected readonly participant = computed<IRankingRowResponse | null>(() => {
     const id = this.userId();

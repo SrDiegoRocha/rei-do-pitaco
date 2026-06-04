@@ -22,7 +22,6 @@ import { listStagger } from '@shared/animations/animations';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ToastService } from '@shared/services/toast.service';
 import {
   ArrowRight,
@@ -41,7 +40,6 @@ import {
   imports: [
     LucideAngularModule,
     RouterLink,
-    PageHeaderComponent,
     EmptyStateComponent,
     FabComponent,
     ConfirmDialogComponent,
@@ -93,12 +91,6 @@ export class PhaseZonesComponent implements OnInit {
       return 'Torneio finalizado — zonas em modo somente leitura.';
     }
     return null;
-  });
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
   });
 
   protected readonly newZoneHref = computed(() => {

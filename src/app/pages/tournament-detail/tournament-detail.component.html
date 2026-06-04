@@ -1,19 +1,4 @@
 <section class="page">
-  <app-page-header title="Torneio" backTo="/tournaments">
-    @if (canJoin()) {
-      <app-button
-        slot="actions"
-        variant="primary"
-        size="sm"
-        [loading]="joining()"
-        (buttonClick)="joinTournament()"
-      >
-        <lucide-icon [img]="logInIcon" [size]="16" />
-        Entrar
-      </app-button>
-    }
-  </app-page-header>
-
   @if (loading()) {
     <div class="page__skeleton">
       <div class="u-skeleton page__skeleton-hero"></div>
@@ -57,6 +42,20 @@
           {{ privacyLabel() }}
         </span>
       </div>
+
+      @if (canJoin()) {
+        <app-button
+          class="hero__join"
+          variant="primary"
+          size="md"
+          [fullWidth]="true"
+          [loading]="joining()"
+          (buttonClick)="joinTournament()"
+        >
+          <lucide-icon [img]="logInIcon" [size]="16" />
+          Entrar no torneio
+        </app-button>
+      }
     </article>
 
     <nav class="tabs" role="tablist" aria-label="Seções do torneio">

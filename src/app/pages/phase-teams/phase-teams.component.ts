@@ -102,12 +102,6 @@ export class PhaseTeamsComponent implements OnInit {
     return null;
   });
 
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
-  });
-
   protected readonly removeDescription = computed(() => {
     const target = this.confirmRemove();
     if (!target) return '';

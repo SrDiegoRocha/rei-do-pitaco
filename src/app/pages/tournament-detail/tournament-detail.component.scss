@@ -114,6 +114,11 @@
   gap: var(--space-2);
 }
 
+.hero__join {
+  display: block;
+  margin-top: var(--space-1);
+}
+
 .hero__status,
 .hero__privacy {
   display: inline-flex;

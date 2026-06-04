@@ -12,7 +12,6 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
-import { MatchStatus } from '@core/interfaces/enums';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
@@ -31,8 +30,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
-import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { MatchRowComponent } from '@shared/components/match-row/match-row.component';
 import { ToastService } from '@shared/services/toast.service';
 import { BracketService } from '@core/services/bracket.service';
 import { IBracketResponse } from '@core/interfaces/bracket.interface';
@@ -50,11 +48,25 @@ interface IGroupOption {
   name: string;
 }
 
-const STATUS_LABEL: Record<MatchStatus, string> = {
-  SCHEDULED: 'Agendada',
-  COMPLETED: 'Concluída',
-  CANCELLED: 'Cancelada',
-};
+const ROUND_KEY = 'reidopitaco.phaseMatches.round';
+const GROUP_KEY = 'reidopitaco.phaseMatches.group';
+
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // Storage indisponível — só não persiste.
+  }
+}
 
 @Component({
   selector: 'app-phase-matches',
@@ -62,8 +74,7 @@ const STATUS_LABEL: Record<MatchStatus, string> = {
   imports: [
     RouterLink,
     LucideAngularModule,
-    PageHeaderComponent,
-    TeamBadgeComponent,
+    MatchRowComponent,
     EmptyStateComponent,
     FabComponent,
     ButtonComponent,
@@ -98,17 +109,24 @@ export class PhaseMatchesComponent implements OnInit {
   protected readonly phase = signal<IPhaseResponse | null>(null);
   protected readonly matches = signal<IMatchResponse[]>([]);
 
-  protected readonly selectedRound = signal<number | null>(null);
-  protected readonly selectedGroupId = signal<string | null>(null);
+  // Filtros iniciam no último valor escolhido pelo usuário (persistido).
+  // São validados contra os dados após a carga (ver _applyStoredFilters).
+  protected readonly selectedRound = signal<number | null>(
+    PhaseMatchesComponent._readStoredRound(),
+  );
+  protected readonly selectedGroupId = signal<string | null>(
+    readStored(GROUP_KEY),
+  );
+
+  private static _readStoredRound(): number | null {
+    const raw = readStored(ROUND_KEY);
+    if (raw === null || raw === '') return null;
+    const n = Number(raw);
+    return Number.isInteger(n) ? n : null;
+  }
 
   protected readonly generateDialogOpen = signal(false);
   protected readonly generating = signal(false);
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
-  });
 
   protected readonly newMatchHref = computed(() => {
     const t = this.tournament();
@@ -354,10 +372,27 @@ export class PhaseMatchesComponent implements OnInit {
 
   protected selectRound(round: number | null): void {
     this.selectedRound.set(round);
+    writeStored(ROUND_KEY, round === null ? null : String(round));
   }
 
   protected selectGroup(groupId: string | null): void {
     this.selectedGroupId.set(groupId);
+    writeStored(GROUP_KEY, groupId);
+  }
+
+  /**
+   * Descarta filtros persistidos que não existem nos dados atuais (ex.: rodada
+   * de outra fase, grupo inexistente) — evita cair num filtro vazio.
+   */
+  private _applyStoredFilters(): void {
+    const round = this.selectedRound();
+    if (round !== null && !this.rounds().includes(round)) {
+      this.selectedRound.set(null);
+    }
+    const groupId = this.selectedGroupId();
+    if (groupId !== null && !this.groups().some((g) => g.id === groupId)) {
+      this.selectedGroupId.set(null);
+    }
   }
 
   /** Rótulo amigável da rodada: usa "Oitavas/Quartas/..." em mata-mata. */
@@ -369,11 +404,6 @@ export class PhaseMatchesComponent implements OnInit {
     return `Rodada ${round}`;
   }
 
-  /** Tem pênaltis lançados? */
-  protected hasPenalties(match: IMatchResponse): boolean {
-    return match.homePenalties !== null && match.awayPenalties !== null;
-  }
-
   protected matchDetailLink(match: IMatchResponse): unknown[] {
     const tid = this.tournament()?.id;
     const pid = this.phase()?.id;
@@ -381,27 +411,31 @@ export class PhaseMatchesComponent implements OnInit {
     return ['/tournaments', tid, 'phases', pid, 'matches', match.id];
   }
 
-  protected statusLabel(status: MatchStatus): string {
-    return STATUS_LABEL[status];
-  }
-
-  protected statusClass(status: MatchStatus): string {
-    return `match-card__status match-card__status--${status.toLowerCase()}`;
-  }
-
-  protected formatScheduledAt(iso: string | null): string {
-    if (!iso) return 'Sem horário';
-    try {
-      const date = new Date(iso);
-      return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(date);
-    } catch {
-      return iso;
+  /**
+   * Subdivide as partidas de uma rodada por grupo (fase de grupos).
+   * Retorna `null` quando não há subdivisão útil (sem grupos em alguma
+   * partida, ou um único grupo presente) — aí a lista é renderizada flat.
+   */
+  protected roundSubgroups(
+    matches: IMatchResponse[],
+  ): { id: string; name: string; matches: IMatchResponse[] }[] | null {
+    const buckets = new Map<
+      string,
+      { id: string; name: string; matches: IMatchResponse[] }
+    >();
+    for (const m of matches) {
+      if (!m.groupId || !m.groupName) return null;
+      let bucket = buckets.get(m.groupId);
+      if (!bucket) {
+        bucket = { id: m.groupId, name: m.groupName, matches: [] };
+        buckets.set(m.groupId, bucket);
+      }
+      bucket.matches.push(m);
     }
+    if (buckets.size <= 1) return null;
+    return Array.from(buckets.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
   }
 
   private _load(tid: string, pid: string): void {
@@ -418,6 +452,7 @@ export class PhaseMatchesComponent implements OnInit {
           this.tournament.set(tournament);
           this.phase.set(phase);
           this.matches.set(matches);
+          this._applyStoredFilters();
           this.loading.set(false);
           if (phase.phaseType === 'KNOCKOUT' && matches.length > 0) {
             this._bracketService

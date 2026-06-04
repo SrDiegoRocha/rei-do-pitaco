@@ -11,6 +11,7 @@ import {
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ChildrenOutletContexts, RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from '@shared/components/toast-container/toast-container.component';
+import { InstallPromptService } from '@shared/services/install-prompt.service';
 
 const SLIDE_DURATION = '300ms cubic-bezier(0.4, 0, 0.2, 1)';
 const FADE_DURATION_IN = '220ms cubic-bezier(0.4, 0, 0.2, 1)';
@@ -111,6 +112,9 @@ const genericFade: AnimationMetadata[] = [
 })
 export class App {
   private readonly _contexts = inject(ChildrenOutletContexts);
+  // Instanciado no bootstrap para capturar o `beforeinstallprompt`, que
+  // dispara cedo (antes do login). O banner pós-login lê deste serviço.
+  private readonly _installPrompt = inject(InstallPromptService);
 
   protected getRouteAnimationData(): string | null {
     const data = this._contexts.getContext('primary')?.route?.snapshot?.data;

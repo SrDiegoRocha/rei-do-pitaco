@@ -3,6 +3,7 @@
   <app-app-bar />
   <main class="layout__main">
     <div class="layout__inner" [@routeFade]="getChildRouteKey()">
+      <app-install-banner />
       <router-outlet />
     </div>
   </main>

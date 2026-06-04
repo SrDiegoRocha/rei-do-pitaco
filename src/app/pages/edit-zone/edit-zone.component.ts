@@ -22,7 +22,6 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { ZonesService } from '@core/services/zones.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ZoneFormComponent } from '@shared/components/zone-form/zone-form.component';
 import { ToastService } from '@shared/services/toast.service';
 
@@ -30,7 +29,6 @@ import { ToastService } from '@shared/services/toast.service';
   selector: 'app-edit-zone',
   standalone: true,
   imports: [
-    PageHeaderComponent,
     ZoneFormComponent,
     ButtonComponent,
     ConfirmDialogComponent,
@@ -64,12 +62,6 @@ export class EditZoneComponent implements OnInit {
     const current = this.phase();
     if (!current) return [];
     return this.allPhases().filter((p) => p.position > current.position);
-  });
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}/zones` : '/tournaments';
   });
 
   protected readonly tournamentStatus = computed(

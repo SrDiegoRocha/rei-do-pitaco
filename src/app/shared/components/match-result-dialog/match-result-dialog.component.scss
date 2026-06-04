@@ -4,7 +4,14 @@
 
 .dialog {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Viewport dinâmico: no Safari iOS a barra inferior reduz o dvh, então o
+     conteúdo ancorado embaixo (flex-end) nunca fica escondido atrás dela. */
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
   z-index: var(--z-modal);
   display: flex;
   align-items: flex-end;

@@ -4,7 +4,14 @@
 
 .dialog {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Viewport dinâmico: no Safari iOS a barra inferior reduz o dvh, então o
+     conteúdo ancorado embaixo (flex-end) nunca fica escondido atrás dela. */
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
   z-index: var(--z-modal);
   display: flex;
   align-items: flex-end;
@@ -151,9 +158,32 @@
 
 .dialog__actions {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.dialog__remove {
+  align-self: center;
+  background: none;
+  border: 0;
+  padding: var(--space-1) var(--space-2);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--danger);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+  transition: background-color 120ms ease;
+}
+
+.dialog__remove:hover {
+  background-color: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.dialog__remove:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 @media (min-width: 640px) {
@@ -164,10 +194,5 @@
   .dialog__content {
     border-radius: var(--radius-xl);
     padding: var(--space-6);
-  }
-
-  .dialog__actions {
-    flex-direction: row;
-    justify-content: flex-end;
   }
 }

@@ -72,13 +72,17 @@ export class SignInComponent {
       return;
     }
 
+    const payload = this.form.getRawValue();
     this.submitting.set(true);
-    this._auth.signIn(this.form.getRawValue()).subscribe({
+    // Usabilidade: trava os campos enquanto a requisição está em voo.
+    this.form.disable();
+    this._auth.signIn(payload).subscribe({
       next: () => {
         void this._router.navigate(['/']);
       },
       error: (err: unknown) => {
         this.submitting.set(false);
+        this.form.enable();
         this.formError.set(this._extractMessage(err));
       },
     });

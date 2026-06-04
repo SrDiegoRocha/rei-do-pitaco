@@ -146,12 +146,6 @@ export class PhaseGroupsComponent implements OnInit {
     return this.phase()?.phaseType === 'GROUPS';
   });
 
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    const p = this.phase();
-    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
-  });
-
   protected readonly editPhaseHref = computed(() => {
     const t = this.tournament();
     const p = this.phase();

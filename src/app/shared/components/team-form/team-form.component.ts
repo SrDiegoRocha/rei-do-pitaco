@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnInit,
@@ -126,6 +127,18 @@ export class TeamFormComponent implements OnInit {
   protected readonly submitLabel = computed(() =>
     this.mode() === 'create' ? 'Criar time' : 'Salvar alterações',
   );
+
+  constructor() {
+    // Usabilidade: desabilita todos os campos durante o envio e reabilita
+    // quando a requisição termina (sucesso ou erro).
+    effect(() => {
+      if (this.submitting()) {
+        this.form.disable();
+      } else {
+        this.form.enable();
+      }
+    });
+  }
 
   public ngOnInit(): void {
     const init = this.initial();

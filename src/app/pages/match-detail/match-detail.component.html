@@ -1,10 +1,4 @@
 <section class="page">
-  <app-page-header
-    title="Partida"
-    [backTo]="backToHref()"
-    [backQueryParams]="backQueryParams()"
-    [backFragment]="backFragment()"
-  />
 
   @if (loading()) {
     <div class="page__skeleton">
@@ -39,12 +33,9 @@
             [badgeUrl]="m.homeTeam.badgeUrl"
             [teamType]="m.homeTeam.teamType"
             [countryCode]="m.homeTeam.countryCode"
-            [size]="72"
+            [size]="58"
           />
           <span class="hero__team-name">{{ m.homeTeam.name }}</span>
-          @if (m.homeTeam.shortName) {
-            <span class="hero__team-short">{{ m.homeTeam.shortName }}</span>
-          }
         </div>
 
         <div class="hero__center">
@@ -88,12 +79,9 @@
             [badgeUrl]="m.awayTeam.badgeUrl"
             [teamType]="m.awayTeam.teamType"
             [countryCode]="m.awayTeam.countryCode"
-            [size]="72"
+            [size]="58"
           />
           <span class="hero__team-name">{{ m.awayTeam.name }}</span>
-          @if (m.awayTeam.shortName) {
-            <span class="hero__team-short">{{ m.awayTeam.shortName }}</span>
-          }
         </div>
       </div>
 
@@ -134,22 +122,19 @@
       @if (activeTab() === 'predictions') {
         @if (showCrowdCard() && predictionStats(); as stats) {
           <article class="crowd">
-            <header class="crowd__header">
-              <h3 class="crowd__title">Previsão da Galera</h3>
-              <span class="crowd__sub">
-                {{ stats.totalVotes }}
-                {{ stats.totalVotes === 1 ? 'pitaco' : 'pitacos' }}
-              </span>
-            </header>
-            <div class="crowd__bubbles">
+            <h3 class="crowd__title">Previsão da Galera</h3>
+
+            <div class="crowd__row">
               <div
-                class="crowd__bubble"
-                [class.crowd__bubble--lead]="
+                class="crowd__side"
+                [class.crowd__side--lead]="
                   stats.homeWinPct >= stats.drawPct &&
                   stats.homeWinPct >= stats.awayWinPct
                 "
-                [style.--bubble-color]="homeTeamColor()"
-                [style.--bubble-text]="homePctColor()"
+                [style.--side-color]="homePctColor()"
+                [attr.aria-label]="
+                  m.homeTeam.name + ': ' + stats.homeWinPct + '%'
+                "
               >
                 <app-team-badge
                   [name]="m.homeTeam.name"
@@ -158,33 +143,35 @@
                   [primaryColor]="homeTeamColor()"
                   [teamType]="m.homeTeam.teamType"
                   [countryCode]="m.homeTeam.countryCode"
-                  [size]="30"
+                  [size]="22"
                 />
                 <span class="crowd__pct">{{ stats.homeWinPct }}%</span>
-                <span class="crowd__label">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
               </div>
 
               <div
-                class="crowd__bubble crowd__bubble--draw"
-                [class.crowd__bubble--lead]="
+                class="crowd__side"
+                [class.crowd__side--lead]="
                   stats.drawPct > stats.homeWinPct &&
                   stats.drawPct >= stats.awayWinPct
                 "
+                [attr.aria-label]="'Empate: ' + stats.drawPct + '%'"
               >
                 <span class="crowd__draw" aria-hidden="true">×</span>
                 <span class="crowd__pct">{{ stats.drawPct }}%</span>
-                <span class="crowd__label">Empate</span>
               </div>
 
               <div
-                class="crowd__bubble"
-                [class.crowd__bubble--lead]="
+                class="crowd__side"
+                [class.crowd__side--lead]="
                   stats.awayWinPct > stats.homeWinPct &&
                   stats.awayWinPct > stats.drawPct
                 "
-                [style.--bubble-color]="awayTeamColor()"
-                [style.--bubble-text]="awayPctColor()"
+                [style.--side-color]="awayPctColor()"
+                [attr.aria-label]="
+                  m.awayTeam.name + ': ' + stats.awayWinPct + '%'
+                "
               >
+                <span class="crowd__pct">{{ stats.awayWinPct }}%</span>
                 <app-team-badge
                   [name]="m.awayTeam.name"
                   [shortName]="m.awayTeam.shortName"
@@ -192,11 +179,33 @@
                   [primaryColor]="awayTeamColor()"
                   [teamType]="m.awayTeam.teamType"
                   [countryCode]="m.awayTeam.countryCode"
-                  [size]="30"
+                  [size]="22"
                 />
-                <span class="crowd__pct">{{ stats.awayWinPct }}%</span>
-                <span class="crowd__label">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
               </div>
+            </div>
+
+            <!-- Distribuição visual: segmentos proporcionais aos percentuais. -->
+            <div class="crowd__bar" aria-hidden="true">
+              @if (stats.homeWinPct > 0) {
+                <span
+                  class="crowd__seg"
+                  [style.flex-grow]="stats.homeWinPct"
+                  [style.background-color]="homeTeamColor()"
+                ></span>
+              }
+              @if (stats.drawPct > 0) {
+                <span
+                  class="crowd__seg"
+                  [style.flex-grow]="stats.drawPct"
+                ></span>
+              }
+              @if (stats.awayWinPct > 0) {
+                <span
+                  class="crowd__seg"
+                  [style.flex-grow]="stats.awayWinPct"
+                  [style.background-color]="awayTeamColor()"
+                ></span>
+              }
             </div>
           </article>
         }
@@ -220,53 +229,6 @@
             >
               Palpitar
             </app-button>
-          </article>
-        } @else if (isActiveMember() && myPrediction(); as mine) {
-          <article class="my-pred">
-            <header class="my-pred__top">
-              <h3 class="my-pred__title">Meu pitaco</h3>
-              @if (m.status === 'COMPLETED') {
-                <span
-                  class="my-pred__pts"
-                  [class.my-pred__pts--zero]="mine.points === 0"
-                >
-                  +{{ mine.points }} pts
-                </span>
-              } @else if (m.status !== 'CANCELLED') {
-                <span class="my-pred__pending">Aguardando resultado</span>
-              }
-            </header>
-            <div class="my-pred__score">
-              <span class="my-pred__team">
-                {{ m.homeTeam.shortName ?? m.homeTeam.name }}
-              </span>
-              <span class="my-pred__val">{{ mine.homeScore }}</span>
-              <span class="my-pred__sep">×</span>
-              <span class="my-pred__val">{{ mine.awayScore }}</span>
-              <span class="my-pred__team">
-                {{ m.awayTeam.shortName ?? m.awayTeam.name }}
-              </span>
-            </div>
-            @if (canPredict()) {
-              <div class="my-pred__actions">
-                <button
-                  type="button"
-                  class="my-pred__btn my-pred__btn--primary"
-                  (click)="openPredictionDialog()"
-                >
-                  <lucide-icon [img]="pencilIcon" [size]="14" />
-                  {{ predictionActionLabel() }}
-                </button>
-                <button
-                  type="button"
-                  class="my-pred__btn my-pred__btn--danger"
-                  (click)="openRemovePredictionDialog()"
-                >
-                  <lucide-icon [img]="trashIcon" [size]="14" />
-                  Remover
-                </button>
-              </div>
-            }
           </article>
         } @else if (
           isActiveMember() && !myPrediction() && predictionBlockReason()
@@ -317,42 +279,81 @@
             <ul class="pred-list">
               @for (p of sortedPredictions(); track p.id) {
                 <li>
-                  <a
-                    class="pred-row"
-                    [class.pred-row--mine]="p.id === myPrediction()?.id"
-                    [routerLink]="participantLink(p.userId)"
-                  >
-                    <app-avatar [name]="p.userName" [size]="32" />
-                    <span class="pred-row__name">
-                      {{ p.userName }}
-                      @if (p.id === myPrediction()?.id) {
+                  @if (isEditableMyRow(p)) {
+                    <!-- Row do próprio usuário: clique edita o pitaco. -->
+                    <button
+                      type="button"
+                      class="pred-row pred-row--mine pred-row--editable"
+                      (click)="openPredictionDialog()"
+                    >
+                      <app-avatar
+                        [name]="p.userName"
+                        [imageUrl]="avatarUrlFor(p.userId)"
+                        [size]="32"
+                      />
+                      <span class="pred-row__name">
+                        {{ p.userName }}
                         <span class="pred-row__tag">você</span>
+                      </span>
+                      @if (myPrediction(); as mine) {
+                        <span class="pred-row__score">
+                          {{ mine.homeScore }}<span class="pred-row__sep">×</span>{{ mine.awayScore }}
+                        </span>
                       }
-                    </span>
-                    @if (canRevealScores()) {
-                      <span class="pred-row__score">
-                        {{ p.homeScore }}<span class="pred-row__sep">×</span>{{ p.awayScore }}
+                      <lucide-icon
+                        class="pred-row__chev"
+                        [img]="pencilIcon"
+                        [size]="14"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  } @else {
+                    <a
+                      class="pred-row"
+                      [class.pred-row--mine]="p.id === myPrediction()?.id"
+                      [routerLink]="participantLink(p.userId)"
+                    >
+                      <app-avatar
+                        [name]="p.userName"
+                        [imageUrl]="avatarUrlFor(p.userId)"
+                        [size]="32"
+                      />
+                      <span class="pred-row__name">
+                        {{ p.userName }}
+                        @if (p.id === myPrediction()?.id) {
+                          <span class="pred-row__tag">você</span>
+                        }
                       </span>
-                    } @else {
-                      <span class="pred-row__score pred-row__score--muted">
-                        ?<span class="pred-row__sep">×</span>?
-                      </span>
-                    }
-                    @if (m.status === 'COMPLETED' && canRevealScores()) {
-                      <span
-                        class="pred-row__pts"
-                        [class.pred-row__pts--zero]="p.points === 0"
-                      >
-                        +{{ p.points }}
-                      </span>
-                    }
-                    <lucide-icon
-                      class="pred-row__chev"
-                      [img]="chevronRightIcon"
-                      [size]="14"
-                      aria-hidden="true"
-                    />
-                  </a>
+                      @if (canRevealScores()) {
+                        <span class="pred-row__score">
+                          {{ p.homeScore }}<span class="pred-row__sep">×</span>{{ p.awayScore }}
+                        </span>
+                      } @else if (p.id === myPrediction()?.id && myPrediction(); as mine) {
+                        <!-- O próprio pitaco é sempre visível pro autor. -->
+                        <span class="pred-row__score">
+                          {{ mine.homeScore }}<span class="pred-row__sep">×</span>{{ mine.awayScore }}
+                        </span>
+                      } @else {
+                        <span class="pred-row__score pred-row__score--muted">
+                          ?<span class="pred-row__sep">×</span>?
+                        </span>
+                      }
+                      @if (m.status === 'COMPLETED' && canRevealScores()) {
+                        <span
+                          class="pred-row__pts"
+                          [class.pred-row__pts--zero]="p.points === 0"
+                        >
+                          +{{ p.points }}
+                        </span>
+                      }
+                      <lucide-icon
+                        class="pred-row__chev"
+                        [img]="chevronRightIcon"
+                        [size]="14"
+                        aria-hidden="true"
+                      />
+                    </a>
+                  }
                 </li>
               }
             </ul>
@@ -516,8 +517,10 @@
   [current]="myPrediction()"
   [submitting]="predictionSubmitting()"
   [serverError]="predictionError()"
+  [canRemove]="!!myPrediction() && canPredict()"
   (confirmed)="submitPrediction($event)"
   (cancelled)="closePredictionDialog()"
+  (removeRequested)="onPredictionDialogRemove()"
 />
 
 <app-confirm-dialog

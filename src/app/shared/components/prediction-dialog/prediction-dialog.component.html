@@ -9,9 +9,9 @@
     <div class="dialog__content" role="document" @modalScale>
       <header class="dialog__header">
         <h2 class="dialog__title">{{ title() }}</h2>
-        <p class="dialog__subtitle">
-          {{ m.homeTeam.name }} × {{ m.awayTeam.name }}
-        </p>
+        @if (dateLabel(); as date) {
+          <p class="dialog__subtitle">{{ date }}</p>
+        }
       </header>
 
       <div class="score">
@@ -20,6 +20,8 @@
             [name]="m.homeTeam.name"
             [shortName]="m.homeTeam.shortName"
             [badgeUrl]="m.homeTeam.badgeUrl"
+            [teamType]="m.homeTeam.teamType"
+            [countryCode]="m.homeTeam.countryCode"
             [size]="44"
           />
           <span class="score__team">{{ m.homeTeam.name }}</span>
@@ -63,6 +65,8 @@
             [name]="m.awayTeam.name"
             [shortName]="m.awayTeam.shortName"
             [badgeUrl]="m.awayTeam.badgeUrl"
+            [teamType]="m.awayTeam.teamType"
+            [countryCode]="m.awayTeam.countryCode"
             [size]="44"
           />
           <span class="score__team">{{ m.awayTeam.name }}</span>
@@ -104,23 +108,27 @@
         <p class="dialog__error" role="alert">{{ err }}</p>
       }
 
+      <!-- Sem botão de cancelar: fechar é clicar fora do modal (ou Esc). -->
       <div class="dialog__actions">
-        <app-button
-          variant="ghost"
-          size="md"
-          [disabled]="submitting()"
-          (buttonClick)="onCancel()"
-        >
-          Cancelar
-        </app-button>
         <app-button
           variant="primary"
           size="md"
+          [fullWidth]="true"
           [loading]="submitting()"
           (buttonClick)="onConfirm()"
         >
           {{ confirmLabel() }}
         </app-button>
+        @if (canRemove() && current()) {
+          <button
+            type="button"
+            class="dialog__remove"
+            [disabled]="submitting()"
+            (click)="onRemove()"
+          >
+            Remover pitaco
+          </button>
+        }
       </div>
     </div>
   </div>

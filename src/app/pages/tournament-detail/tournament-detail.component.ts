@@ -1,4 +1,4 @@
-import { ViewportScroller } from '@angular/common';
+import {ViewportScroller} from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -11,47 +11,43 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
-import { AuthState } from '@core/auth/auth-state';
-import { ApiException } from '@core/errors/api-error';
-import {
-  TiebreakCriteria,
-  TournamentStatus,
-} from '@core/interfaces/enums';
-import { IMatchResponse } from '@core/interfaces/match.interface';
-import { IPhaseResponse } from '@core/interfaces/phase.interface';
-import { IPredictionResponse } from '@core/interfaces/prediction.interface';
-import { IRankingRowResponse } from '@core/interfaces/ranking.interface';
-import { IStandingsResponse } from '@core/interfaces/standings.interface';
-import { IBracketResponse } from '@core/interfaces/bracket.interface';
-import { ITournamentResponse } from '@core/interfaces/tournament.interface';
-import { BracketService } from '@core/services/bracket.service';
-import { MatchesService } from '@core/services/matches.service';
-import { PhasesService } from '@core/services/phases.service';
-import { PredictionsService } from '@core/services/predictions.service';
-import { RankingService } from '@core/services/ranking.service';
-import { StandingsService } from '@core/services/standings.service';
-import { TournamentMembersService } from '@core/services/tournament-members.service';
-import { TournamentReturnService } from '@core/services/tournament-return.service';
-import { TournamentsService } from '@core/services/tournaments.service';
-import { knockoutRoundLabel } from '@core/utils/round-label';
-import { AvatarComponent } from '@shared/components/avatar/avatar.component';
-import { ButtonComponent } from '@shared/components/button/button.component';
-import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
-import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
-import { BracketViewComponent, BracketViewMode } from '@shared/components/bracket-view/bracket-view.component';
-import { MatchRowComponent } from '@shared/components/match-row/match-row.component';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
-import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
+import {catchError, forkJoin, of} from 'rxjs';
+import {AuthState} from '@core/auth/auth-state';
+import {ApiException} from '@core/errors/api-error';
+import {TiebreakCriteria, TournamentStatus,} from '@core/interfaces/enums';
+import {IMatchResponse} from '@core/interfaces/match.interface';
+import {IPhaseResponse} from '@core/interfaces/phase.interface';
+import {IPredictionResponse} from '@core/interfaces/prediction.interface';
+import {IRankingRowResponse} from '@core/interfaces/ranking.interface';
+import {IStandingsResponse} from '@core/interfaces/standings.interface';
+import {IBracketResponse} from '@core/interfaces/bracket.interface';
+import {ITournamentResponse} from '@core/interfaces/tournament.interface';
+import {BracketService} from '@core/services/bracket.service';
+import {MatchesService} from '@core/services/matches.service';
+import {PhasesService} from '@core/services/phases.service';
+import {PredictionsService} from '@core/services/predictions.service';
+import {RankingService} from '@core/services/ranking.service';
+import {StandingsService} from '@core/services/standings.service';
+import {TournamentMembersService} from '@core/services/tournament-members.service';
+import {TournamentReturnService} from '@core/services/tournament-return.service';
+import {TournamentsService} from '@core/services/tournaments.service';
+import {knockoutRoundLabel} from '@core/utils/round-label';
+import {AvatarComponent} from '@shared/components/avatar/avatar.component';
+import {ButtonComponent} from '@shared/components/button/button.component';
+import {ConfirmDialogComponent} from '@shared/components/confirm-dialog/confirm-dialog.component';
+import {EmptyStateComponent} from '@shared/components/empty-state/empty-state.component';
+import {ErrorStateComponent} from '@shared/components/error-state/error-state.component';
+import {BracketViewComponent, BracketViewMode} from '@shared/components/bracket-view/bracket-view.component';
+import {MatchRowComponent} from '@shared/components/match-row/match-row.component';
+import {PredictionCardComponent} from '@shared/components/prediction-card/prediction-card.component';
 import {
   IPredictionPayload,
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
-import { StandingsTableComponent } from '@shared/components/standings-table/standings-table.component';
-import { ToastService } from '@shared/services/toast.service';
+import {StandingsTableComponent} from '@shared/components/standings-table/standings-table.component';
+import {ToastService} from '@shared/services/toast.service';
 import {
   CalendarDays,
   ChevronRight,
@@ -177,6 +173,28 @@ interface IMyPredictionRow {
 const TAB_RANKING = 'ranking';
 const TAB_MATCHES = 'matches';
 const TAB_MY_PREDICTIONS = 'predictions';
+
+const MATCHES_PHASE_KEY = 'reidopitaco.tMatches.phase';
+const MATCHES_BUCKET_KEY = 'reidopitaco.tMatches.bucket';
+const MATCHES_GROUP_KEY = 'reidopitaco.tMatches.group';
+
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // Storage indisponível — só não persiste.
+  }
+}
+
 const TAB_INFO = 'info';
 const PHASE_TAB_PREFIX = 'phase-';
 
@@ -186,7 +204,6 @@ const PHASE_TAB_PREFIX = 'phase-';
   imports: [
     RouterLink,
     LucideAngularModule,
-    PageHeaderComponent,
     AvatarComponent,
     ButtonComponent,
     ConfirmDialogComponent,
@@ -264,9 +281,17 @@ export class TournamentDetailComponent implements OnInit {
 
   protected readonly bracketViewMode = signal<BracketViewMode>('cards');
 
-  protected readonly selectedMatchesPhaseId = signal<string | null>(null);
-  protected readonly selectedMatchesBucketKey = signal<string | null>(null);
-  protected readonly selectedMatchesGroupId = signal<string | null>(null);
+  // Filtros da aba de partidas persistidos; validados após a carga em
+  // _validateMatchesFilters (IDs de fase/grupo são específicos do torneio).
+  protected readonly selectedMatchesPhaseId = signal<string | null>(
+    readStored(MATCHES_PHASE_KEY),
+  );
+  protected readonly selectedMatchesBucketKey = signal<string | null>(
+    readStored(MATCHES_BUCKET_KEY),
+  );
+  protected readonly selectedMatchesGroupId = signal<string | null>(
+    readStored(MATCHES_GROUP_KEY),
+  );
 
   protected readonly changingStatus = signal(false);
   protected readonly regenerating = signal(false);
@@ -369,17 +394,17 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly tabs = computed<ITab[]>(() => {
     const phases = this.phases();
     const list: ITab[] = [
-      { id: TAB_RANKING, label: 'Ranking' },
-      { id: TAB_MATCHES, label: 'Partidas' },
+      {id: TAB_RANKING, label: 'Ranking'},
+      {id: TAB_MATCHES, label: 'Partidas'},
       ...phases.map((p) => ({
         id: `${PHASE_TAB_PREFIX}${p.id}`,
         label: p.name,
       })),
     ];
     if (this.isActiveMember()) {
-      list.push({ id: TAB_MY_PREDICTIONS, label: 'Meus pitacos' });
+      list.push({id: TAB_MY_PREDICTIONS, label: 'Meus pitacos'});
     }
-    list.push({ id: TAB_INFO, label: 'Detalhes' });
+    list.push({id: TAB_INFO, label: 'Detalhes'});
     return list;
   });
 
@@ -479,7 +504,7 @@ export class TournamentDetailComponent implements OnInit {
           if (a.round !== b.round) return a.round - b.round;
           return a.kind === b.kind ? 0 : a.kind === 'REGULAR' ? -1 : 1;
         })
-        .map(({ key, label }) => ({ key, label }));
+        .map(({key, label}) => ({key, label}));
     },
   );
 
@@ -492,7 +517,7 @@ export class TournamentDetailComponent implements OnInit {
       if (m.phaseId !== pid) continue;
       if (!m.groupId || !m.groupName) continue;
       if (!seen.has(m.groupId)) {
-        seen.set(m.groupId, { id: m.groupId, name: m.groupName });
+        seen.set(m.groupId, {id: m.groupId, name: m.groupName});
       }
     }
     return Array.from(seen.values()).sort((a, b) =>
@@ -528,17 +553,48 @@ export class TournamentDetailComponent implements OnInit {
 
   protected selectMatchesPhase(phaseId: string | null): void {
     this.selectedMatchesPhaseId.set(phaseId);
+    writeStored(MATCHES_PHASE_KEY, phaseId);
     // Trocar de fase zera os sub-filtros.
     this.selectedMatchesBucketKey.set(null);
     this.selectedMatchesGroupId.set(null);
+    writeStored(MATCHES_BUCKET_KEY, null);
+    writeStored(MATCHES_GROUP_KEY, null);
   }
 
   protected selectMatchesBucket(key: string | null): void {
     this.selectedMatchesBucketKey.set(key);
+    writeStored(MATCHES_BUCKET_KEY, key);
   }
 
   protected selectMatchesGroup(groupId: string | null): void {
     this.selectedMatchesGroupId.set(groupId);
+    writeStored(MATCHES_GROUP_KEY, groupId);
+  }
+
+  /**
+   * Descarta filtros persistidos que não existem no torneio/fase atual (os IDs
+   * de fase e grupo são específicos do torneio) — evita filtro vazio. Valida na
+   * ordem fase → bucket → grupo, pois os sub-filtros dependem da fase efetiva.
+   */
+  private _validateMatchesFilters(): void {
+    const phase = this.selectedMatchesPhaseId();
+    if (phase !== null && !this.matchesPhaseOptions().some((p) => p.id === phase)) {
+      this.selectedMatchesPhaseId.set(null);
+    }
+    const bucket = this.selectedMatchesBucketKey();
+    if (
+      bucket !== null &&
+      !this.matchesBucketOptions().some((b) => b.key === bucket)
+    ) {
+      this.selectedMatchesBucketKey.set(null);
+    }
+    const group = this.selectedMatchesGroupId();
+    if (
+      group !== null &&
+      !this.matchesGroupOptions().some((g) => g.id === group)
+    ) {
+      this.selectedMatchesGroupId.set(null);
+    }
   }
 
   /**
@@ -557,7 +613,7 @@ export class TournamentDetailComponent implements OnInit {
       if (!m.groupId || !m.groupName) return null;
       let bucket = buckets.get(m.groupId);
       if (!bucket) {
-        bucket = { id: m.groupId, name: m.groupName, matches: [] };
+        bucket = {id: m.groupId, name: m.groupName, matches: []};
         buckets.set(m.groupId, bucket);
       }
       bucket.matches.push(m);
@@ -715,7 +771,7 @@ export class TournamentDetailComponent implements OnInit {
       this._pendingScrollAnchor = returnTarget.anchorId;
       void this._router.navigate([], {
         relativeTo: this._route,
-        queryParams: { tab: returnTarget.tab },
+        queryParams: {tab: returnTarget.tab},
         queryParamsHandling: 'merge',
         replaceUrl: true,
       });
@@ -744,7 +800,7 @@ export class TournamentDetailComponent implements OnInit {
     this.activeTab.set(id);
     void this._router.navigate([], {
       relativeTo: this._route,
-      queryParams: { tab: id },
+      queryParams: {tab: id},
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
@@ -861,7 +917,7 @@ export class TournamentDetailComponent implements OnInit {
 
     this.joining.set(true);
     this._tournamentsService
-      .join({ inviteCode: t.inviteCode })
+      .join({inviteCode: t.inviteCode})
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: () => {
@@ -977,7 +1033,7 @@ export class TournamentDetailComponent implements OnInit {
     if (!t || !next || this.changingStatus()) return;
     this.changingStatus.set(true);
     this._tournamentsService
-      .changeStatus(t.id, { targetStatus: next })
+      .changeStatus(t.id, {targetStatus: next})
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (updated) => {
@@ -1035,7 +1091,7 @@ export class TournamentDetailComponent implements OnInit {
     })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
-        next: ({ tournament, phases, matches, ranking, myPredictions }) => {
+        next: ({tournament, phases, matches, ranking, myPredictions}) => {
           this.tournament.set(tournament);
           this.phases.set(
             [...phases].sort((a, b) => a.position - b.position),
@@ -1043,6 +1099,7 @@ export class TournamentDetailComponent implements OnInit {
           this.matches.set(matches);
           this.ranking.set(ranking);
           this.myPredictions.set(myPredictions);
+          this._validateMatchesFilters();
           this.loading.set(false);
           this._scheduleAnchorScroll();
         },
@@ -1071,30 +1128,30 @@ export class TournamentDetailComponent implements OnInit {
       () => {
         const el = document.getElementById(anchor);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.scrollIntoView({behavior: 'smooth', block: 'center'});
         } else {
           this._scroller.scrollToAnchor(anchor);
         }
       },
-      { injector: this._injector },
+      {injector: this._injector},
     );
   }
 
   private _loadStandings(phaseId: string): void {
     const t = this.tournament();
     if (!t) return;
-    this.standingsLoading.update((s) => ({ ...s, [phaseId]: true }));
-    this.standingsError.update((s) => ({ ...s, [phaseId]: null }));
+    this.standingsLoading.update((s) => ({...s, [phaseId]: true}));
+    this.standingsError.update((s) => ({...s, [phaseId]: null}));
     this._standingsService
       .get(t.id, phaseId)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (standings) => {
-          this.standingsCache.update((s) => ({ ...s, [phaseId]: standings }));
-          this.standingsLoading.update((s) => ({ ...s, [phaseId]: false }));
+          this.standingsCache.update((s) => ({...s, [phaseId]: standings}));
+          this.standingsLoading.update((s) => ({...s, [phaseId]: false}));
         },
         error: (err: unknown) => {
-          this.standingsLoading.update((s) => ({ ...s, [phaseId]: false }));
+          this.standingsLoading.update((s) => ({...s, [phaseId]: false}));
           this.standingsError.update((s) => ({
             ...s,
             [phaseId]:
@@ -1109,18 +1166,18 @@ export class TournamentDetailComponent implements OnInit {
   private _loadBracket(phaseId: string): void {
     const t = this.tournament();
     if (!t) return;
-    this.bracketLoading.update((s) => ({ ...s, [phaseId]: true }));
-    this.bracketError.update((s) => ({ ...s, [phaseId]: null }));
+    this.bracketLoading.update((s) => ({...s, [phaseId]: true}));
+    this.bracketError.update((s) => ({...s, [phaseId]: null}));
     this._bracketService
       .get(t.id, phaseId)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (bracket) => {
-          this.bracketCache.update((s) => ({ ...s, [phaseId]: bracket }));
-          this.bracketLoading.update((s) => ({ ...s, [phaseId]: false }));
+          this.bracketCache.update((s) => ({...s, [phaseId]: bracket}));
+          this.bracketLoading.update((s) => ({...s, [phaseId]: false}));
         },
         error: (err: unknown) => {
-          this.bracketLoading.update((s) => ({ ...s, [phaseId]: false }));
+          this.bracketLoading.update((s) => ({...s, [phaseId]: false}));
           this.bracketError.update((s) => ({
             ...s,
             [phaseId]:

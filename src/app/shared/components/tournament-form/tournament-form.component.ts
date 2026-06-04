@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnInit,
@@ -163,6 +164,24 @@ export class TournamentFormComponent implements OnInit {
     const c = this.form.controls.settings.controls.tiebreakCriteria;
     return c.touched && c.invalid;
   });
+
+  constructor() {
+    // Usabilidade: desabilita os campos durante o envio; ao terminar
+    // (sucesso ou erro), restaura os locks de negócio (FINISHED trava o
+    // form inteiro; IN_PROGRESS trava apenas a privacidade).
+    effect(() => {
+      if (this.submitting()) {
+        this.form.disable();
+        return;
+      }
+      const status = this.initial()?.status;
+      if (status === 'FINISHED') return;
+      this.form.enable();
+      if (status === 'IN_PROGRESS') {
+        this.form.controls.privacy.disable();
+      }
+    });
+  }
 
   public ngOnInit(): void {
     const init = this.initial();

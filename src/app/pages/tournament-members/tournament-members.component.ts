@@ -83,11 +83,6 @@ export class TournamentMembersComponent implements OnInit {
     () => this._authState.user()?.id ?? null,
   );
 
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}` : '/tournaments';
-  });
-
   protected readonly counts = computed(() => {
     const list = this.members();
     return {

@@ -103,9 +103,12 @@
   }
 </section>
 
-<app-fab
-  routerPath="/teams/new"
-  ariaLabel="Cadastrar novo time"
-  label="Novo time"
-  [icon]="plusIcon"
-/>
+<!-- FAB escondido quando a lista está vazia: o placeholder já traz o CTA. -->
+@if (!isEmpty()) {
+  <app-fab
+    routerPath="/teams/new"
+    ariaLabel="Cadastrar novo time"
+    label="Novo time"
+    [icon]="plusIcon"
+  />
+}

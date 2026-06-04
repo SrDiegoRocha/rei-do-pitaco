@@ -1,9 +1,4 @@
 <section class="page">
-  <app-page-header
-    title="Criar zona"
-    [subtitle]="phase()?.name ?? ''"
-    [backTo]="backToHref()"
-  />
 
   @if (loading()) {
     <div class="page__skeleton">

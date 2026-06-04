@@ -1,9 +1,4 @@
 <section class="page">
-  <app-page-header
-    title="Partidas"
-    [subtitle]="phase()?.name ?? ''"
-    [backTo]="backToHref()"
-  />
 
   @if (loading()) {
     <div class="page__skeleton">
@@ -130,7 +125,7 @@
           [attr.aria-selected]="selectedRound() === null"
           (click)="selectRound(null)"
         >
-          Todas as rodadas
+          Todas
         </button>
         @for (round of rounds(); track round) {
           <button
@@ -146,12 +141,12 @@
         }
       </div>
 
-      @if (groups().length > 0) {
+      @if (groups().length > 1) {
         <div class="filters__row" role="tablist" aria-label="Filtro de grupo">
           <button
             type="button"
             role="tab"
-            class="filters__chip filters__chip--secondary"
+            class="filters__chip filters__chip--sub"
             [class.filters__chip--active]="selectedGroupId() === null"
             [attr.aria-selected]="selectedGroupId() === null"
             (click)="selectGroup(null)"
@@ -162,7 +157,7 @@
             <button
               type="button"
               role="tab"
-              class="filters__chip filters__chip--secondary"
+              class="filters__chip filters__chip--sub"
               [class.filters__chip--active]="selectedGroupId() === group.id"
               [attr.aria-selected]="selectedGroupId() === group.id"
               (click)="selectGroup(group.id)"
@@ -181,98 +176,47 @@
         description="Tente outro filtro ou limpe as opções."
       />
     } @else {
-      <div class="rounds" [@listStagger]="filteredMatches().length">
+      <div class="match-groups" [@listStagger]="filteredMatches().length">
         @for (entry of matchesByRound(); track entry.round) {
-          <section class="round">
-            <header class="round__header">
-              <h2 class="round__title">{{ roundLabel(entry.round) }}</h2>
-              <span class="round__count">
-                {{ entry.matches.length }}
-                {{ entry.matches.length === 1 ? 'partida' : 'partidas' }}
-              </span>
+          <section class="match-group">
+            <header class="match-group__header">
+              <span class="match-group__phase">{{ phase()?.name }}</span>
+              <span class="match-group__round">{{ roundLabel(entry.round) }}</span>
             </header>
 
-            <ul class="round__matches">
-              @for (match of entry.matches; track match.id) {
-                <li>
-                  <a
-                    class="match-card"
-                    [routerLink]="matchDetailLink(match)"
-                    [class.match-card--cancelled]="match.status === 'CANCELLED'"
-                  >
-                    <header class="match-card__top">
-                      @if (match.groupName) {
-                        <span class="match-card__group">
-                          Grupo {{ match.groupName }}
-                        </span>
-                      }
-                      <span class="match-card__time">
-                        {{ formatScheduledAt(match.scheduledAt) }}
-                      </span>
-                      <span [class]="statusClass(match.status)">
-                        {{ statusLabel(match.status) }}
-                      </span>
+            @if (roundSubgroups(entry.matches); as subgroups) {
+              <div class="match-group__subgroups">
+                @for (sub of subgroups; track sub.id) {
+                  <div class="subgroup">
+                    <header class="subgroup__header">
+                      <span class="subgroup__dot" aria-hidden="true"></span>
+                      Grupo {{ sub.name }}
                     </header>
-
-                    <div class="match-card__center">
-                      <div class="match-card__side match-card__side--home">
-                        <app-team-badge
-                          [name]="match.homeTeam.name"
-                          [shortName]="match.homeTeam.shortName"
-                          [badgeUrl]="match.homeTeam.badgeUrl"
-                          [size]="36"
-                        />
-                        <span class="match-card__team">
-                          {{ match.homeTeam.name }}
-                        </span>
-                      </div>
-
-                      <div
-                        class="match-card__score"
-                        [class.match-card__score--cancelled]="
-                          match.status === 'CANCELLED'
-                        "
-                      >
-                        @if (
-                          match.homeScore !== null && match.awayScore !== null
-                        ) {
-                          <span class="match-card__score-val">
-                            {{ match.homeScore }}
-                          </span>
-                          <span class="match-card__score-sep">×</span>
-                          <span class="match-card__score-val">
-                            {{ match.awayScore }}
-                          </span>
-                        } @else {
-                          <span class="match-card__score-placeholder">vs</span>
-                        }
-                      </div>
-
-                      <div class="match-card__side match-card__side--away">
-                        <span class="match-card__team">
-                          {{ match.awayTeam.name }}
-                        </span>
-                        <app-team-badge
-                          [name]="match.awayTeam.name"
-                          [shortName]="match.awayTeam.shortName"
-                          [badgeUrl]="match.awayTeam.badgeUrl"
-                          [size]="36"
-                        />
-                      </div>
+                    <div class="match-group__list">
+                      @for (match of sub.matches; track match.id) {
+                        <a
+                          class="match-row-link"
+                          [routerLink]="matchDetailLink(match)"
+                        >
+                          <app-match-row [match]="match" />
+                        </a>
+                      }
                     </div>
-
-                    @if (hasPenalties(match)) {
-                      <p class="match-card__pen-line" aria-label="Pênaltis">
-                        Pênaltis:
-                        <strong>
-                          {{ match.homePenalties }} × {{ match.awayPenalties }}
-                        </strong>
-                      </p>
-                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="match-group__list">
+                @for (match of entry.matches; track match.id) {
+                  <a
+                    class="match-row-link"
+                    [routerLink]="matchDetailLink(match)"
+                  >
+                    <app-match-row [match]="match" />
                   </a>
-                </li>
-              }
-            </ul>
+                }
+              </div>
+            }
           </section>
         }
       </div>

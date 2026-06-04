@@ -99,11 +99,6 @@ export class TournamentTeamsComponent implements OnInit {
     return status === 'DRAFT' || status === 'OPEN';
   });
 
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}` : '/tournaments';
-  });
-
   protected readonly detachDescription = computed(() => {
     const target = this.confirmDetach();
     if (!target) return '';

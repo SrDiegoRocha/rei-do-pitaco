@@ -141,12 +141,15 @@ export class SignUpComponent {
     };
 
     this.submitting.set(true);
+    // Usabilidade: trava os campos enquanto a requisição está em voo.
+    this.form.disable();
     this._auth.signUp(payload).subscribe({
       next: () => {
         void this._router.navigate(['/']);
       },
       error: (err: unknown) => {
         this.submitting.set(false);
+        this.form.enable();
         this.formError.set(this._extractMessage(err));
       },
     });

@@ -89,18 +89,22 @@
   }
 </section>
 
-@if (showJoined()) {
-  <app-fab
-    routerPath="/join"
-    ariaLabel="Entrar em torneio com código"
-    label="Entrar"
-    [icon]="ticketIcon"
-  />
-} @else {
-  <app-fab
-    routerPath="/tournaments/new"
-    ariaLabel="Criar novo torneio"
-    label="Novo torneio"
-    [icon]="plusIcon"
-  />
+<!-- FAB escondido quando a lista está vazia: nesse caso o placeholder já
+     traz o CTA, evitando dois botões com a mesma ação. -->
+@if (!isEmpty()) {
+  @if (showJoined()) {
+    <app-fab
+      routerPath="/join"
+      ariaLabel="Entrar em torneio com código"
+      label="Entrar"
+      [icon]="ticketIcon"
+    />
+  } @else {
+    <app-fab
+      routerPath="/tournaments/new"
+      ariaLabel="Criar novo torneio"
+      label="Novo torneio"
+      [icon]="plusIcon"
+    />
+  }
 }

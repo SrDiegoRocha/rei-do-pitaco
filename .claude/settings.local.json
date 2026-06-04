@@ -56,7 +56,25 @@
       "Bash(curl -s -o /dev/null -w 'manifest        -> %{http_code}\\\\n' --max-time 20 https://rei-do-pitaco.pages.dev/manifest.webmanifest)",
       "Bash(curl -s -o /dev/null -w 'ngsw-worker.js  -> %{http_code}\\\\n' --max-time 20 https://rei-do-pitaco.pages.dev/ngsw-worker.js)",
       "Bash(curl -s -o /dev/null -w 'icon-512.png    -> %{http_code}\\\\n' --max-time 20 https://rei-do-pitaco.pages.dev/icons/icon-512.png)",
-      "Bash(curl -s --max-time 20 https://rei-do-pitaco.pages.dev/)"
+      "Bash(curl -s --max-time 20 https://rei-do-pitaco.pages.dev/)",
+      "Bash(sed -n 1,15p shared/components/__TRACKED_VAR__/__TRACKED_VAR__.component.ts)",
+      "Bash(sed -n '1,40p' layouts/main-layout/main-layout.component.ts)",
+      "Bash(sed -n '1,30p' shared/services/theme.service.ts)",
+      "Bash(curl -s -o /dev/null -w 'produção -> %{http_code}\\\\n' --max-time 20 https://rei-do-pitaco.pages.dev/)",
+      "Bash(grep -n -A8 app-page-header __TRACKED_VAR__/__TRACKED_VAR__.component.html)",
+      "Bash(grep -n -A6 '<app-page-header' __TRACKED_VAR__/__TRACKED_VAR__.component.html)",
+      "Bash(grep -n PageHeaderComponent __TRACKED_VAR__/__TRACKED_VAR__.component.ts)",
+      "Bash(grep -c backToHref __TRACKED_VAR__/__TRACKED_VAR__.component.ts)",
+      "Bash(grep -c backToHref __TRACKED_VAR__/__TRACKED_VAR__.component.html)",
+      "Bash(grep -c backQueryParams __TRACKED_VAR__/__TRACKED_VAR__.component.ts)",
+      "Bash(grep -c backQueryParams __TRACKED_VAR__/__TRACKED_VAR__.component.html)",
+      "Bash(grep -c backFragment __TRACKED_VAR__/__TRACKED_VAR__.component.ts)",
+      "Bash(grep -n -A6 'backToHref = computed' __TRACKED_VAR__/__TRACKED_VAR__.component.ts)",
+      "Bash(python -)",
+      "Bash(sed -n '1,30p' app/shared/components/confirm-dialog/confirm-dialog.component.scss)",
+      "Bash(sed -n '1,30p' app/shared/components/match-result-dialog/match-result-dialog.component.scss)",
+      "Bash(curl -s -D - -o /dev/null --max-time 20 https://rei-do-pitaco.pages.dev/)",
+      "Bash(curl -s --max-time 20 https://rei-do-pitaco.pages.dev/styles-ILQSTTGA.css)"
     ]
   }
 }

@@ -37,9 +37,12 @@ export class PredictionDialogComponent {
   public readonly current = input<IPredictionResponse | null>(null);
   public readonly submitting = input<boolean>(false);
   public readonly serverError = input<string | null>(null);
+  /** Mostra a ação "Remover pitaco" (só faz sentido com `current` setado). */
+  public readonly canRemove = input<boolean>(false);
 
   public readonly confirmed = output<IPredictionPayload>();
   public readonly cancelled = output<void>();
+  public readonly removeRequested = output<void>();
 
   protected readonly minusIcon = Minus;
   protected readonly plusIcon = Plus;
@@ -54,6 +57,22 @@ export class PredictionDialogComponent {
   protected readonly confirmLabel = computed(() =>
     this.current() ? 'Salvar pitaco' : 'Lançar pitaco',
   );
+
+  /** Data/hora da partida formatada (null quando sem agenda). */
+  protected readonly dateLabel = computed(() => {
+    const iso = this.match()?.scheduledAt;
+    if (!iso) return null;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(iso));
+    } catch {
+      return null;
+    }
+  });
 
   constructor() {
     effect(() => {
@@ -97,15 +116,15 @@ export class PredictionDialogComponent {
     if (!this.submitting()) this.cancelled.emit();
   }
 
-  protected onCancel(): void {
-    if (!this.submitting()) this.cancelled.emit();
-  }
-
   protected onConfirm(): void {
     this.confirmed.emit({
       homeScore: this.homeScore(),
       awayScore: this.awayScore(),
     });
+  }
+
+  protected onRemove(): void {
+    if (!this.submitting()) this.removeRequested.emit();
   }
 
   @HostListener('document:keydown.escape')

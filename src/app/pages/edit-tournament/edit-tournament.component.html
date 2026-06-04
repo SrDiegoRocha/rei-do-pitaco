@@ -2,7 +2,6 @@
   <app-page-header
     title="Editar torneio"
     [subtitle]="tournament()?.name ?? ''"
-    [backTo]="backToHref()"
   />
 
   @if (loading()) {
@@ -19,7 +18,6 @@
       <app-button
         variant="brand-outline"
         size="md"
-        (buttonClick)="backToList()"
       >
         Voltar para Meus torneios
       </app-button>

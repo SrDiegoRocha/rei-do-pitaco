@@ -6,6 +6,7 @@ import {
   inject,
   OnInit,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -66,6 +67,8 @@ export class CreateMatchComponent implements OnInit {
   protected readonly submitting = signal(false);
   protected readonly serverError = signal<string | null>(null);
 
+  private readonly _form = viewChild(MatchFormComponent);
+
   protected readonly backToHref = computed(() => {
     const t = this.tournament();
     const p = this.phase();
@@ -89,7 +92,17 @@ export class CreateMatchComponent implements OnInit {
     this._load(tid, pid);
   }
 
+  /** "Criar e sair": cria e volta para a listagem de partidas da fase. */
   protected save(payload: MatchFormPayload): void {
+    this._create(payload, false);
+  }
+
+  /** "Salvar e criar outra": cria e permanece na tela para o próximo cadastro. */
+  protected saveAndNew(payload: MatchFormPayload): void {
+    this._create(payload, true);
+  }
+
+  private _create(payload: MatchFormPayload, stay: boolean): void {
     const tid = this.tournament()?.id;
     const pid = this.phase()?.id;
     if (!tid || !pid) return;
@@ -103,15 +116,22 @@ export class CreateMatchComponent implements OnInit {
       .subscribe({
         next: (match) => {
           this.submitting.set(false);
-          this._toast.success('Partida criada.');
-          void this._router.navigate([
-            '/tournaments',
-            tid,
-            'phases',
-            pid,
-            'matches',
-            match.id,
-          ]);
+          if (stay) {
+            // Inclui a nova partida para os filtros do form (times já
+            // escalados na rodada) refletirem na próxima de imediato.
+            this.existingMatches.update((list) => [...list, match]);
+            this._toast.success('Partida criada. Monte a próxima.');
+            this._form()?.resetForNext();
+          } else {
+            this._toast.success('Partida criada.');
+            void this._router.navigate([
+              '/tournaments',
+              tid,
+              'phases',
+              pid,
+              'matches',
+            ]);
+          }
         },
         error: (err: unknown) => {
           this.submitting.set(false);

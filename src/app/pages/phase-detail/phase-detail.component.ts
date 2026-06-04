@@ -21,7 +21,6 @@ import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { PhasesService } from '@core/services/phases.service';
 import { TournamentsService } from '@core/services/tournaments.service';
-import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import {
   CalendarDays,
   CheckCircle2,
@@ -55,7 +54,7 @@ const GEN_LABEL: Record<MatchGenerationMode, string> = {
 @Component({
   selector: 'app-phase-detail',
   standalone: true,
-  imports: [LucideAngularModule, RouterLink, PageHeaderComponent],
+  imports: [LucideAngularModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './phase-detail.component.html',
   styleUrl: './phase-detail.component.scss',
@@ -93,11 +92,6 @@ export class PhaseDetailComponent implements OnInit {
     if (!this.isOwner()) return false;
     const status = this.tournament()?.status;
     return status === 'DRAFT' || status === 'OPEN';
-  });
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}/phases` : '/tournaments';
   });
 
   protected readonly typeLabel = computed(() => {

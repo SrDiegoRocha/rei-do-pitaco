@@ -2,6 +2,7 @@
   "name": "Rei do Pitaco",
   "short_name": "Rei do Pitaco",
   "description": "Crie torneios de futebol e palpite com seus amigos",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

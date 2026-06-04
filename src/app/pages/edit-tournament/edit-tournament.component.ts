@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   DestroyRef,
   inject,
   OnInit,
@@ -50,11 +49,6 @@ export class EditTournamentComponent implements OnInit {
   protected readonly serverError = signal<string | null>(null);
 
   protected readonly confirmDeleteOpen = signal(false);
-
-  protected readonly backToHref = computed(() => {
-    const t = this.tournament();
-    return t ? `/tournaments/${t.id}` : '/tournaments';
-  });
 
   public ngOnInit(): void {
     const id = this._route.snapshot.paramMap.get('id');

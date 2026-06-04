@@ -30,6 +30,7 @@
         [phaseType]="p.phaseType"
         [phaseTeams]="phaseTeams()"
         [groups]="groups()"
+        [playsInsideGroupOnly]="p.playsInsideGroupOnly ?? false"
         [existingMatches]="existingMatches()"
         [bracket]="bracket()"
         [hasThirdPlace]="p.hasThirdPlace"
@@ -37,6 +38,7 @@
         [submitting]="submitting()"
         [serverError]="serverError()"
         (saveForm)="save($event)"
+        (saveAndNew)="saveAndNew($event)"
         (cancelForm)="cancel()"
       />
     }
