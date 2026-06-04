@@ -17,6 +17,8 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TournamentCardComponent } from '@shared/components/tournament-card/tournament-card.component';
+import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { SectionPagerService } from '@shared/services/section-pager.service';
 import { Globe } from 'lucide-angular';
 
 const PAGE_SIZE = 12;
@@ -31,6 +33,7 @@ const SORT = 'createdAt,desc';
     ButtonComponent,
     PaginationComponent,
     RouterLink,
+    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './public-tournaments.component.html',
@@ -39,9 +42,15 @@ const SORT = 'createdAt,desc';
 })
 export class PublicTournamentsComponent implements OnInit {
   private readonly _service = inject(TournamentsService);
+  private readonly _sectionPager = inject(SectionPagerService);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly globeIcon = Globe;
+
+  /** Swipe entre seções (sem abas internas aqui). */
+  protected swipeSection(delta: 1 | -1): void {
+    this._sectionPager.navigate('/tournaments/public', delta);
+  }
 
   protected readonly loading = signal(true);
   protected readonly items = signal<ITournamentResponse[]>([]);

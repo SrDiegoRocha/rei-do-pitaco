@@ -2,7 +2,7 @@
   <app-sidebar />
   <app-app-bar />
   <main class="layout__main">
-    <div class="layout__inner" [@routeFade]="getChildRouteKey()">
+    <div class="layout__inner" [@routeSections]="getRouteState()">
       <app-install-banner />
       <router-outlet />
     </div>

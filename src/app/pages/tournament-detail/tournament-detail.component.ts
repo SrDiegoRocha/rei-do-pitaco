@@ -47,6 +47,9 @@ import {
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import {StandingsTableComponent} from '@shared/components/standings-table/standings-table.component';
+import {SwipeNavDirective} from '@shared/directives/swipe-nav.directive';
+import {CenterActiveTabDirective} from '@shared/directives/center-active-tab.directive';
+import {tabSlide} from '@shared/animations/animations';
 import {ToastService} from '@shared/services/toast.service';
 import {
   CalendarDays,
@@ -214,10 +217,13 @@ const PHASE_TAB_PREFIX = 'phase-';
     BracketViewComponent,
     PredictionDialogComponent,
     PredictionCardComponent,
+    SwipeNavDirective,
+    CenterActiveTabDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tournament-detail.component.html',
   styleUrl: './tournament-detail.component.scss',
+  animations: [tabSlide],
 })
 export class TournamentDetailComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
@@ -808,6 +814,20 @@ export class TournamentDetailComponent implements OnInit {
 
   protected isTabActive(id: string): boolean {
     return this.activeTab() === id;
+  }
+
+  /** Índice da aba ativa na ordem visível (alimenta a animação direcional). */
+  protected readonly activeTabIndex = computed(() => {
+    const idx = this.tabs().findIndex((t) => t.id === this.activeTab());
+    return idx < 0 ? 0 : idx;
+  });
+
+  /** Swipe: vai para a aba vizinha (delta +1 = direita, -1 = esquerda). */
+  protected swipeToTab(delta: 1 | -1): void {
+    const tabs = this.tabs();
+    const next = this.activeTabIndex() + delta;
+    if (next < 0 || next >= tabs.length) return;
+    this.selectTab(tabs[next].id);
   }
 
   protected tiebreakLabel(criterion: TiebreakCriteria): string {

@@ -27,6 +27,13 @@
     </button>
   </div>
 
+  <div
+    class="page__pager"
+    appSwipeNav
+    (next)="swipeTab(1)"
+    (prev)="swipeTab(-1)"
+    [@tabSlide]="tabIndex()"
+  >
   @if (loading()) {
     <div class="page__grid">
       @for (i of [1, 2, 3, 4]; track i) {
@@ -87,6 +94,7 @@
       (pageChange)="goToPage($event)"
     />
   }
+  </div>
 </section>
 
 <!-- FAB escondido quando a lista está vazia: nesse caso o placeholder já

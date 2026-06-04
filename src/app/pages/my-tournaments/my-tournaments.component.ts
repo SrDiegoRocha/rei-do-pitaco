@@ -12,7 +12,9 @@ import { RouterLink } from '@angular/router';
 import { ApiException } from '@core/errors/api-error';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { TournamentsService } from '@core/services/tournaments.service';
-import { listStagger } from '@shared/animations/animations';
+import { listStagger, tabSlide } from '@shared/animations/animations';
+import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { SectionPagerService } from '@shared/services/section-pager.service';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
@@ -46,14 +48,16 @@ function readStoredTab(): Tab {
     FabComponent,
     PaginationComponent,
     RouterLink,
+    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-tournaments.component.html',
   styleUrl: './my-tournaments.component.scss',
-  animations: [listStagger],
+  animations: [listStagger, tabSlide],
 })
 export class MyTournamentsComponent implements OnInit {
   private readonly _service = inject(TournamentsService);
+  private readonly _sectionPager = inject(SectionPagerService);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly trophyIcon = Trophy;
@@ -90,6 +94,26 @@ export class MyTournamentsComponent implements OnInit {
     this.items.set([]);
     this.currentPage.set(0);
     this._load();
+  }
+
+  private readonly _tabOrder: Tab[] = ['mine', 'joined'];
+
+  /** Índice da aba ativa (alimenta a animação direcional do swipe). */
+  protected readonly tabIndex = computed(() =>
+    Math.max(0, this._tabOrder.indexOf(this.tab())),
+  );
+
+  /**
+   * Swipe: percorre as abas internas; ao passar da borda, atravessa para a
+   * seção vizinha (pager aninhado: ... ↔ Criados ↔ Participo ↔ Públicos ↔ ...).
+   */
+  protected swipeTab(delta: 1 | -1): void {
+    const next = this.tabIndex() + delta;
+    if (next < 0 || next >= this._tabOrder.length) {
+      this._sectionPager.navigate('/tournaments', delta);
+      return;
+    }
+    this.setTab(this._tabOrder[next]);
   }
 
   private _persistTab(tab: Tab): void {

@@ -59,7 +59,7 @@
     </article>
 
     <nav class="tabs" role="tablist" aria-label="Seções do torneio">
-      <div class="tabs__scroll">
+      <div class="tabs__scroll" [appCenterActiveTab]="activeTabIndex()">
         @for (tab of tabs(); track tab.id) {
           <button
             type="button"
@@ -75,7 +75,13 @@
       </div>
     </nav>
 
-    <div class="tab-body">
+    <div
+      class="tab-body"
+      appSwipeNav
+      (next)="swipeToTab(1)"
+      (prev)="swipeToTab(-1)"
+      [@tabSlide]="activeTabIndex()"
+    >
       @if (activeTab() === 'ranking') {
         @if (ranking().length === 0) {
           <app-empty-state

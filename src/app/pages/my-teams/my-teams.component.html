@@ -37,6 +37,13 @@
     </button>
   </div>
 
+  <div
+    class="page__pager"
+    appSwipeNav
+    (next)="swipeGroup(1)"
+    (prev)="swipeGroup(-1)"
+    [@tabSlide]="groupIndex()"
+  >
   @if (loading()) {
     <div class="page__grid">
       @for (i of [1, 2, 3, 4, 5, 6]; track i) {
@@ -101,6 +108,7 @@
       (pageChange)="goToPage($event)"
     />
   }
+  </div>
 </section>
 
 <!-- FAB escondido quando a lista está vazia: o placeholder já traz o CTA. -->

@@ -6,7 +6,10 @@
       aria-hidden="true"
       @backdropFade
     ></div>
-    <div class="dialog__content" role="document" @modalScale>
+    <div class="dialog__content" role="document" @dialogFade appDraggableSheet>
+      <div class="sheet__handle" data-sheet-handle aria-hidden="true">
+        <span class="sheet__grabber"></span>
+      </div>
       <header class="dialog__header">
         <h2 class="dialog__title">{{ title() }}</h2>
         @if (dateLabel(); as date) {

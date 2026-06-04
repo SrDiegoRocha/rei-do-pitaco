@@ -73,6 +73,95 @@ export const listStagger = trigger('listStagger', [
 ]);
 
 /**
+ * Slide horizontal direcional entre as seções principais + fade para o resto.
+ *
+ * Use vinculando ao índice numérico da seção quando estiver numa delas, ou a
+ * uma string (o path) nas demais rotas: `[@routeSections]="getRouteState()"`.
+ * Avançar de seção (índice maior) → nova página entra pela direita; voltar →
+ * entra pela esquerda. Transições de/para rotas não-seção caem no fade.
+ */
+function routeSlide(direction: 'forward' | 'back') {
+  const enterFrom = direction === 'forward' ? '100%' : '-100%';
+  const leaveTo = direction === 'forward' ? '-100%' : '100%';
+  return [
+    style({ position: 'relative' }),
+    query(
+      ':enter, :leave',
+      [
+        style({
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+        }),
+      ],
+      { optional: true },
+    ),
+    query(
+      ':enter',
+      [style({ transform: `translateX(${enterFrom})`, opacity: 0.5 })],
+      { optional: true },
+    ),
+    group([
+      query(
+        ':leave',
+        [
+          animate(
+            `280ms ${EASE_OUT}`,
+            style({ transform: `translateX(${leaveTo})`, opacity: 0.5 }),
+          ),
+        ],
+        { optional: true },
+      ),
+      query(
+        ':enter',
+        [
+          animate(
+            `280ms ${EASE_OUT}`,
+            style({ transform: 'translateX(0)', opacity: 1 }),
+          ),
+        ],
+        { optional: true },
+      ),
+    ]),
+  ];
+}
+
+export const routeSections = trigger('routeSections', [
+  transition(':increment', routeSlide('forward')),
+  transition(':decrement', routeSlide('back')),
+  // Demais trocas de rota: fade cruzado (igual ao routeFade).
+  transition('* <=> *', [
+    style({ position: 'relative' }),
+    query(
+      ':enter, :leave',
+      [
+        style({
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+        }),
+      ],
+      { optional: true },
+    ),
+    query(':enter', [style({ opacity: 0 })], { optional: true }),
+    query(':leave', animateChild(), { optional: true }),
+    group([
+      query(':leave', [animate(`160ms ${EASE_OUT}`, style({ opacity: 0 }))], {
+        optional: true,
+      }),
+      query(':enter', [animate(`200ms ${EASE_OUT}`, style({ opacity: 1 }))], {
+        optional: true,
+      }),
+    ]),
+    query(':enter', animateChild(), { optional: true }),
+  ]),
+]);
+
+/**
  * Modal/dialog enter (scale + fade). Aplica-se no elemento renderizado por @if.
  */
 export const modalScale = trigger('modalScale', [
@@ -88,6 +177,20 @@ export const modalScale = trigger('modalScale', [
       `150ms ${EASE_OUT}`,
       style({ opacity: 0, transform: 'scale(0.96) translateY(4px)' }),
     ),
+  ]),
+]);
+
+/**
+ * Fade puro para modais cujo `transform` é controlado por outra fonte
+ * (ex.: bottom-sheet arrastável). Não anima transform para não conflitar.
+ */
+export const dialogFade = trigger('dialogFade', [
+  transition(':enter', [
+    style({ opacity: 0 }),
+    animate(`180ms ${EASE_DECEL}`, style({ opacity: 1 })),
+  ]),
+  transition(':leave', [
+    animate(`140ms ${EASE_OUT}`, style({ opacity: 0 })),
   ]),
 ]);
 
@@ -117,6 +220,28 @@ export const toastSlide = trigger('toastSlide', [
     animate(
       `160ms ${EASE_OUT}`,
       style({ opacity: 0, transform: 'translateY(8px) scale(0.97)' }),
+    ),
+  ]),
+]);
+
+/**
+ * Slide direcional entre abas, disparado por mudança do índice numérico da aba
+ * ativa: `[@tabSlide]="activeTabIndex()"`. Avançar (índice maior) entra pela
+ * direita; voltar (índice menor) entra pela esquerda. Vale para swipe e clique.
+ */
+export const tabSlide = trigger('tabSlide', [
+  transition(':increment', [
+    style({ transform: 'translateX(28px)', opacity: 0 }),
+    animate(
+      `240ms ${EASE_OUT}`,
+      style({ transform: 'translateX(0)', opacity: 1 }),
+    ),
+  ]),
+  transition(':decrement', [
+    style({ transform: 'translateX(-28px)', opacity: 0 }),
+    animate(
+      `240ms ${EASE_OUT}`,
+      style({ transform: 'translateX(0)', opacity: 1 }),
     ),
   ]),
 ]);

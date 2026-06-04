@@ -74,7 +74,9 @@
       "Bash(sed -n '1,30p' app/shared/components/confirm-dialog/confirm-dialog.component.scss)",
       "Bash(sed -n '1,30p' app/shared/components/match-result-dialog/match-result-dialog.component.scss)",
       "Bash(curl -s -D - -o /dev/null --max-time 20 https://rei-do-pitaco.pages.dev/)",
-      "Bash(curl -s --max-time 20 https://rei-do-pitaco.pages.dev/styles-ILQSTTGA.css)"
+      "Bash(curl -s --max-time 20 https://rei-do-pitaco.pages.dev/styles-ILQSTTGA.css)",
+      "Bash(sed -n '9,16p' prediction-dialog/prediction-dialog.component.html)",
+      "Bash(sed -n '9,16p' match-result-dialog/match-result-dialog.component.html)"
     ]
   }
 }

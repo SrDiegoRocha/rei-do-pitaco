@@ -10,8 +10,9 @@ import {
 } from '@angular/core';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
-import { backdropFade, modalScale } from '@shared/animations/animations';
+import { backdropFade, dialogFade } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { LucideAngularModule, Minus, Plus } from 'lucide-angular';
 
@@ -25,11 +26,16 @@ const MAX_SCORE = 99;
 @Component({
   selector: 'app-prediction-dialog',
   standalone: true,
-  imports: [ButtonComponent, TeamBadgeComponent, LucideAngularModule],
+  imports: [
+    ButtonComponent,
+    TeamBadgeComponent,
+    LucideAngularModule,
+    DraggableSheetDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prediction-dialog.component.html',
   styleUrl: './prediction-dialog.component.scss',
-  animations: [modalScale, backdropFade],
+  animations: [dialogFade, backdropFade],
 })
 export class PredictionDialogComponent {
   public readonly open = input<boolean>(false);

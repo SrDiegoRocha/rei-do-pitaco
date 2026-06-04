@@ -38,6 +38,8 @@ import {
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { tabSlide } from '@shared/animations/animations';
 import { ThemeService } from '@shared/services/theme.service';
 import { ToastService } from '@shared/services/toast.service';
 import { readableAccent } from '@core/utils/color-contrast';
@@ -75,10 +77,12 @@ type MatchTab = 'predictions' | 'info';
     MatchResultDialogComponent,
     PredictionDialogComponent,
     ConfirmDialogComponent,
+    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-detail.component.html',
   styleUrl: './match-detail.component.scss',
+  animations: [tabSlide],
 })
 export class MatchDetailComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
@@ -432,6 +436,24 @@ export class MatchDetailComponent implements OnInit {
 
   protected setTab(tab: MatchTab): void {
     this.activeTab.set(tab);
+  }
+
+  /** Abas visíveis na ordem exibida (Detalhes só aparece para o organizador). */
+  protected readonly visibleTabs = computed<MatchTab[]>(() =>
+    this.showInfoTab() ? ['predictions', 'info'] : ['predictions'],
+  );
+
+  /** Índice da aba ativa (alimenta a animação direcional do swipe). */
+  protected readonly activeTabIndex = computed(() =>
+    Math.max(0, this.visibleTabs().indexOf(this.activeTab())),
+  );
+
+  /** Swipe: vai para a aba vizinha (delta +1 = direita, -1 = esquerda). */
+  protected swipeToTab(delta: 1 | -1): void {
+    const tabs = this.visibleTabs();
+    const next = this.activeTabIndex() + delta;
+    if (next < 0 || next >= tabs.length) return;
+    this.setTab(tabs[next]);
   }
 
   protected openResultDialog(): void {

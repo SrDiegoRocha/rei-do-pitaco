@@ -23,6 +23,8 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
+import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { tabSlide } from '@shared/animations/animations';
 import {
   ArrowLeftRight,
   Crown,
@@ -58,10 +60,12 @@ interface ICompareMetric {
     AvatarComponent,
     PredictionCardComponent,
     EmptyStateComponent,
+    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './participant-detail.component.html',
   styleUrl: './participant-detail.component.scss',
+  animations: [tabSlide],
 })
 export class ParticipantDetailComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
@@ -188,6 +192,20 @@ export class ParticipantDetailComponent implements OnInit {
 
   protected setTab(tab: ParticipantTab): void {
     this.activeTab.set(tab);
+  }
+
+  private readonly _tabOrder: ParticipantTab[] = ['info', 'predictions'];
+
+  /** Índice da aba ativa (alimenta a animação direcional do swipe). */
+  protected readonly activeTabIndex = computed(() =>
+    Math.max(0, this._tabOrder.indexOf(this.activeTab())),
+  );
+
+  /** Swipe: vai para a aba vizinha (delta +1 = direita, -1 = esquerda). */
+  protected swipeToTab(delta: 1 | -1): void {
+    const next = this.activeTabIndex() + delta;
+    if (next < 0 || next >= this._tabOrder.length) return;
+    this.setTab(this._tabOrder[next]);
   }
 
   protected onCompareChange(event: Event): void {

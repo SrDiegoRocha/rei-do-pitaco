@@ -10,8 +10,9 @@ import {
 } from '@angular/core';
 import { TournamentPhaseType } from '@core/interfaces/enums';
 import { IMatchResponse } from '@core/interfaces/match.interface';
-import { backdropFade, modalScale } from '@shared/animations/animations';
+import { backdropFade, dialogFade } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { LucideAngularModule, Minus, Plus } from 'lucide-angular';
 
@@ -28,11 +29,16 @@ const MAX_PEN = 30;
 @Component({
   selector: 'app-match-result-dialog',
   standalone: true,
-  imports: [ButtonComponent, TeamBadgeComponent, LucideAngularModule],
+  imports: [
+    ButtonComponent,
+    TeamBadgeComponent,
+    LucideAngularModule,
+    DraggableSheetDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-result-dialog.component.html',
   styleUrl: './match-result-dialog.component.scss',
-  animations: [modalScale, backdropFade],
+  animations: [dialogFade, backdropFade],
 })
 export class MatchResultDialogComponent {
   public readonly open = input<boolean>(false);

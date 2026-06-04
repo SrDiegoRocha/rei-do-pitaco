@@ -51,7 +51,13 @@
       </button>
     </nav>
 
-    <div class="tab-body">
+    <div
+      class="tab-body"
+      appSwipeNav
+      (next)="swipeToTab(1)"
+      (prev)="swipeToTab(-1)"
+      [@tabSlide]="activeTabIndex()"
+    >
       @if (activeTab() === 'info') {
         <article class="stats">
           <div class="stats__grid">

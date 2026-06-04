@@ -13,7 +13,9 @@ import { ApiException } from '@core/errors/api-error';
 import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
-import { listStagger } from '@shared/animations/animations';
+import { listStagger, tabSlide } from '@shared/animations/animations';
+import { SwipeNavDirective } from '@shared/directives/swipe-nav.directive';
+import { SectionPagerService } from '@shared/services/section-pager.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
@@ -47,14 +49,16 @@ const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
     FabComponent,
     PaginationComponent,
     RouterLink,
+    SwipeNavDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-teams.component.html',
   styleUrl: './my-teams.component.scss',
-  animations: [listStagger],
+  animations: [listStagger, tabSlide],
 })
 export class MyTeamsComponent implements OnInit {
   private readonly _service = inject(TeamsService);
+  private readonly _sectionPager = inject(SectionPagerService);
   private readonly _destroyRef = inject(DestroyRef);
 
   protected readonly shieldIcon = Shield;
@@ -87,6 +91,26 @@ export class MyTeamsComponent implements OnInit {
     this.items.set([]);
     this.currentPage.set(0);
     this._load();
+  }
+
+  private readonly _groupOrder: TeamGroup[] = ['mine', 'national', 'clubs'];
+
+  /** Índice do grupo ativo (alimenta a animação direcional do swipe). */
+  protected readonly groupIndex = computed(() =>
+    Math.max(0, this._groupOrder.indexOf(this.group())),
+  );
+
+  /**
+   * Swipe: percorre os grupos internos; ao passar da borda, atravessa para a
+   * seção vizinha (pager aninhado: ... ↔ Públicos ↔ Meus ↔ Seleções ↔ Clubes).
+   */
+  protected swipeGroup(delta: 1 | -1): void {
+    const next = this.groupIndex() + delta;
+    if (next < 0 || next >= this._groupOrder.length) {
+      this._sectionPager.navigate('/teams', delta);
+      return;
+    }
+    this.setGroup(this._groupOrder[next]);
   }
 
   protected retry(): void {

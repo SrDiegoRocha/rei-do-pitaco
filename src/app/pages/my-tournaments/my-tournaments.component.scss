@@ -5,6 +5,13 @@
   padding-bottom: var(--space-20);
 }
 
+/* Área navegável por swipe (preserva o espaçamento grid ↔ paginação). */
+.page__pager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 .page__header {
   display: flex;
   flex-direction: column;
