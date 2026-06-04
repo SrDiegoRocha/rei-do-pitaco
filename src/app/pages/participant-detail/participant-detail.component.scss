@@ -395,3 +395,78 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+
+/* Filtros dos pitacos — mesmo visual da aba de partidas do torneio. */
+.phase-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin-bottom: var(--space-3);
+}
+
+.phase-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.phase-filters__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.phase-filters__chip:hover {
+  background-color: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.phase-filters__chip--active {
+  background-color: var(--brand);
+  color: var(--text-on-brand);
+  border-color: var(--brand);
+}
+
+.phase-filters__chip--active:hover {
+  background-color: var(--brand-hover);
+  color: var(--text-on-brand);
+}
+
+.phase-filters--sub {
+  margin-top: calc(var(--space-2) * -1);
+}
+
+.phase-filters__chip--sub {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  background-color: transparent;
+}
+
+[data-theme='dark'] .phase-filters__chip--sub {
+  background-color: transparent;
+}
+
+.phase-filters__chip--sub.phase-filters__chip--active {
+  background-color: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand);
+  border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+.phase-filters__chip--sub.phase-filters__chip--active:hover {
+  background-color: color-mix(in srgb, var(--brand) 24%, transparent);
+  color: var(--brand);
+}

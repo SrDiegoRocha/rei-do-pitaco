@@ -1,0 +1,32 @@
+@if (install.showInstallBanner()) {
+  <aside class="install" role="complementary" aria-label="Instalar o aplicativo">
+    <div class="install__icon" aria-hidden="true">
+      <lucide-icon [img]="downloadIcon" [size]="20" />
+    </div>
+
+    <div class="install__body">
+      <strong class="install__title">Instale o Rei do Pitaco</strong>
+      @if (install.canPromptInstall()) {
+        <span class="install__desc">
+          Acesso direto da tela inicial, em tela cheia e mais rápido.
+        </span>
+      } @else {
+        <span class="install__desc">
+          No Safari: toque em <strong>Compartilhar</strong> e depois em
+          <strong>"Adicionar à Tela de Início"</strong>.
+        </span>
+      }
+    </div>
+
+    <div class="install__actions">
+      @if (install.canPromptInstall()) {
+        <app-button variant="primary" size="sm" (buttonClick)="onInstall()">
+          Instalar
+        </app-button>
+      }
+      <button type="button" class="install__later" (click)="onDismiss()">
+        Agora não
+      </button>
+    </div>
+  </aside>
+}

@@ -795,55 +795,125 @@
   color: var(--text-tertiary);
 }
 
-.points {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+/* Lista de pontuação (times / participantes) — linha explicativa + valor. */
+.score-list {
+  list-style: none;
   margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-@media (min-width: 640px) {
-  .points {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
 }
 
-.points__item {
+.score-row + .score-row {
+  border-top: 1px solid var(--border-subtle, var(--border-default));
+}
+
+.score-row__text {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-2) var(--space-3);
-  background-color: var(--bg-muted);
-  border-radius: var(--radius-md);
-  margin: 0;
+  min-width: 0;
 }
 
-.points__item dt {
+.score-row__label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.score-row__desc {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  line-height: var(--lh-base);
 }
 
-.points__item dd {
-  margin: 0;
-  font-size: var(--text-lg);
+.score-row__value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background-color: var(--bg-muted);
+  font-size: var(--text-base);
   font-weight: var(--font-bold);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
+/* Valores que premiam o acerto ganham destaque na cor da marca. */
+.score-row--good .score-row__value {
+  background-color: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
+}
+
+.score-row__unit {
+  font-size: var(--text-2xs, 10px);
+  font-weight: var(--font-semibold);
+  opacity: 0.7;
+}
+
+/* Aviso/observação dentro de um card. */
+.info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background-color: color-mix(in srgb, var(--brand) 7%, var(--bg-muted));
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: var(--lh-base);
+}
+
+.info-note lucide-icon {
+  color: var(--brand);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 .tiebreak {
   margin: 0;
-  padding-left: var(--space-5);
+  padding: 0;
+  list-style: none;
+  counter-reset: tiebreak;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .tiebreak__item {
+  counter-increment: tiebreak;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-sm);
   color: var(--text-primary);
+}
+
+.tiebreak__item::before {
+  content: counter(tiebreak);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Organizer actions — responsive, balanced: stacked on narrow screens,

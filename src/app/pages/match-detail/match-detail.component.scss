@@ -677,6 +677,50 @@
   gap: var(--space-4);
 }
 
+/* Card de compartilhar partida (visível para todos). */
+.share-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: color-mix(in srgb, var(--brand) 8%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+[data-theme='dark'] .share-card {
+  background-color: color-mix(in srgb, var(--brand) 14%, var(--bg-elevated));
+}
+
+.share-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.share-card__title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.share-card__desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-base);
+}
+
+@media (max-width: 480px) {
+  .share-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 [data-theme='dark'] .actions {
   background-color: var(--bg-elevated);
 }

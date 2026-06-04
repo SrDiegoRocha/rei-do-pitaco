@@ -13,7 +13,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiException } from '@core/errors/api-error';
 import { AuthService } from '@core/services/auth.service';
 import { AuthLayoutComponent } from '@shared/components/auth-layout/auth-layout.component';
@@ -48,6 +48,7 @@ export class SignUpComponent {
   private readonly _fb = inject(FormBuilder);
   private readonly _auth = inject(AuthService);
   private readonly _router = inject(Router);
+  private readonly _route = inject(ActivatedRoute);
 
   protected readonly userIcon = User;
   protected readonly mailIcon = Mail;
@@ -145,7 +146,10 @@ export class SignUpComponent {
     this.form.disable();
     this._auth.signUp(payload).subscribe({
       next: () => {
-        void this._router.navigate(['/']);
+        const url = this._route.snapshot.queryParamMap.get('returnUrl');
+        void this._router.navigateByUrl(
+          url && url.startsWith('/') && !url.startsWith('//') ? url : '/',
+        );
       },
       error: (err: unknown) => {
         this.submitting.set(false);

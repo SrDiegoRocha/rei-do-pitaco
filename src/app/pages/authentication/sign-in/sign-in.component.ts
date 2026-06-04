@@ -9,7 +9,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiException } from '@core/errors/api-error';
 import { AuthService } from '@core/services/auth.service';
 import { AuthLayoutComponent } from '@shared/components/auth-layout/auth-layout.component';
@@ -35,6 +35,7 @@ export class SignInComponent {
   private readonly _fb = inject(FormBuilder);
   private readonly _auth = inject(AuthService);
   private readonly _router = inject(Router);
+  private readonly _route = inject(ActivatedRoute);
 
   protected readonly mailIcon = Mail;
   protected readonly lockIcon = Lock;
@@ -78,7 +79,7 @@ export class SignInComponent {
     this.form.disable();
     this._auth.signIn(payload).subscribe({
       next: () => {
-        void this._router.navigate(['/']);
+        void this._router.navigateByUrl(this._returnUrl());
       },
       error: (err: unknown) => {
         this.submitting.set(false);
@@ -86,6 +87,12 @@ export class SignInComponent {
         this.formError.set(this._extractMessage(err));
       },
     });
+  }
+
+  /** URL de retorno (interna) após login, ou a home. Evita open redirect. */
+  private _returnUrl(): string {
+    const url = this._route.snapshot.queryParamMap.get('returnUrl');
+    return url && url.startsWith('/') && !url.startsWith('//') ? url : '/';
   }
 
   private _extractMessage(err: unknown): string {

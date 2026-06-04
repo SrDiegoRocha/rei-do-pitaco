@@ -185,15 +185,114 @@
             description="Os pitacos deste participante aparecem aqui."
           />
         } @else {
-          <div class="preds">
-            @for (row of predictionRows(); track row.prediction.id) {
-              <app-prediction-card
-                [match]="row.match"
-                [prediction]="row.prediction"
-                [tournamentId]="tournament()?.id ?? null"
-              />
-            }
-          </div>
+          @if (predPhaseOptions().length > 1) {
+            <div class="phase-filters" role="tablist" aria-label="Filtro de fase">
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip"
+                [class.phase-filters__chip--active]="selectedPredPhaseId() === null"
+                [attr.aria-selected]="selectedPredPhaseId() === null"
+                (click)="selectPredPhase(null)"
+              >
+                Todas as fases
+              </button>
+              @for (phase of predPhaseOptions(); track phase.id) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="phase-filters__chip"
+                  [class.phase-filters__chip--active]="selectedPredPhaseId() === phase.id"
+                  [attr.aria-selected]="selectedPredPhaseId() === phase.id"
+                  (click)="selectPredPhase(phase.id)"
+                >
+                  {{ phase.name }}
+                </button>
+              }
+            </div>
+          }
+
+          @if (predBucketOptions().length > 1) {
+            <div
+              class="phase-filters phase-filters--sub"
+              role="tablist"
+              aria-label="Filtro de rodada ou etapa"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip phase-filters__chip--sub"
+                [class.phase-filters__chip--active]="selectedPredBucketKey() === null"
+                [attr.aria-selected]="selectedPredBucketKey() === null"
+                (click)="selectPredBucket(null)"
+              >
+                Todas
+              </button>
+              @for (opt of predBucketOptions(); track opt.key) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="phase-filters__chip phase-filters__chip--sub"
+                  [class.phase-filters__chip--active]="selectedPredBucketKey() === opt.key"
+                  [attr.aria-selected]="selectedPredBucketKey() === opt.key"
+                  (click)="selectPredBucket(opt.key)"
+                >
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          }
+
+          @if (predGroupOptions().length > 1) {
+            <div
+              class="phase-filters phase-filters--sub"
+              role="tablist"
+              aria-label="Filtro de grupo"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip phase-filters__chip--sub"
+                [class.phase-filters__chip--active]="selectedPredGroupId() === null"
+                [attr.aria-selected]="selectedPredGroupId() === null"
+                (click)="selectPredGroup(null)"
+              >
+                Todos os grupos
+              </button>
+              @for (g of predGroupOptions(); track g.id) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="phase-filters__chip phase-filters__chip--sub"
+                  [class.phase-filters__chip--active]="selectedPredGroupId() === g.id"
+                  [attr.aria-selected]="selectedPredGroupId() === g.id"
+                  (click)="selectPredGroup(g.id)"
+                >
+                  Grupo {{ g.name }}
+                </button>
+              }
+            </div>
+          }
+
+          @if (filteredPredictionRows().length === 0) {
+            <app-empty-state
+              [icon]="sparklesIcon"
+              title="Nenhum pitaco neste filtro"
+              description="Tente outro filtro ou limpe as opções."
+            />
+          } @else {
+            <div class="preds">
+              @for (row of filteredPredictionRows(); track row.prediction.id) {
+                <app-prediction-card
+                  [id]="'pred-' + row.prediction.id"
+                  [match]="row.match"
+                  [prediction]="row.prediction"
+                  [tournamentId]="tournament()?.id ?? null"
+                  (click)="rememberReturn(row.prediction.id)"
+                />
+              }
+            </div>
+          }
         }
       }
     </div>

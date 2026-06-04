@@ -43,6 +43,7 @@ import { tabSlide } from '@shared/animations/animations';
 import { ThemeService } from '@shared/services/theme.service';
 import { ToastService } from '@shared/services/toast.service';
 import { readableAccent } from '@core/utils/color-contrast';
+import { knockoutRoundLabel } from '@core/utils/round-label';
 import {
   ArrowLeftRight,
   Ban,
@@ -51,6 +52,7 @@ import {
   Hash,
   LucideAngularModule,
   Pencil,
+  Share2,
   Sparkles,
   Trash2,
   Trophy,
@@ -99,6 +101,7 @@ export class MatchDetailComponent implements OnInit {
 
   protected readonly calendarIcon = CalendarDays;
   protected readonly arrowLeftRightIcon = ArrowLeftRight;
+  protected readonly shareIcon = Share2;
   protected readonly hashIcon = Hash;
   protected readonly usersIcon = Users;
   protected readonly pencilIcon = Pencil;
@@ -198,7 +201,16 @@ export class MatchDetailComponent implements OnInit {
     const m = this.match();
     const p = this.phase();
     if (!m || !p) return '';
-    const parts: string[] = [p.name, `Rodada ${m.round}`];
+    let roundLabel: string;
+    if (p.phaseType === 'KNOCKOUT') {
+      roundLabel =
+        m.matchType === 'THIRD_PLACE'
+          ? 'Disputa de 3º lugar'
+          : knockoutRoundLabel(m.round, p.teamCount);
+    } else {
+      roundLabel = `Rodada ${m.round}`;
+    }
+    const parts: string[] = [p.name, roundLabel];
     if (m.groupName) parts.push(`Grupo ${m.groupName}`);
     if (p.matchLegMode === 'TWO_LEGGED') parts.push('Ida e volta');
     return parts.join(' · ');
@@ -240,10 +252,8 @@ export class MatchDetailComponent implements OnInit {
     return !!(t && user && t.owner.id === user.id);
   });
 
-  /** Aba "Detalhes" só para o organizador, e só quando há ações disponíveis. */
-  protected readonly showInfoTab = computed(
-    () => this.isOwner() && this.tournament()?.status !== 'FINISHED',
-  );
+  /** Aba "Detalhes": visível para todos (traz compartilhar + ações do dono). */
+  protected readonly showInfoTab = computed(() => this.match() !== null);
 
   // "Previsão da Galera" — agregado dos pitacos antes do jogo começar.
   protected readonly predictionStats =
@@ -436,6 +446,65 @@ export class MatchDetailComponent implements OnInit {
 
   protected setTab(tab: MatchTab): void {
     this.activeTab.set(tab);
+  }
+
+  /** Compartilha o link desta partida (Web Share API, com fallback de cópia). */
+  protected async shareMatch(): Promise<void> {
+    const m = this.match();
+    if (!m) return;
+    // Link curto resolvido pelo backend (/m/:matchId) → rota completa da partida.
+    const url = `${window.location.origin}/m/${m.id}`;
+    const lines = [
+      'Dê seu pitaco nessa partida!',
+      '',
+      `⚽ ${m.homeTeam.name} vs ${m.awayTeam.name}`,
+    ];
+    const subMeta = this.subMeta();
+    if (subMeta) lines.push(subMeta);
+    const dateTime = this._shareDateTime();
+    if (dateTime) lines.push(`📅 ${dateTime}`);
+    lines.push('', url);
+    const text = lines.join('\n');
+    // O link já faz parte da mensagem (última linha), então não passamos `url`
+    // separado para evitar que apps de share o dupliquem.
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${m.homeTeam.name} × ${m.awayTeam.name}`,
+          text,
+        });
+      } catch {
+        // Usuário cancelou ou o share falhou — silencioso.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      this._toast.success('Link da partida copiado!');
+    } catch {
+      this._toast.error('Não foi possível copiar o link.');
+    }
+  }
+
+  /** Data/hora da partida para a mensagem de compartilhamento (dd/MM/yy HH:mmh). */
+  private _shareDateTime(): string {
+    const m = this.match();
+    if (!m || !m.scheduledAt) return '';
+    try {
+      const d = new Date(m.scheduledAt);
+      const date = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      }).format(d);
+      const time = new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(d);
+      return `${date} ${time}h`;
+    } catch {
+      return '';
+    }
   }
 
   /** Abas visíveis na ordem exibida (Detalhes só aparece para o organizador). */
@@ -765,6 +834,16 @@ export class MatchDetailComponent implements OnInit {
           this.match.set(match);
           this._members.set(membersPage?.content ?? []);
           this.isActiveMember.set(myPredictions !== null);
+          // Quem não participa (e não é o dono) chegou via link compartilhado:
+          // manda para o ranking do torneio, onde há o botão de entrar.
+          if (myPredictions === null && !this.isOwner()) {
+            this.loading.set(false);
+            void this._router.navigate(['/tournaments', tid], {
+              queryParams: { tab: 'ranking' },
+              replaceUrl: true,
+            });
+            return;
+          }
           this.myPrediction.set(
             myPredictions?.find((p) => p.matchId === match.id) ?? null,
           );
@@ -777,7 +856,11 @@ export class MatchDetailComponent implements OnInit {
           if (err instanceof ApiException && err.isNotFound) {
             this.loadError.set('Partida não encontrada.');
           } else if (err instanceof ApiException && err.isForbidden) {
-            this.loadError.set('Você não tem acesso a esta partida.');
+            // Não-membro via link: redireciona para entrar no torneio.
+            void this._router.navigate(['/tournaments', tid], {
+              queryParams: { tab: 'ranking' },
+              replaceUrl: true,
+            });
           } else {
             this.loadError.set(
               err instanceof ApiException

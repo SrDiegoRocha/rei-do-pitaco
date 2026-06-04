@@ -121,6 +121,23 @@
   background-color: var(--bg-surface);
 }
 
+/* Corpo clicável do confronto (leva ao detalhe da partida). */
+.bv-tie__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-decoration: none;
+  color: inherit;
+}
+
+a.bv-tie__body {
+  cursor: pointer;
+}
+
+.bv-tie:hover {
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--border-default));
+}
+
 .bv-tie--complete.bv-tie--winner-home,
 .bv-tie--complete.bv-tie--winner-away {
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
@@ -163,6 +180,11 @@
 .bv-tie__side--loser .bv-tie__team {
   color: var(--text-tertiary);
   font-weight: var(--font-regular, 400);
+}
+
+/* Time derrotado: escudo também apagado, junto com nome e placar. */
+.bv-tie__side--loser app-team-badge {
+  opacity: 0.4;
 }
 
 .bv-tie__side--winner .bv-tie__team {

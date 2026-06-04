@@ -290,6 +290,7 @@
                               class="match-row-link"
                               [id]="'match-' + match.id"
                               [routerLink]="matchLink(match)"
+                              (click)="rememberMatchReturn(match)"
                             >
                               <app-match-row
                                 [match]="match"
@@ -311,6 +312,7 @@
                         class="match-row-link"
                         [id]="'match-' + match.id"
                         [routerLink]="matchLink(match)"
+                        (click)="rememberMatchReturn(match)"
                       >
                         <app-match-row
                           [match]="match"
@@ -379,6 +381,7 @@
                 [tournamentId]="tournament()?.id ?? null"
                 [phaseId]="phase.id"
                 [showLegs]="false"
+                (matchOpen)="rememberBracketReturn($event, phase.id)"
               />
             }
           } @else {
@@ -424,10 +427,12 @@
           <div class="pred-list">
             @for (row of myPredictionsRows(); track row.prediction.id) {
               <app-prediction-card
+                [id]="'pred-' + row.prediction.id"
                 [match]="row.match"
                 [prediction]="row.prediction"
                 [context]="row.phaseName"
                 [tournamentId]="tournament()?.id ?? null"
+                (click)="rememberMyPredReturn(row.prediction.id)"
               />
             }
           </div>
@@ -538,41 +543,94 @@
 
         <article class="info-card">
           <header class="info-card__header">
-            <h3 class="info-card__title">Pontuação</h3>
+            <h3 class="info-card__title">Pontuação dos times</h3>
+            <p class="info-card__subtitle">
+              Pontos que cada time soma na classificação das fases.
+            </p>
           </header>
-          <dl class="points">
-            <div class="points__item">
-              <dt>Vitória</dt>
-              <dd>{{ t.settings.winPoints }}</dd>
-            </div>
-            <div class="points__item">
-              <dt>Empate</dt>
-              <dd>{{ t.settings.drawPoints }}</dd>
-            </div>
-            <div class="points__item">
-              <dt>Derrota</dt>
-              <dd>{{ t.settings.lossPoints }}</dd>
-            </div>
-            <div class="points__item">
-              <dt>Placar exato</dt>
-              <dd>{{ t.settings.exactScorePoints }}</dd>
-            </div>
-            <div class="points__item">
-              <dt>Acertou vencedor</dt>
-              <dd>{{ t.settings.winnerPoints }}</dd>
-            </div>
-            <div class="points__item">
-              <dt>Errou tudo</dt>
-              <dd>{{ t.settings.wrongPoints }}</dd>
-            </div>
-          </dl>
+          <ul class="score-list">
+            <li class="score-row">
+              <div class="score-row__text">
+                <span class="score-row__label">Vitória</span>
+                <span class="score-row__desc">Quando o time vence a partida</span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.winPoints }} <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+            <li class="score-row">
+              <div class="score-row__text">
+                <span class="score-row__label">Empate</span>
+                <span class="score-row__desc">Quando a partida termina empatada</span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.drawPoints }} <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+            <li class="score-row">
+              <div class="score-row__text">
+                <span class="score-row__label">Derrota</span>
+                <span class="score-row__desc">Quando o time perde a partida</span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.lossPoints }} <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+          </ul>
+        </article>
+
+        <article class="info-card">
+          <header class="info-card__header">
+            <h3 class="info-card__title">Pontuação dos participantes</h3>
+            <p class="info-card__subtitle">
+              Pontos que cada participante ganha por palpite no ranking.
+            </p>
+          </header>
+          <ul class="score-list">
+            <li class="score-row score-row--good">
+              <div class="score-row__text">
+                <span class="score-row__label">Placar exato</span>
+                <span class="score-row__desc">Acertou o placar exato da partida</span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.exactScorePoints }}
+                <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+            <li class="score-row score-row--good">
+              <div class="score-row__text">
+                <span class="score-row__label">Acertou o vencedor</span>
+                <span class="score-row__desc">
+                  Acertou quem venceu, mas não o placar
+                </span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.winnerPoints }}
+                <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+            <li class="score-row">
+              <div class="score-row__text">
+                <span class="score-row__label">Errou o palpite</span>
+                <span class="score-row__desc">Não acertou o resultado</span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.wrongPoints }}
+                <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+          </ul>
         </article>
 
         <article class="info-card">
           <header class="info-card__header">
             <h3 class="info-card__title">Critérios de desempate</h3>
-            <p class="info-card__subtitle">Ordem importa</p>
           </header>
+          <p class="info-note">
+            <lucide-icon [img]="shieldIcon" [size]="14" />
+            Aplicam-se apenas à classificação dos times. A ordem importa: o
+            primeiro critério é avaliado primeiro.
+          </p>
           <ol class="tiebreak">
             @for (criterion of t.settings.tiebreakCriteria; track criterion) {
               <li class="tiebreak__item">{{ tiebreakLabel(criterion) }}</li>

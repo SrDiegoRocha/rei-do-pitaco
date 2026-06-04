@@ -51,6 +51,11 @@
 
   <div slot="footer" class="auth-form__divider">
     <span>Não tem uma conta?</span>
-    <a class="auth-form__link" routerLink="/auth/signup">Cadastre-se</a>
+    <a
+      class="auth-form__link"
+      routerLink="/auth/signup"
+      queryParamsHandling="preserve"
+      >Cadastre-se</a
+    >
   </div>
 </app-auth-layout>

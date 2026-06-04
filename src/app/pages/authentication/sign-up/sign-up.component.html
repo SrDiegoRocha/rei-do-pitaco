@@ -87,6 +87,11 @@
 
   <div slot="footer" class="auth-form__divider">
     <span>Já tem uma conta?</span>
-    <a class="auth-form__link" routerLink="/auth/signin">Entre</a>
+    <a
+      class="auth-form__link"
+      routerLink="/auth/signin"
+      queryParamsHandling="preserve"
+      >Entre</a
+    >
   </div>
 </app-auth-layout>

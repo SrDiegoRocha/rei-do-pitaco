@@ -180,6 +180,7 @@ const TAB_MY_PREDICTIONS = 'predictions';
 const MATCHES_PHASE_KEY = 'reidopitaco.tMatches.phase';
 const MATCHES_BUCKET_KEY = 'reidopitaco.tMatches.bucket';
 const MATCHES_GROUP_KEY = 'reidopitaco.tMatches.group';
+const BRACKET_MODE_KEY = 'reidopitaco.bracketViewMode';
 
 function readStored(key: string): string | null {
   try {
@@ -285,7 +286,9 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly bracketLoading = signal<Record<string, boolean>>({});
   protected readonly bracketError = signal<Record<string, string | null>>({});
 
-  protected readonly bracketViewMode = signal<BracketViewMode>('cards');
+  protected readonly bracketViewMode = signal<BracketViewMode>(
+    readStored(BRACKET_MODE_KEY) === 'tree' ? 'tree' : 'cards',
+  );
 
   // Filtros da aba de partidas persistidos; validados após a carga em
   // _validateMatchesFilters (IDs de fase/grupo são específicos do torneio).
@@ -747,6 +750,12 @@ export class TournamentDetailComponent implements OnInit {
 
   protected setBracketViewMode(mode: BracketViewMode): void {
     this.bracketViewMode.set(mode);
+    writeStored(BRACKET_MODE_KEY, mode);
+  }
+
+  /** Lembra o confronto clicado no chaveamento para voltar à fase e rolar até ele. */
+  protected rememberBracketReturn(matchId: string, phaseId: string): void {
+    this.rememberReturn(`match-${matchId}`, `${PHASE_TAB_PREFIX}${phaseId}`);
   }
 
   public ngOnInit(): void {
@@ -760,12 +769,28 @@ export class TournamentDetailComponent implements OnInit {
       this.loadError.set('Torneio não encontrado.');
       return;
     }
+    // Abas sempre existentes (independem de dados carregados). As de fase são
+    // dinâmicas e validadas contra tabs().
+    const staticTabs = [
+      TAB_RANKING,
+      TAB_MATCHES,
+      TAB_MY_PREDICTIONS,
+      TAB_INFO,
+    ];
     this._route.queryParamMap
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe((params) => {
         const requested = params.get('tab');
-        const valid = this.tabs().some((t) => t.id === requested);
-        this.activeTab.set(valid && requested ? requested : TAB_RANKING);
+        if (!requested) {
+          this.activeTab.set(TAB_RANKING);
+          return;
+        }
+        // Aceita aba estática mesmo antes do load (ex.: "Meus pitacos" só entra
+        // em tabs() após isActiveMember) — evita cair em Ranking na corrida.
+        const valid =
+          staticTabs.includes(requested) ||
+          this.tabs().some((t) => t.id === requested);
+        this.activeTab.set(valid ? requested : TAB_RANKING);
       });
     this._route.fragment
       .pipe(takeUntilDestroyed(this._destroyRef))
@@ -804,6 +829,16 @@ export class TournamentDetailComponent implements OnInit {
 
   protected rememberRankReturn(userId: string): void {
     this.rememberReturn(`rank-${userId}`, TAB_RANKING);
+  }
+
+  /** Lembra a partida clicada para rolar até ela ao voltar. */
+  protected rememberMatchReturn(match: IMatchResponse): void {
+    this.rememberReturn(`match-${match.id}`, TAB_MATCHES);
+  }
+
+  /** Lembra o pitaco clicado (aba Meus pitacos) para rolar até ele ao voltar. */
+  protected rememberMyPredReturn(predictionId: string): void {
+    this.rememberReturn(`pred-${predictionId}`, TAB_MY_PREDICTIONS);
   }
 
   protected selectTab(id: string): void {
@@ -1149,16 +1184,26 @@ export class TournamentDetailComponent implements OnInit {
     if (!anchor) return;
     this._pendingScrollAnchor = null;
     afterNextRender(
-      () => {
-        const el = document.getElementById(anchor);
-        if (el) {
-          el.scrollIntoView({behavior: 'smooth', block: 'center'});
-        } else {
-          this._scroller.scrollToAnchor(anchor);
-        }
-      },
+      () => this._tryScrollToAnchor(anchor, 15),
       {injector: this._injector},
     );
+  }
+
+  /**
+   * Rola até a âncora; se o elemento ainda não renderizou (a aba/lista pode
+   * montar um frame depois), tenta de novo por alguns frames antes de desistir.
+   */
+  private _tryScrollToAnchor(anchor: string, attempts: number): void {
+    const el = document.getElementById(anchor);
+    if (el) {
+      el.scrollIntoView({behavior: 'auto', block: 'center'});
+      return;
+    }
+    if (attempts <= 0) {
+      this._scroller.scrollToAnchor(anchor);
+      return;
+    }
+    requestAnimationFrame(() => this._tryScrollToAnchor(anchor, attempts - 1));
   }
 
   private _loadStandings(phaseId: string): void {

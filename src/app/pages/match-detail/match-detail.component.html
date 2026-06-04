@@ -362,6 +362,19 @@
       }
 
       @if (activeTab() === 'info') {
+        <article class="share-card">
+          <div class="share-card__text">
+            <h3 class="share-card__title">Compartilhar partida</h3>
+            <p class="share-card__desc">
+              Envie o link para os amigos darem o pitaco neste jogo.
+            </p>
+          </div>
+          <app-button variant="primary" size="md" (buttonClick)="shareMatch()">
+            <lucide-icon [img]="shareIcon" [size]="16" />
+            Compartilhar
+          </app-button>
+        </article>
+
         @if (isOwner() && tournament()?.status !== 'FINISHED') {
           <article class="actions">
             <header class="actions__header">

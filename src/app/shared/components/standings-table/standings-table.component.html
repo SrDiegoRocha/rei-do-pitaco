@@ -13,27 +13,6 @@
   }
 </div>
 
-@if (zoneLegend().length > 0) {
-  <article class="zones-legend">
-    <h3 class="zones-legend__title">Zonas de avanço</h3>
-    <ul class="zones-legend__list">
-      @for (zone of zoneLegend(); track zone.zoneId) {
-        <li
-          class="zones-legend__item"
-          [attr.data-zone-style]="zone.style"
-          [attr.data-zone-color]="zone.colorIndex"
-        >
-          <span class="zones-legend__dot" aria-hidden="true"></span>
-          <span class="zones-legend__name">{{ zone.zoneName }}</span>
-          @if (zone.nextPhaseName) {
-            <span class="zones-legend__dest">→ {{ zone.nextPhaseName }}</span>
-          }
-        </li>
-      }
-    </ul>
-  </article>
-}
-
 <div
   class="groups"
   [attr.data-density]="density()"
@@ -116,6 +95,27 @@
     </article>
   }
 </div>
+
+@if (zoneLegend().length > 0) {
+  <article class="zones-legend">
+    <h3 class="zones-legend__title">Zonas de avanço</h3>
+    <ul class="zones-legend__list">
+      @for (zone of zoneLegend(); track zone.zoneId) {
+        <li
+          class="zones-legend__item"
+          [attr.data-zone-style]="zone.style"
+          [attr.data-zone-color]="zone.colorIndex"
+        >
+          <span class="zones-legend__dot" aria-hidden="true"></span>
+          <span class="zones-legend__name">{{ zone.zoneName }}</span>
+          @if (zone.nextPhaseName) {
+            <span class="zones-legend__dest">→ {{ zone.nextPhaseName }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </article>
+}
 
 <dl class="stats-legend" aria-label="Significado das colunas">
   @for (col of visibleStats(); track col.key) {

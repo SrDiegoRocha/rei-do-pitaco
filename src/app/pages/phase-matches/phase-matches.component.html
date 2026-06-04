@@ -196,7 +196,9 @@
                       @for (match of sub.matches; track match.id) {
                         <a
                           class="match-row-link"
+                          [id]="'match-' + match.id"
                           [routerLink]="matchDetailLink(match)"
+                          (click)="rememberReturn(match)"
                         >
                           <app-match-row [match]="match" />
                         </a>
@@ -210,7 +212,9 @@
                 @for (match of entry.matches; track match.id) {
                   <a
                     class="match-row-link"
+                    [id]="'match-' + match.id"
                     [routerLink]="matchDetailLink(match)"
+                    (click)="rememberReturn(match)"
                   >
                     <app-match-row [match]="match" />
                   </a>

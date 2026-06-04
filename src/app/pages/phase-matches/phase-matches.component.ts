@@ -1,9 +1,11 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
   inject,
+  Injector,
   OnInit,
   signal,
 } from '@angular/core';
@@ -32,6 +34,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { FabComponent } from '@shared/components/fab/fab.component';
 import { MatchRowComponent } from '@shared/components/match-row/match-row.component';
 import { ToastService } from '@shared/services/toast.service';
+import { ScrollReturnService } from '@shared/services/scroll-return.service';
 import { BracketService } from '@core/services/bracket.service';
 import { IBracketResponse } from '@core/interfaces/bracket.interface';
 import {
@@ -94,6 +97,10 @@ export class PhaseMatchesComponent implements OnInit {
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _scrollReturn = inject(ScrollReturnService);
+  private readonly _injector = inject(Injector);
+
+  private _pendingScrollAnchor: string | null = null;
 
   protected readonly calendarIcon = CalendarDays;
   protected readonly plusIcon = Plus;
@@ -319,7 +326,33 @@ export class PhaseMatchesComponent implements OnInit {
       this.loadError.set('Fase não encontrada.');
       return;
     }
+    // Se está voltando de uma partida, rola de volta até ela após carregar.
+    this._pendingScrollAnchor = this._scrollReturn.consume(`${tid}/${pid}`);
     this._load(tid, pid);
+  }
+
+  private _listKey(): string {
+    return `${this.tournament()?.id ?? ''}/${this.phase()?.id ?? ''}`;
+  }
+
+  /** Lembra a partida clicada para rolar até ela ao voltar. */
+  protected rememberReturn(match: IMatchResponse): void {
+    this._scrollReturn.set(this._listKey(), `match-${match.id}`);
+  }
+
+  /** Rola até a partida de origem assim que a lista renderiza. */
+  private _scheduleScroll(): void {
+    const anchor = this._pendingScrollAnchor;
+    if (!anchor) return;
+    this._pendingScrollAnchor = null;
+    afterNextRender(
+      () => {
+        document
+          .getElementById(anchor)
+          ?.scrollIntoView({ behavior: 'auto', block: 'center' });
+      },
+      { injector: this._injector },
+    );
   }
 
   protected openGenerateDialog(): void {
@@ -454,6 +487,7 @@ export class PhaseMatchesComponent implements OnInit {
           this.matches.set(matches);
           this._applyStoredFilters();
           this.loading.set(false);
+          this._scheduleScroll();
           if (phase.phaseType === 'KNOCKOUT' && matches.length > 0) {
             this._bracketService
               .get(tid, pid)

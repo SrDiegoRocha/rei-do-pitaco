@@ -61,3 +61,9 @@ export interface IMatchListParams {
   round?: number;
   groupId?: string;
 }
+
+export interface IMatchLocationResponse {
+  tournamentId: string;
+  phaseId: string;
+  matchId: string;
+}

@@ -299,5 +299,14 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'tournaments' },
     ],
   },
+  {
+    path: 'm/:matchId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('@pages/match-locator/match-locator.component').then(
+        (m) => m.MatchLocatorComponent,
+      ),
+    title: 'Abrindo partida · Rei do Pitaco',
+  },
   { path: '**', redirectTo: '' },
 ];

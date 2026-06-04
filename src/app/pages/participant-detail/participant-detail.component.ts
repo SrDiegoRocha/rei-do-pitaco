@@ -1,25 +1,31 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
   inject,
+  Injector,
   OnInit,
   signal,
 } from '@angular/core';
+import { Location } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
+import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import { IRankingRowResponse } from '@core/interfaces/ranking.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { MatchesService } from '@core/services/matches.service';
+import { PhasesService } from '@core/services/phases.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { RankingService } from '@core/services/ranking.service';
 import { TournamentsService } from '@core/services/tournaments.service';
+import { knockoutRoundLabel } from '@core/utils/round-label';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
@@ -41,6 +47,16 @@ interface IPredictionRow {
   prediction: IPredictionResponse;
   match: IMatchResponse;
   whenMs: number;
+}
+
+type MatchBucketKind = 'REGULAR' | 'THIRD_PLACE';
+interface IBucketOption {
+  key: string;
+  label: string;
+}
+interface IGroupOption {
+  id: string;
+  name: string;
 }
 
 interface ICompareMetric {
@@ -70,11 +86,17 @@ export class ParticipantDetailComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
   private readonly _rankingService = inject(RankingService);
   private readonly _matchesService = inject(MatchesService);
+  private readonly _phasesService = inject(PhasesService);
   private readonly _predictionsService = inject(PredictionsService);
   private readonly _authState = inject(AuthState);
   private readonly _route = inject(ActivatedRoute);
+  private readonly _router = inject(Router);
+  private readonly _location = inject(Location);
   private readonly _destroyRef = inject(DestroyRef);
   private readonly _swipeReg = inject(SwipeNavRegistry);
+  private readonly _injector = inject(Injector);
+
+  private _pendingScrollAnchor: string | null = null;
 
   protected readonly trophyIcon = Trophy;
   protected readonly targetIcon = Target;
@@ -88,12 +110,18 @@ export class ParticipantDetailComponent implements OnInit {
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly ranking = signal<IRankingRowResponse[]>([]);
   protected readonly matches = signal<IMatchResponse[]>([]);
+  protected readonly phases = signal<IPhaseResponse[]>([]);
   protected readonly predictions = signal<IPredictionResponse[]>([]);
   protected readonly predictionsError = signal(false);
 
   protected readonly userId = signal<string>('');
   protected readonly activeTab = signal<ParticipantTab>('info');
   protected readonly compareId = signal<string | null>(null);
+
+  // Filtros dos pitacos (mesma lógica da aba de partidas do torneio).
+  protected readonly selectedPredPhaseId = signal<string | null>(null);
+  protected readonly selectedPredBucketKey = signal<string | null>(null);
+  protected readonly selectedPredGroupId = signal<string | null>(null);
 
 
   protected readonly participant = computed<IRankingRowResponse | null>(() => {
@@ -178,6 +206,130 @@ export class ParticipantDetailComponent implements OnInit {
     });
   });
 
+  // ===== Filtros dos pitacos (fase → rodada/etapa → grupo) =====
+
+  private _phaseById(id: string): IPhaseResponse | undefined {
+    return this.phases().find((p) => p.id === id);
+  }
+
+  private _bucketKind(
+    match: IMatchResponse,
+    phase: IPhaseResponse | undefined,
+  ): MatchBucketKind {
+    if (phase?.phaseType === 'KNOCKOUT' && match.matchType === 'THIRD_PLACE') {
+      return 'THIRD_PLACE';
+    }
+    return 'REGULAR';
+  }
+
+  private _bucketLabel(
+    phase: IPhaseResponse | undefined,
+    round: number,
+    kind: MatchBucketKind,
+  ): string {
+    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
+    if (phase?.phaseType === 'KNOCKOUT') {
+      return knockoutRoundLabel(round, phase.teamCount);
+    }
+    return `Rodada ${round}`;
+  }
+
+  /** Fases presentes entre os pitacos do participante. */
+  protected readonly predPhaseOptions = computed<IPhaseResponse[]>(() => {
+    const ids = new Set(this.predictionRows().map((r) => r.match.phaseId));
+    return this.phases().filter((p) => ids.has(p.id));
+  });
+
+  /** Fase usada pelos sub-filtros: a selecionada ou a única com pitacos. */
+  protected readonly effectivePredPhaseId = computed<string | null>(() => {
+    const sel = this.selectedPredPhaseId();
+    if (sel !== null) return sel;
+    const opts = this.predPhaseOptions();
+    return opts.length === 1 ? opts[0]!.id : null;
+  });
+
+  protected readonly predIsGroupsPhase = computed(() => {
+    const pid = this.effectivePredPhaseId();
+    return !!pid && this._phaseById(pid)?.phaseType === 'GROUPS';
+  });
+
+  protected readonly predBucketOptions = computed<IBucketOption[]>(() => {
+    const pid = this.effectivePredPhaseId();
+    if (!pid) return [];
+    const phase = this._phaseById(pid);
+    const seen = new Map<
+      string,
+      IBucketOption & { round: number; kind: MatchBucketKind }
+    >();
+    for (const r of this.predictionRows()) {
+      if (r.match.phaseId !== pid) continue;
+      const kind = this._bucketKind(r.match, phase);
+      const key = `${r.match.round}:${kind}`;
+      if (seen.has(key)) continue;
+      seen.set(key, {
+        key,
+        label: this._bucketLabel(phase, r.match.round, kind),
+        round: r.match.round,
+        kind,
+      });
+    }
+    return Array.from(seen.values())
+      .sort((a, b) => {
+        if (a.round !== b.round) return a.round - b.round;
+        return a.kind === b.kind ? 0 : a.kind === 'REGULAR' ? -1 : 1;
+      })
+      .map(({ key, label }) => ({ key, label }));
+  });
+
+  protected readonly predGroupOptions = computed<IGroupOption[]>(() => {
+    const pid = this.effectivePredPhaseId();
+    if (!pid || !this.predIsGroupsPhase()) return [];
+    const seen = new Map<string, IGroupOption>();
+    for (const r of this.predictionRows()) {
+      if (r.match.phaseId !== pid) continue;
+      if (!r.match.groupId || !r.match.groupName) continue;
+      if (!seen.has(r.match.groupId)) {
+        seen.set(r.match.groupId, {
+          id: r.match.groupId,
+          name: r.match.groupName,
+        });
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  });
+
+  protected readonly filteredPredictionRows = computed<IPredictionRow[]>(() => {
+    let rows = this.predictionRows();
+    const phaseId = this.selectedPredPhaseId();
+    const bucket = this.selectedPredBucketKey();
+    const group = this.selectedPredGroupId();
+    if (phaseId) rows = rows.filter((r) => r.match.phaseId === phaseId);
+    if (bucket) {
+      rows = rows.filter((r) => {
+        const kind = this._bucketKind(r.match, this._phaseById(r.match.phaseId));
+        return `${r.match.round}:${kind}` === bucket;
+      });
+    }
+    if (group) rows = rows.filter((r) => r.match.groupId === group);
+    return rows;
+  });
+
+  protected selectPredPhase(id: string | null): void {
+    this.selectedPredPhaseId.set(id);
+    this.selectedPredBucketKey.set(null);
+    this.selectedPredGroupId.set(null);
+  }
+
+  protected selectPredBucket(key: string | null): void {
+    this.selectedPredBucketKey.set(key);
+  }
+
+  protected selectPredGroup(id: string | null): void {
+    this.selectedPredGroupId.set(id);
+  }
+
   public ngOnInit(): void {
     const swipe = (delta: 1 | -1) => this.swipeToTab(delta);
     this._swipeReg.set(swipe);
@@ -185,6 +337,15 @@ export class ParticipantDetailComponent implements OnInit {
 
     const tid = this._route.snapshot.paramMap.get('id');
     const uid = this._route.snapshot.paramMap.get('userId');
+
+    // Voltando de um pitaco: a aba e a âncora vêm da URL (query + fragment),
+    // que o navegador restaura no "voltar" — confiável em qualquer iteração.
+    if (this._route.snapshot.queryParamMap.get('ptab') === 'predictions') {
+      this.activeTab.set('predictions');
+    }
+    const fragment = this._route.snapshot.fragment;
+    if (fragment) this._pendingScrollAnchor = fragment;
+
     if (!tid || !uid) {
       this.loading.set(false);
       this.loadError.set('Participante não encontrado.');
@@ -210,6 +371,46 @@ export class ParticipantDetailComponent implements OnInit {
     const next = this.activeTabIndex() + delta;
     if (next < 0 || next >= this._tabOrder.length) return;
     this.setTab(this._tabOrder[next]);
+  }
+
+  /**
+   * Carimba a entrada atual do histórico (aba + âncora) ANTES de navegar para a
+   * partida. Como é gravado na URL via replaceState, o "voltar" do navegador
+   * restaura tudo — funciona em todas as iterações, sem estado compartilhado.
+   */
+  protected rememberReturn(predictionId: string): void {
+    const tid = this._route.snapshot.paramMap.get('id');
+    const uid = this._route.snapshot.paramMap.get('userId');
+    if (!tid || !uid) return;
+    // URL absoluta (sem relativeTo) para evitar ambiguidade na entrada
+    // restaurada — o "voltar" recria esta entrada com aba + âncora.
+    const url = this._router.serializeUrl(
+      this._router.createUrlTree(
+        ['/tournaments', tid, 'participants', uid],
+        { queryParams: { ptab: 'predictions' }, fragment: `pred-${predictionId}` },
+      ),
+    );
+    this._location.replaceState(url);
+  }
+
+  /** Rola até o pitaco de origem assim que a lista renderiza. */
+  private _scheduleScroll(): void {
+    const anchor = this._pendingScrollAnchor;
+    if (!anchor) return;
+    this._pendingScrollAnchor = null;
+    afterNextRender(() => this._tryScroll(anchor, 15), {
+      injector: this._injector,
+    });
+  }
+
+  private _tryScroll(anchor: string, attempts: number): void {
+    const el = document.getElementById(anchor);
+    if (el) {
+      el.scrollIntoView({ behavior: 'auto', block: 'center' });
+      return;
+    }
+    if (attempts <= 0) return;
+    requestAnimationFrame(() => this._tryScroll(anchor, attempts - 1));
   }
 
   protected onCompareChange(event: Event): void {
@@ -242,6 +443,7 @@ export class ParticipantDetailComponent implements OnInit {
       matches: this._matchesService
         .listForTournament(tid)
         .pipe(catchError(() => of<IMatchResponse[]>([]))),
+      phases: this._phasesService.list(tid).pipe(catchError(() => of([]))),
       predictions: this._predictionsService
         .listForUserInTournament(tid, uid)
         .pipe(
@@ -253,12 +455,14 @@ export class ParticipantDetailComponent implements OnInit {
     })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
-        next: ({ tournament, ranking, matches, predictions }) => {
+        next: ({ tournament, ranking, matches, phases, predictions }) => {
           this.tournament.set(tournament);
           this.ranking.set(ranking);
           this.matches.set(matches);
+          this.phases.set([...phases].sort((a, b) => a.position - b.position));
           this.predictions.set(predictions);
           this.loading.set(false);
+          this._scheduleScroll();
           if (!ranking.some((r) => r.userId === uid)) {
             this.loadError.set(
               'Este participante ainda não aparece no ranking do torneio.',

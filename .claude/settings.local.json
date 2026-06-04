@@ -76,7 +76,13 @@
       "Bash(curl -s -D - -o /dev/null --max-time 20 https://rei-do-pitaco.pages.dev/)",
       "Bash(curl -s --max-time 20 https://rei-do-pitaco.pages.dev/styles-ILQSTTGA.css)",
       "Bash(sed -n '9,16p' prediction-dialog/prediction-dialog.component.html)",
-      "Bash(sed -n '9,16p' match-result-dialog/match-result-dialog.component.html)"
+      "Bash(sed -n '9,16p' match-result-dialog/match-result-dialog.component.html)",
+      "Bash(sed -n '107,120p' match-detail/match-detail.component.html)",
+      "Bash(sed -n '384,396p' match-detail/match-detail.component.html)",
+      "Bash(./mvnw -q -o compile)",
+      "Bash(./mvnw -q compile)",
+      "Bash(xargs grep -l \"matches\\\\|Match\" -i)",
+      "Bash(npm test *)"
     ]
   }
 }

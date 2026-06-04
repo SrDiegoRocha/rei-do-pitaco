@@ -5,6 +5,7 @@ import { toHttpParams } from '@core/http/query-params';
 import {
   ICreateMatchRequest,
   IMatchListParams,
+  IMatchLocationResponse,
   IMatchResponse,
   ISetMatchResultRequest,
   IUpdateMatchRequest,
@@ -42,6 +43,16 @@ export class MatchesService {
   ): Observable<IMatchResponse> {
     return this._http.get<IMatchResponse>(
       `${this._baseUrl}/api/tournaments/${tournamentId}/phases/${phaseId}/matches/${matchId}`,
+    );
+  }
+
+  /**
+   * Resolve um link curto (/m/:matchId) para a localização completa da partida
+   * (torneio + fase), usado pelo MatchLocatorComponent.
+   */
+  public locate(matchId: string): Observable<IMatchLocationResponse> {
+    return this._http.get<IMatchLocationResponse>(
+      `${this._baseUrl}/api/matches/${matchId}/location`,
     );
   }
 
