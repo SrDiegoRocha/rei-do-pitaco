@@ -13,6 +13,7 @@ import { ChildrenOutletContexts, RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from '@shared/components/toast-container/toast-container.component';
 import { InstallPromptService } from '@shared/services/install-prompt.service';
 import { PushNotificationsService } from '@shared/services/push-notifications.service';
+import { ThemeService } from '@shared/services/theme.service';
 
 const SLIDE_DURATION = '300ms cubic-bezier(0.4, 0, 0.2, 1)';
 const FADE_DURATION_IN = '220ms cubic-bezier(0.4, 0, 0.2, 1)';
@@ -119,6 +120,10 @@ export class App {
   // Instanciado cedo para resolver o estado de permissão de push e religar a
   // inscrição de quem já aceitou; o banner pós-login lê deste serviço.
   private readonly _pushNotifications = inject(PushNotificationsService);
+  // Instanciado no bootstrap para aplicar o tema (data-theme) já no primeiro
+  // load. Sem escolha salva, o padrão é 'system' — segue o tema do aparelho até
+  // o usuário escolher claro/escuro/sistema manualmente.
+  private readonly _theme = inject(ThemeService);
 
   protected getRouteAnimationData(): string | null {
     const data = this._contexts.getContext('primary')?.route?.snapshot?.data;
