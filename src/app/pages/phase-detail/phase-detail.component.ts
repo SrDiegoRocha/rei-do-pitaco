@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { forkJoin } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
@@ -54,7 +55,7 @@ const GEN_LABEL: Record<MatchGenerationMode, string> = {
 @Component({
   selector: 'app-phase-detail',
   standalone: true,
-  imports: [LucideAngularModule, RouterLink],
+  imports: [LucideAngularModule, RouterLink, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './phase-detail.component.html',
   styleUrl: './phase-detail.component.scss',
@@ -81,6 +82,12 @@ export class PhaseDetailComponent implements OnInit {
   protected readonly loadError = signal<string | null>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly phase = signal<IPhaseResponse | null>(null);
+
+  protected readonly backHref = computed(() => {
+    const t = this.tournament();
+    return t ? `/tournaments/${t.id}/phases` : '/tournaments';
+  });
+  protected readonly pageTitle = computed(() => this.phase()?.name ?? '');
 
   protected readonly isOwner = computed(() => {
     const t = this.tournament();

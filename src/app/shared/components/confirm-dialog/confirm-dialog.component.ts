@@ -5,17 +5,23 @@ import {
   input,
   output,
 } from '@angular/core';
-import { backdropFade, modalScale } from '@shared/animations/animations';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  backdropFade,
+  dialogFade,
+  modalScale,
+} from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
+import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [ButtonComponent],
+  imports: [ButtonComponent, NgTemplateOutlet, DraggableSheetDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
-  animations: [modalScale, backdropFade],
+  animations: [modalScale, backdropFade, dialogFade],
 })
 export class ConfirmDialogComponent {
   public readonly open = input<boolean>(false);
@@ -25,6 +31,10 @@ export class ConfirmDialogComponent {
   public readonly cancelLabel = input<string>('Cancelar');
   public readonly variant = input<'default' | 'destructive'>('default');
   public readonly loading = input<boolean>(false);
+  /** Quando true, o modal vira bottom-sheet arrastável (respeita posição salva). */
+  public readonly draggable = input<boolean>(false);
+  /** Controla visibilidade do botão de cancelar. */
+  public readonly showCancelButton = input<boolean>(true);
 
   public readonly confirmed = output<void>();
   public readonly cancelled = output<void>();

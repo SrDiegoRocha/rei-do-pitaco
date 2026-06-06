@@ -101,16 +101,36 @@
 }
 
 .hero__team-name {
+  overflow: hidden;
+  width: 100%;
+}
+
+.hero__team-name__label {
+  display: inline-block;
+  white-space: nowrap;
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
 }
 
-.hero__team--loser .hero__team-name,
+.hero__team-name__label.is-marquee {
+  animation: hero-team-scroll 10s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__team-name__label.is-marquee {
+    animation: none;
+  }
+}
+
+@keyframes hero-team-scroll {
+  0%, 15%  { transform: translateX(0); }
+  60%, 80% { transform: translateX(var(--marquee-shift, 0px)); }
+  95%, 100% { transform: translateX(0); }
+}
+
+.hero__team--loser .hero__team-name__label,
 .hero__team--loser app-team-badge {
   opacity: 0.55;
 }

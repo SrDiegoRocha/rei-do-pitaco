@@ -13,6 +13,7 @@ import { ApiException } from '@core/errors/api-error';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger, tabSlide } from '@shared/animations/animations';
+import { ScrollContainerService } from '@shared/services/scroll-container.service';
 import { SectionPagerService } from '@shared/services/section-pager.service';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -59,6 +60,7 @@ export class MyTournamentsComponent implements OnInit {
   private readonly _sectionPager = inject(SectionPagerService);
   private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _scrollContainer = inject(ScrollContainerService);
 
   protected readonly trophyIcon = Trophy;
   protected readonly usersIcon = Users;
@@ -135,9 +137,7 @@ export class MyTournamentsComponent implements OnInit {
     if (this.loading()) return;
     this.currentPage.set(page);
     this._load();
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    this._scrollContainer.scrollToTop();
   }
 
   private _load(): void {

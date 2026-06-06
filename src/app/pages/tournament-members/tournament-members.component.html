@@ -2,6 +2,7 @@
   <app-page-header
     title="Membros"
     [subtitle]="tournament()?.name ?? ''"
+    [historyBack]="true"
   />
 
   @if (loading()) {

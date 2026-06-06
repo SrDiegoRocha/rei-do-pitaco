@@ -11,7 +11,6 @@
         <span class="sheet__grabber"></span>
       </div>
       <header class="dialog__header">
-        <h2 class="dialog__title">{{ title() }}</h2>
         @if (dateLabel(); as date) {
           <p class="dialog__subtitle">{{ date }}</p>
         }
@@ -27,7 +26,7 @@
             [countryCode]="m.homeTeam.countryCode"
             [size]="44"
           />
-          <span class="score__team">{{ m.homeTeam.name }}</span>
+          <span class="score__team"><span class="score__team__label" appMarquee>{{ m.homeTeam.name }}</span></span>
           <div class="stepper">
             <button
               type="button"
@@ -72,7 +71,7 @@
             [countryCode]="m.awayTeam.countryCode"
             [size]="44"
           />
-          <span class="score__team">{{ m.awayTeam.name }}</span>
+          <span class="score__team"><span class="score__team__label" appMarquee>{{ m.awayTeam.name }}</span></span>
           <div class="stepper">
             <button
               type="button"

@@ -9,16 +9,21 @@ import {
   signal,
 } from '@angular/core';
 import { IMatchResponse } from '@core/interfaces/match.interface';
-import { IPredictionResponse } from '@core/interfaces/prediction.interface';
+import {
+  IPredictionResponse,
+  PenaltyWinner,
+} from '@core/interfaces/prediction.interface';
 import { backdropFade, dialogFade } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
+import { MarqueeDirective } from '@shared/directives/marquee.directive';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { LucideAngularModule, Minus, Plus } from 'lucide-angular';
 
 export interface IPredictionPayload {
   homeScore: number;
   awayScore: number;
+  penaltyWinner?: PenaltyWinner;
 }
 
 const MAX_SCORE = 99;
@@ -31,6 +36,7 @@ const MAX_SCORE = 99;
     TeamBadgeComponent,
     LucideAngularModule,
     DraggableSheetDirective,
+    MarqueeDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prediction-dialog.component.html',
@@ -45,6 +51,13 @@ export class PredictionDialogComponent {
   public readonly serverError = input<string | null>(null);
   /** Mostra a ação "Remover pitaco" (só faz sentido com `current` setado). */
   public readonly canRemove = input<boolean>(false);
+  /** Confronto pode ir aos pênaltis (jogo único KO ou perna de volta). */
+  public readonly penaltyEligible = input<boolean>(false);
+  /** Gols já marcados nas pernas anteriores (ida-e-volta); 0 em jogo único. */
+  public readonly aggregateBeforeHome = input<number>(0);
+  public readonly aggregateBeforeAway = input<number>(0);
+  /** Ida-e-volta: muda o texto para "no agregado" em vez de "no tempo normal". */
+  public readonly penaltyTwoLegged = input<boolean>(false);
 
   public readonly confirmed = output<IPredictionPayload>();
   public readonly cancelled = output<void>();
@@ -55,6 +68,23 @@ export class PredictionDialogComponent {
 
   protected readonly homeScore = signal(0);
   protected readonly awayScore = signal(0);
+  protected readonly penaltyWinner = signal<PenaltyWinner | null>(null);
+
+  /**
+   * Empate que vai aos pênaltis: jogo elegível + placar agregado empatado.
+   * Em jogo único o agregado é 0/0, então reduz a "placar palpitado empatado".
+   */
+  protected readonly isPenaltyDraw = computed(
+    () =>
+      this.penaltyEligible() &&
+      this.aggregateBeforeHome() + this.homeScore() ===
+        this.aggregateBeforeAway() + this.awayScore(),
+  );
+
+  /** Bloqueia o envio enquanto o empate em pênaltis não tiver um escolhido. */
+  protected readonly canConfirm = computed(
+    () => !(this.isPenaltyDraw() && this.penaltyWinner() === null),
+  );
 
   protected readonly title = computed(() =>
     this.current() ? 'Editar pitaco' : 'Novo pitaco',
@@ -87,7 +117,13 @@ export class PredictionDialogComponent {
       const c = this.current();
       this.homeScore.set(c?.homeScore ?? 0);
       this.awayScore.set(c?.awayScore ?? 0);
+      this.penaltyWinner.set(c?.penaltyWinner ?? null);
     });
+  }
+
+  protected selectPenaltyWinner(side: PenaltyWinner): void {
+    if (this.submitting()) return;
+    this.penaltyWinner.set(side);
   }
 
   protected incHome(): void {
@@ -123,10 +159,16 @@ export class PredictionDialogComponent {
   }
 
   protected onConfirm(): void {
-    this.confirmed.emit({
+    if (!this.canConfirm()) return;
+    const payload: IPredictionPayload = {
       homeScore: this.homeScore(),
       awayScore: this.awayScore(),
-    });
+    };
+    // Só envia penaltyWinner num empate elegível (a API rejeita fora disso).
+    if (this.isPenaltyDraw() && this.penaltyWinner() !== null) {
+      payload.penaltyWinner = this.penaltyWinner()!;
+    }
+    this.confirmed.emit(payload);
   }
 
   protected onRemove(): void {

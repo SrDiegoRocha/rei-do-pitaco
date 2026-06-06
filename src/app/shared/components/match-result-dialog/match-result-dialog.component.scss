@@ -7,8 +7,6 @@
   top: 0;
   left: 0;
   right: 0;
-  /* Viewport dinâmico: no Safari iOS a barra inferior reduz o dvh, então o
-     conteúdo ancorado embaixo (flex-end) nunca fica escondido atrás dela. */
   height: 100vh;
   height: 100dvh;
   overflow-y: auto;
@@ -59,6 +57,8 @@
   color: var(--text-secondary);
 }
 
+/* ── Score grid ─────────────────────────────────────────────────── */
+
 .score {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -72,16 +72,37 @@
   align-items: center;
   gap: var(--space-2);
   text-align: center;
+  min-width: 0;
 }
 
 .score__team {
+  overflow: hidden;
+  width: 100%;
+}
+
+.score__team__label {
+  display: inline-block;
+  white-space: nowrap;
   font-size: var(--text-xs);
   font-weight: var(--font-medium);
   color: var(--text-secondary);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.score__team__label.is-marquee {
+  animation: team-name-scroll 10s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score__team__label.is-marquee {
+    animation: none;
+  }
+}
+
+@keyframes team-name-scroll {
+  0%, 15%  { transform: translateX(0); }
+  60%, 80% { transform: translateX(var(--marquee-shift, 0px)); }
+  95%, 100% { transform: translateX(0); }
 }
 
 .score__sep {
@@ -91,13 +112,18 @@
   font-weight: var(--font-semibold);
 }
 
+/* ── Stepper ────────────────────────────────────────────────────── */
+
 .stepper {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
+  width: 100%;
 }
 
 .stepper__btn {
+  flex-shrink: 0;
   width: 36px;
   height: 36px;
   display: inline-flex;
@@ -124,7 +150,9 @@
 }
 
 .stepper__input {
-  width: 56px;
+  flex: 1;
+  min-width: 36px;
+  max-width: 60px;
   height: 44px;
   text-align: center;
   font-size: var(--text-2xl);
@@ -149,12 +177,7 @@
   outline-offset: 1px;
 }
 
-.dialog__error {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--danger);
-  text-align: center;
-}
+/* ── Penalties ──────────────────────────────────────────────────── */
 
 .penalties {
   display: flex;
@@ -251,6 +274,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .penalties__label {
@@ -259,6 +283,11 @@
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
 }
 
 .penalties__sep {
@@ -274,15 +303,30 @@
   text-align: center;
 }
 
+/* Stepper menor para pênaltis — mantém inline-flex compacto. */
+.stepper--sm {
+  width: auto;
+}
+
 .stepper--sm .stepper__btn {
   width: 30px;
   height: 30px;
 }
 
 .stepper__input--sm {
+  flex: none;
   width: 44px;
   height: 36px;
   font-size: var(--text-lg);
+}
+
+/* ── Actions / errors ────────────────────────────────────────────── */
+
+.dialog__error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--danger);
+  text-align: center;
 }
 
 .dialog__actions {
@@ -292,11 +336,12 @@
   margin-top: var(--space-2);
 }
 
-/* Puxador (grabber) do bottom-sheet arrastável. */
+/* ── Sheet handle ─────────────────────────────────────────────────── */
+
 .sheet__handle {
   display: flex;
   justify-content: center;
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
   margin: calc(var(--space-5) * -1) 0 calc(var(--space-3) * -1);
   cursor: grab;
   touch-action: none;
@@ -307,23 +352,69 @@
 }
 
 .sheet__grabber {
-  width: 44px;
-  height: 5px;
+  width: 56px;
+  height: 6px;
   border-radius: 999px;
   background-color: var(--text-secondary);
   opacity: 0.7;
   transition: background-color 120ms ease, opacity 120ms ease;
 }
 
-/* Feedback ao segurar: o puxador acende na cor da marca. */
 .sheet__handle:active .sheet__grabber {
   background-color: var(--brand);
   opacity: 1;
 }
 
-/* Estado centralizado (arrastado pra cima): cantos totalmente arredondados. */
 .dialog__content.is-centered {
   border-radius: var(--radius-2xl);
+}
+
+/* ── Responsividade ───────────────────────────────────────────────── */
+
+@media (max-width: 380px) {
+  .dialog__content {
+    padding-inline: var(--space-4);
+  }
+
+  .score {
+    gap: var(--space-2);
+  }
+
+  .stepper {
+    gap: var(--space-1);
+  }
+
+  .stepper__btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .stepper__input {
+    height: 40px;
+    font-size: var(--text-xl);
+    min-width: 32px;
+  }
+}
+
+@media (max-width: 350px) {
+  .dialog {
+    padding-inline: var(--space-2);
+  }
+
+  .dialog__content {
+    padding-inline: var(--space-3);
+  }
+
+  .stepper__btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .stepper__input {
+    height: 36px;
+    font-size: var(--text-lg);
+    min-width: 28px;
+  }
 }
 
 @media (min-width: 640px) {
@@ -331,7 +422,6 @@
     align-items: center;
   }
 
-  /* Desktop já abre centralizado; arrastar não faz sentido. */
   .sheet__handle {
     display: none;
   }

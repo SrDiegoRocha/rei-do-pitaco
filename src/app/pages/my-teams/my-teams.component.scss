@@ -81,14 +81,31 @@
 }
 
 .page__grid {
+  --grid-cols: 4;
+  --grid-gap: var(--space-2);
+  --grid-min: 72px;
   display: grid;
-  gap: var(--space-3);
-  grid-template-columns: repeat(2, 1fr);
+  gap: var(--grid-gap);
+  /* Fluido: no máximo 4 colunas. Conforme a tela estreita, cai sozinho para
+     3, 2 e 1. Cada faixa nunca fica menor que --grid-min; o max() trava o teto
+     de colunas (quando 1/4 da largura ainda cabe, entram só 4). */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      max(
+        var(--grid-min),
+        calc(
+          (100% - (var(--grid-cols) - 1) * var(--grid-gap)) / var(--grid-cols)
+        )
+      ),
+      1fr
+    )
+  );
 }
 
 .page__skeleton-card {
-  height: 168px;
-  border-radius: var(--radius-lg);
+  height: 104px;
+  border-radius: var(--radius-md);
 }
 
 .page__card-link {
@@ -145,8 +162,11 @@
 
 @media (min-width: 640px) {
   .page__grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-4);
+    --grid-gap: var(--space-4);
+  }
+  .page__skeleton-card {
+    height: 168px;
+    border-radius: var(--radius-lg);
   }
 }
 
@@ -158,9 +178,6 @@
 }
 
 @media (min-width: 1024px) {
-  .page__grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
   .page {
     padding-bottom: var(--space-12);
   }

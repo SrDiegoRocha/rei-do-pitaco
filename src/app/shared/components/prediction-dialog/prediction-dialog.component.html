@@ -11,7 +11,6 @@
         <span class="sheet__grabber"></span>
       </div>
       <header class="dialog__header">
-        <h2 class="dialog__title">{{ title() }}</h2>
         @if (dateLabel(); as date) {
           <p class="dialog__subtitle">{{ date }}</p>
         }
@@ -27,7 +26,7 @@
             [countryCode]="m.homeTeam.countryCode"
             [size]="44"
           />
-          <span class="score__team">{{ m.homeTeam.name }}</span>
+          <span class="score__team"><span class="score__team__label" appMarquee>{{ m.homeTeam.name }}</span></span>
           <div class="stepper">
             <button
               type="button"
@@ -72,7 +71,7 @@
             [countryCode]="m.awayTeam.countryCode"
             [size]="44"
           />
-          <span class="score__team">{{ m.awayTeam.name }}</span>
+          <span class="score__team"><span class="score__team__label" appMarquee>{{ m.awayTeam.name }}</span></span>
           <div class="stepper">
             <button
               type="button"
@@ -107,6 +106,56 @@
         </div>
       </div>
 
+      @if (isPenaltyDraw()) {
+        <div class="pens">
+          <p class="pens__title">
+            {{ penaltyTwoLegged() ? 'Empate no agregado' : 'Empate no tempo normal' }} — quem avança?
+          </p>
+          <div class="pens__options" role="group" aria-label="Quem avança nos pênaltis">
+            <button
+              type="button"
+              class="pens__option"
+              [class.pens__option--on]="penaltyWinner() === 'HOME'"
+              [attr.aria-pressed]="penaltyWinner() === 'HOME'"
+              [disabled]="submitting()"
+              (click)="selectPenaltyWinner('HOME')"
+            >
+              <app-team-badge
+                [name]="m.homeTeam.name"
+                [shortName]="m.homeTeam.shortName"
+                [badgeUrl]="m.homeTeam.badgeUrl"
+                [teamType]="m.homeTeam.teamType"
+                [countryCode]="m.homeTeam.countryCode"
+                [size]="28"
+              />
+              <span class="pens__option-name">{{
+                m.homeTeam.shortName ?? m.homeTeam.name
+              }}</span>
+            </button>
+            <button
+              type="button"
+              class="pens__option"
+              [class.pens__option--on]="penaltyWinner() === 'AWAY'"
+              [attr.aria-pressed]="penaltyWinner() === 'AWAY'"
+              [disabled]="submitting()"
+              (click)="selectPenaltyWinner('AWAY')"
+            >
+              <app-team-badge
+                [name]="m.awayTeam.name"
+                [shortName]="m.awayTeam.shortName"
+                [badgeUrl]="m.awayTeam.badgeUrl"
+                [teamType]="m.awayTeam.teamType"
+                [countryCode]="m.awayTeam.countryCode"
+                [size]="28"
+              />
+              <span class="pens__option-name">{{
+                m.awayTeam.shortName ?? m.awayTeam.name
+              }}</span>
+            </button>
+          </div>
+        </div>
+      }
+
       @if (serverError(); as err) {
         <p class="dialog__error" role="alert">{{ err }}</p>
       }
@@ -118,6 +167,7 @@
           size="md"
           [fullWidth]="true"
           [loading]="submitting()"
+          [disabled]="!canConfirm()"
           (buttonClick)="onConfirm()"
         >
           {{ confirmLabel() }}

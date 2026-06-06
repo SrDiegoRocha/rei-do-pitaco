@@ -1,4 +1,5 @@
 <section class="page">
+  <app-page-header [title]="pageTitle()" [historyBack]="true" />
 
   @if (loading()) {
     <div class="page__skeleton">
@@ -35,7 +36,7 @@
             [countryCode]="m.homeTeam.countryCode"
             [size]="58"
           />
-          <span class="hero__team-name">{{ m.homeTeam.name }}</span>
+          <span class="hero__team-name"><span class="hero__team-name__label" appMarquee>{{ m.homeTeam.name }}</span></span>
         </div>
 
         <div class="hero__center">
@@ -81,7 +82,7 @@
             [countryCode]="m.awayTeam.countryCode"
             [size]="58"
           />
-          <span class="hero__team-name">{{ m.awayTeam.name }}</span>
+          <span class="hero__team-name"><span class="hero__team-name__label" appMarquee>{{ m.awayTeam.name }}</span></span>
         </div>
       </div>
 
@@ -531,6 +532,10 @@
   [submitting]="predictionSubmitting()"
   [serverError]="predictionError()"
   [canRemove]="!!myPrediction() && canPredict()"
+  [penaltyEligible]="penaltyEligible()"
+  [aggregateBeforeHome]="aggregateBeforeHome()"
+  [aggregateBeforeAway]="aggregateBeforeAway()"
+  [penaltyTwoLegged]="isTwoLegged()"
   (confirmed)="submitPrediction($event)"
   (cancelled)="closePredictionDialog()"
   (removeRequested)="onPredictionDialogRemove()"
@@ -541,8 +546,9 @@
   title="Remover pitaco?"
   description="Seu pitaco atual será apagado. Você pode lançar um novo até o prazo da partida."
   confirmLabel="Remover pitaco"
-  cancelLabel="Voltar"
   variant="destructive"
+  [draggable]="true"
+  [showCancelButton]="false"
   [loading]="removePredictionSubmitting()"
   (confirmed)="confirmRemovePrediction()"
   (cancelled)="closeRemovePredictionDialog()"

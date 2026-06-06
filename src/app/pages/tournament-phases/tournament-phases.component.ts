@@ -94,6 +94,11 @@ export class TournamentPhasesComponent implements OnInit {
   protected readonly phases = signal<IPhaseResponse[]>([]);
   protected readonly reordering = signal(false);
 
+  protected readonly backHref = computed(() => {
+    const t = this.tournament();
+    return t ? `/tournaments/${t.id}` : '/tournaments';
+  });
+
   protected readonly isOwner = computed(() => {
     const t = this.tournament();
     const user = this._authState.user();

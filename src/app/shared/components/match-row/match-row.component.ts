@@ -89,8 +89,8 @@ export class MatchRowComponent {
       if (m.homeScore > m.awayScore) return 'home';
       if (m.awayScore > m.homeScore) return 'away';
       if (m.homePenalties !== null && m.awayPenalties !== null) {
-        if (m.homePenalties > m.awayPenalties) return 'away';
-        if (m.awayPenalties > m.homePenalties) return 'home';
+        if (m.homePenalties > m.awayPenalties) return 'home';
+        if (m.awayPenalties > m.homePenalties) return 'away';
       }
       return 'draw';
     },

@@ -13,6 +13,7 @@ import { IMatchResponse } from '@core/interfaces/match.interface';
 import { backdropFade, dialogFade } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
+import { MarqueeDirective } from '@shared/directives/marquee.directive';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { LucideAngularModule, Minus, Plus } from 'lucide-angular';
 
@@ -34,6 +35,7 @@ const MAX_PEN = 30;
     TeamBadgeComponent,
     LucideAngularModule,
     DraggableSheetDirective,
+    MarqueeDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-result-dialog.component.html',

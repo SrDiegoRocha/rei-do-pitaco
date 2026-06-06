@@ -46,6 +46,15 @@ export class PredictionCardComponent {
     return !!p && p.homeScore !== null && p.awayScore !== null;
   });
 
+  /** Quem o palpiteiro acha que avança nos pênaltis (nome do time), ou null. */
+  protected readonly penaltyPickName = computed<string | null>(() => {
+    const p = this.prediction();
+    if (!p || !p.penaltyWinner) return null;
+    const m = this.match();
+    const team = p.penaltyWinner === 'HOME' ? m.homeTeam : m.awayTeam;
+    return team.shortName ?? team.name;
+  });
+
   protected readonly resultRevealed = computed(() => {
     const m = this.match();
     return (

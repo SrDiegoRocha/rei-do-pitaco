@@ -6,34 +6,56 @@
       aria-hidden="true"
       @backdropFade
     ></div>
-    <div
-      class="dialog__content"
-      [class.dialog__content--destructive]="variant() === 'destructive'"
-      role="document"
-      @modalScale
-    >
-      <h2 class="dialog__title">{{ title() }}</h2>
-      @if (description()) {
-        <p class="dialog__description">{{ description() }}</p>
-      }
-      <div class="dialog__actions">
-        <app-button
-          variant="ghost"
-          size="md"
-          [disabled]="loading()"
-          (buttonClick)="onCancel()"
-        >
-          {{ cancelLabel() }}
-        </app-button>
-        <app-button
-          [variant]="variant() === 'destructive' ? 'destructive' : 'primary'"
-          size="md"
-          [loading]="loading()"
-          (buttonClick)="onConfirm()"
-        >
-          {{ confirmLabel() }}
-        </app-button>
+
+    @if (draggable()) {
+      <div
+        class="dialog__content"
+        [class.dialog__content--destructive]="variant() === 'destructive'"
+        role="document"
+        @dialogFade
+        appDraggableSheet
+      >
+        <div class="sheet__handle" data-sheet-handle aria-hidden="true">
+          <span class="sheet__grabber"></span>
+        </div>
+        <ng-container [ngTemplateOutlet]="bodyTpl"></ng-container>
       </div>
-    </div>
+    } @else {
+      <div
+        class="dialog__content"
+        [class.dialog__content--destructive]="variant() === 'destructive'"
+        role="document"
+        @modalScale
+      >
+        <ng-container [ngTemplateOutlet]="bodyTpl"></ng-container>
+      </div>
+    }
   </div>
 }
+
+<ng-template #bodyTpl>
+  <h2 class="dialog__title">{{ title() }}</h2>
+  @if (description()) {
+    <p class="dialog__description">{{ description() }}</p>
+  }
+  <div class="dialog__actions">
+    @if (showCancelButton()) {
+      <app-button
+        variant="ghost"
+        size="md"
+        [disabled]="loading()"
+        (buttonClick)="onCancel()"
+      >
+        {{ cancelLabel() }}
+      </app-button>
+    }
+    <app-button
+      [variant]="variant() === 'destructive' ? 'destructive' : 'primary'"
+      size="md"
+      [loading]="loading()"
+      (buttonClick)="onConfirm()"
+    >
+      {{ confirmLabel() }}
+    </app-button>
+  </div>
+</ng-template>

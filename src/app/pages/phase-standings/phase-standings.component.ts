@@ -24,6 +24,7 @@ import { listStagger } from '@shared/animations/animations';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { StandingsTableComponent } from '@shared/components/standings-table/standings-table.component';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ToastService } from '@shared/services/toast.service';
 import {
   CheckCircle2,
@@ -40,6 +41,7 @@ import {
     StandingsTableComponent,
     EmptyStateComponent,
     ConfirmDialogComponent,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './phase-standings.component.html',
@@ -64,6 +66,12 @@ export class PhaseStandingsComponent implements OnInit {
   protected readonly loadError = signal<string | null>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly phase = signal<IPhaseResponse | null>(null);
+
+  protected readonly backHref = computed(() => {
+    const t = this.tournament();
+    const p = this.phase();
+    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
+  });
   protected readonly standings = signal<IStandingsResponse | null>(null);
   protected readonly matches = signal<IMatchResponse[]>([]);
 

@@ -37,6 +37,8 @@ import {
   IPredictionPayload,
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
+import { MarqueeDirective } from '@shared/directives/marquee.directive';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { tabSlide } from '@shared/animations/animations';
@@ -79,6 +81,8 @@ type MatchTab = 'predictions' | 'info';
     MatchResultDialogComponent,
     PredictionDialogComponent,
     ConfirmDialogComponent,
+    MarqueeDirective,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-detail.component.html',
@@ -116,6 +120,14 @@ export class MatchDetailComponent implements OnInit {
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly phase = signal<IPhaseResponse | null>(null);
   protected readonly match = signal<IMatchResponse | null>(null);
+
+  protected readonly pageTitle = computed(() => {
+    const m = this.match();
+    if (!m) return '';
+    const home = m.homeTeam.shortName ?? m.homeTeam.name;
+    const away = m.awayTeam.shortName ?? m.awayTeam.name;
+    return `${home} × ${away}`;
+  });
 
   protected readonly activeTab = signal<MatchTab>('predictions');
 
@@ -224,8 +236,8 @@ export class MatchDetailComponent implements OnInit {
       if (m.homeScore > m.awayScore) return 'home';
       if (m.awayScore > m.homeScore) return 'away';
       if (m.homePenalties !== null && m.awayPenalties !== null) {
-        if (m.homePenalties > m.awayPenalties) return 'away';
-        if (m.awayPenalties > m.homePenalties) return 'home';
+        if (m.homePenalties > m.awayPenalties) return 'home';
+        if (m.awayPenalties > m.homePenalties) return 'away';
       }
       return 'draw';
     },
@@ -244,6 +256,27 @@ export class MatchDetailComponent implements OnInit {
     this.match()?.status === 'CANCELLED'
       ? 'Esta partida foi cancelada. Pitacos associados não pontuam.'
       : null,
+  );
+
+  /** Ida-e-volta de mata-mata (muda o texto do palpite de pênaltis). */
+  protected readonly isTwoLegged = computed(
+    () => this.phase()?.matchLegMode === 'TWO_LEGGED',
+  );
+
+  /**
+   * O palpite deste confronto pode ir aos pênaltis? Fonte única: o backend
+   * sinaliza no `MatchResponse` (jogo único de KO ou perna de volta).
+   */
+  protected readonly penaltyEligible = computed(
+    () => this.match()?.penaltyShootoutEligible === true,
+  );
+
+  /** Gols já marcados nas pernas anteriores (ida-e-volta); 0 em jogo único. */
+  protected readonly aggregateBeforeHome = computed(
+    () => this.match()?.aggregateBeforeHome ?? 0,
+  );
+  protected readonly aggregateBeforeAway = computed(
+    () => this.match()?.aggregateBeforeAway ?? 0,
   );
 
   protected readonly isOwner = computed(() => {
@@ -768,6 +801,7 @@ export class MatchDetailComponent implements OnInit {
       this.loadError.set('Partida não encontrada.');
       return;
     }
+
     this._load(tid, pid, mid);
   }
 

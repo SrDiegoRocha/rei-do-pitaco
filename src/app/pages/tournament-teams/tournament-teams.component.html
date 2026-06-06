@@ -2,6 +2,7 @@
   <app-page-header
     title="Times do torneio"
     [subtitle]="tournament()?.name ?? ''"
+    [historyBack]="true"
   />
 
   @if (loading()) {

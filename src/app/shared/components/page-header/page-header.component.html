@@ -1,6 +1,15 @@
 <header class="page-header">
   <div class="page-header__top">
-    @if (backTo(); as path) {
+    @if (historyBack()) {
+      <button
+        type="button"
+        class="page-header__back"
+        [attr.aria-label]="backLabel()"
+        (click)="onHistoryBack()"
+      >
+        <lucide-icon [img]="arrowLeftIcon" [size]="16" />
+      </button>
+    } @else if (backTo(); as path) {
       <a
         class="page-header__back"
         [routerLink]="path"
@@ -8,7 +17,7 @@
         [fragment]="backFragment() ?? undefined"
         [attr.aria-label]="backLabel()"
       >
-        <lucide-icon [img]="arrowLeftIcon" [size]="20" />
+        <lucide-icon [img]="arrowLeftIcon" [size]="16" />
       </a>
     }
     <div class="page-header__text">

@@ -1,12 +1,16 @@
 .team-card {
+  /* Mobile-first compacto (4 por linha): escudo e espaçamentos menores.
+     `--team-badge-size/font` controlam o escudo de forma responsiva. */
+  --team-badge-size: 48px;
+  --team-badge-font: 16px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-2);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   transition:
     transform var(--duration-fast) var(--easing-default),
     box-shadow var(--duration-fast) var(--easing-default),
@@ -37,8 +41,8 @@
 }
 
 .team-card__name {
-  font-size: var(--text-base);
-  line-height: var(--lh-base);
+  font-size: var(--text-xs);
+  line-height: var(--lh-sm);
   font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0;
@@ -52,10 +56,40 @@
 }
 
 .team-card__short {
+  /* Escondido no mobile compacto para não sufocar o card. */
+  display: none;
   font-size: var(--text-xs);
   color: var(--text-muted);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: var(--font-medium);
+}
+
+/* Tablet: cards maiores, escudo médio, short volta a aparecer. */
+@media (min-width: 640px) {
+  .team-card {
+    --team-badge-size: 64px;
+    --team-badge-font: 20px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .team-card__name {
+    font-size: var(--text-base);
+    line-height: var(--lh-base);
+  }
+
+  .team-card__short {
+    display: block;
+  }
+}
+
+/* Desktop: tamanho cheio (mantém o visual atual). */
+@media (min-width: 1024px) {
+  .team-card {
+    --team-badge-size: 72px;
+    --team-badge-font: 22px;
+  }
 }

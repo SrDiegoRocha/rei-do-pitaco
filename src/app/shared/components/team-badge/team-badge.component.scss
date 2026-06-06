@@ -1,6 +1,9 @@
 .team-badge {
-  width: var(--team-badge-size, 72px);
-  height: var(--team-badge-size, 72px);
+  /* O tamanho vem do input (inline `--team-badge-size-default`). Um consumidor
+     pode sobrescrever de forma responsiva definindo `--team-badge-size` num
+     ancestral — a variável herda e tem prioridade sobre o padrão inline. */
+  width: var(--team-badge-size, var(--team-badge-size-default, 72px));
+  height: var(--team-badge-size, var(--team-badge-size-default, 72px));
   border-radius: var(--radius-full);
   overflow: hidden;
   display: flex;
@@ -48,7 +51,7 @@
 .team-badge__initials {
   font-family: var(--font-sans);
   font-weight: var(--font-bold);
-  font-size: var(--team-badge-font, 22px);
+  font-size: var(--team-badge-font, var(--team-badge-font-default, 22px));
   color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   letter-spacing: -0.02em;

@@ -17,6 +17,7 @@ import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TournamentCardComponent } from '@shared/components/tournament-card/tournament-card.component';
+import { ScrollContainerService } from '@shared/services/scroll-container.service';
 import { SectionPagerService } from '@shared/services/section-pager.service';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { Globe } from 'lucide-angular';
@@ -44,6 +45,7 @@ export class PublicTournamentsComponent implements OnInit {
   private readonly _sectionPager = inject(SectionPagerService);
   private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _scrollContainer = inject(ScrollContainerService);
 
   protected readonly globeIcon = Globe;
 
@@ -81,9 +83,7 @@ export class PublicTournamentsComponent implements OnInit {
     if (this.loading()) return;
     this.currentPage.set(page);
     this._load();
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    this._scrollContainer.scrollToTop();
   }
 
   private _load(): void {

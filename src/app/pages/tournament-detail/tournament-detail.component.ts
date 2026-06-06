@@ -20,7 +20,10 @@ import {TiebreakCriteria, TournamentStatus,} from '@core/interfaces/enums';
 import {IMatchResponse} from '@core/interfaces/match.interface';
 import {IPhaseResponse} from '@core/interfaces/phase.interface';
 import {IPredictionResponse} from '@core/interfaces/prediction.interface';
-import {IRankingRowResponse} from '@core/interfaces/ranking.interface';
+import {
+  IRankingFilterParams,
+  IRankingRowResponse,
+} from '@core/interfaces/ranking.interface';
 import {IStandingsResponse} from '@core/interfaces/standings.interface';
 import {IBracketResponse} from '@core/interfaces/bracket.interface';
 import {ITournamentResponse} from '@core/interfaces/tournament.interface';
@@ -47,6 +50,7 @@ import {
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import {StandingsTableComponent} from '@shared/components/standings-table/standings-table.component';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import {CenterActiveTabDirective} from '@shared/directives/center-active-tab.directive';
 import {SwipeNavRegistry} from '@shared/services/swipe-nav-registry.service';
 import {tabSlide} from '@shared/animations/animations';
@@ -180,6 +184,9 @@ const TAB_MY_PREDICTIONS = 'predictions';
 const MATCHES_PHASE_KEY = 'reidopitaco.tMatches.phase';
 const MATCHES_BUCKET_KEY = 'reidopitaco.tMatches.bucket';
 const MATCHES_GROUP_KEY = 'reidopitaco.tMatches.group';
+const RANKING_PHASE_KEY = 'reidopitaco.tRanking.phase';
+const RANKING_GROUP_KEY = 'reidopitaco.tRanking.group';
+const RANKING_BUCKET_KEY = 'reidopitaco.tRanking.bucket';
 const BRACKET_MODE_KEY = 'reidopitaco.bracketViewMode';
 
 function readStored(key: string): string | null {
@@ -219,6 +226,7 @@ const PHASE_TAB_PREFIX = 'phase-';
     PredictionDialogComponent,
     PredictionCardComponent,
     CenterActiveTabDirective,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tournament-detail.component.html',
@@ -269,6 +277,8 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
+
+  protected readonly pageTitle = computed(() => this.tournament()?.name ?? '');
   protected readonly phases = signal<IPhaseResponse[]>([]);
   protected readonly matches = signal<IMatchResponse[]>([]);
   protected readonly ranking = signal<IRankingRowResponse[]>([]);
@@ -301,6 +311,20 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly selectedMatchesGroupId = signal<string | null>(
     readStored(MATCHES_GROUP_KEY),
   );
+
+  // Filtros da aba de ranking — mesma ideia da aba de partidas, mas o recorte
+  // é feito no servidor (re-fetch), pois o ranking é agregado. Validados após
+  // a carga em _validateRankingFilters.
+  protected readonly selectedRankingPhaseId = signal<string | null>(
+    readStored(RANKING_PHASE_KEY),
+  );
+  protected readonly selectedRankingGroupId = signal<string | null>(
+    readStored(RANKING_GROUP_KEY),
+  );
+  protected readonly selectedRankingBucketKey = signal<string | null>(
+    readStored(RANKING_BUCKET_KEY),
+  );
+  protected readonly rankingLoading = signal(false);
 
   protected readonly changingStatus = signal(false);
   protected readonly regenerating = signal(false);
@@ -603,6 +627,186 @@ export class TournamentDetailComponent implements OnInit {
       !this.matchesGroupOptions().some((g) => g.id === group)
     ) {
       this.selectedMatchesGroupId.set(null);
+    }
+  }
+
+  // ── Filtros do ranking ─────────────────────────────────────────────
+  // As opções de fase são as mesmas da aba de partidas (fases com partidas).
+
+  /** Fase usada pelos sub-filtros do ranking (selecionada ou fase única). */
+  protected readonly effectiveRankingPhaseId = computed<string | null>(() => {
+    const selected = this.selectedRankingPhaseId();
+    if (selected !== null) return selected;
+    const opts = this.matchesPhaseOptions();
+    return opts.length === 1 ? opts[0]!.id : null;
+  });
+
+  protected readonly selectedRankingPhase = computed<IPhaseResponse | null>(
+    () => {
+      const pid = this.effectiveRankingPhaseId();
+      if (!pid) return null;
+      return this.phases().find((p) => p.id === pid) ?? null;
+    },
+  );
+
+  protected readonly rankingPhaseIsGroups = computed(
+    () => this.selectedRankingPhase()?.phaseType === 'GROUPS',
+  );
+
+  /**
+   * Rodadas/etapas da fase efetiva, como "baldes" round+tipo. Em mata-mata a
+   * Final e a Disputa de 3º lugar (mesma rodada) viram baldes separados — igual
+   * à aba de partidas. O recorte de tipo é enviado via `matchType` (ver
+   * _rankingFilterParams / FILTER_CHANGES.md).
+   */
+  protected readonly rankingBucketOptions = computed<IBucketFilterOption[]>(
+    () => {
+      const pid = this.effectiveRankingPhaseId();
+      if (!pid) return [];
+      const phase = this.phases().find((p) => p.id === pid);
+      const seen = new Map<
+        string,
+        IBucketFilterOption & { round: number; kind: MatchBucketKind }
+      >();
+      for (const m of this.matches()) {
+        if (m.phaseId !== pid) continue;
+        const kind = this._bucketKind(m, phase);
+        const key = `${m.round}:${kind}`;
+        if (seen.has(key)) continue;
+        seen.set(key, {
+          key,
+          label: this._bucketLabel(phase, m.round, kind),
+          round: m.round,
+          kind,
+        });
+      }
+      return Array.from(seen.values())
+        .sort((a, b) => {
+          if (a.round !== b.round) return a.round - b.round;
+          return a.kind === b.kind ? 0 : a.kind === 'REGULAR' ? -1 : 1;
+        })
+        .map(({key, label}) => ({key, label}));
+    },
+  );
+
+  /** Grupos da fase efetiva — só em fase de grupos. */
+  protected readonly rankingGroupOptions = computed<IGroupFilterOption[]>(
+    () => {
+      const pid = this.effectiveRankingPhaseId();
+      if (!pid || !this.rankingPhaseIsGroups()) return [];
+      const seen = new Map<string, IGroupFilterOption>();
+      for (const m of this.matches()) {
+        if (m.phaseId !== pid) continue;
+        if (!m.groupId || !m.groupName) continue;
+        if (!seen.has(m.groupId)) {
+          seen.set(m.groupId, {id: m.groupId, name: m.groupName});
+        }
+      }
+      return Array.from(seen.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+    },
+  );
+
+  protected readonly rankingHasActiveFilter = computed(
+    () =>
+      this.selectedRankingPhaseId() !== null ||
+      this.selectedRankingGroupId() !== null ||
+      this.selectedRankingBucketKey() !== null,
+  );
+
+  protected selectRankingPhase(phaseId: string | null): void {
+    this.selectedRankingPhaseId.set(phaseId);
+    writeStored(RANKING_PHASE_KEY, phaseId);
+    // Trocar de fase zera os sub-filtros (grupo/rodada pertencem à fase).
+    this.selectedRankingGroupId.set(null);
+    this.selectedRankingBucketKey.set(null);
+    writeStored(RANKING_GROUP_KEY, null);
+    writeStored(RANKING_BUCKET_KEY, null);
+    this._loadRanking();
+  }
+
+  protected selectRankingGroup(groupId: string | null): void {
+    this.selectedRankingGroupId.set(groupId);
+    writeStored(RANKING_GROUP_KEY, groupId);
+    this._loadRanking();
+  }
+
+  protected selectRankingBucket(key: string | null): void {
+    this.selectedRankingBucketKey.set(key);
+    writeStored(RANKING_BUCKET_KEY, key);
+    this._loadRanking();
+  }
+
+  private _rankingFilterParams(): IRankingFilterParams {
+    const params: IRankingFilterParams = {};
+    const pid = this.effectiveRankingPhaseId();
+    if (pid) params.phaseId = pid;
+    const gid = this.selectedRankingGroupId();
+    if (gid) params.groupId = gid;
+    const bucket = this.selectedRankingBucketKey();
+    if (bucket !== null) {
+      const [roundStr, kind] = bucket.split(':');
+      const round = Number(roundStr);
+      if (Number.isFinite(round)) params.round = round;
+      // matchType só quando a rodada tem Final + Disputa de 3º (rodada
+      // "dividida"); aí é preciso distinguir os dois recortes. Em rodadas
+      // normais o `round` já basta. Ver FILTER_CHANGES.md.
+      const sameRound = this.rankingBucketOptions().filter((o) =>
+        o.key.startsWith(`${round}:`),
+      );
+      if (sameRound.length > 1 && (kind === 'REGULAR' || kind === 'THIRD_PLACE')) {
+        params.matchType = kind;
+      }
+    }
+    return params;
+  }
+
+  /** Re-busca o ranking no servidor com os filtros atuais. */
+  private _loadRanking(): void {
+    const t = this.tournament();
+    if (!t) return;
+    this.rankingLoading.set(true);
+    this._rankingService
+      .list(t.id, this._rankingFilterParams())
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (rows) => {
+          this.ranking.set(rows);
+          this.rankingLoading.set(false);
+        },
+        error: () => {
+          this.ranking.set([]);
+          this.rankingLoading.set(false);
+        },
+      });
+  }
+
+  /** Descarta filtros de ranking persistidos que não existem mais. */
+  private _validateRankingFilters(): void {
+    const phase = this.selectedRankingPhaseId();
+    if (
+      phase !== null &&
+      !this.matchesPhaseOptions().some((p) => p.id === phase)
+    ) {
+      this.selectedRankingPhaseId.set(null);
+      writeStored(RANKING_PHASE_KEY, null);
+    }
+    const group = this.selectedRankingGroupId();
+    if (
+      group !== null &&
+      !this.rankingGroupOptions().some((g) => g.id === group)
+    ) {
+      this.selectedRankingGroupId.set(null);
+      writeStored(RANKING_GROUP_KEY, null);
+    }
+    const bucket = this.selectedRankingBucketKey();
+    if (
+      bucket !== null &&
+      !this.rankingBucketOptions().some((b) => b.key === bucket)
+    ) {
+      this.selectedRankingBucketKey.set(null);
+      writeStored(RANKING_BUCKET_KEY, null);
     }
   }
 
@@ -919,6 +1123,25 @@ export class TournamentDetailComponent implements OnInit {
     },
   );
 
+  // Apoio ao palpite de pênaltis no modal aberto direto na listagem.
+  protected readonly predictionPenaltyEligible = computed(
+    () => this.predictionMatch()?.penaltyShootoutEligible === true,
+  );
+  protected readonly predictionAggregateBeforeHome = computed(
+    () => this.predictionMatch()?.aggregateBeforeHome ?? 0,
+  );
+  protected readonly predictionAggregateBeforeAway = computed(
+    () => this.predictionMatch()?.aggregateBeforeAway ?? 0,
+  );
+  protected readonly predictionTwoLegged = computed(() => {
+    const m = this.predictionMatch();
+    if (!m) return false;
+    return (
+      this.phases().find((p) => p.id === m.phaseId)?.matchLegMode ===
+      'TWO_LEGGED'
+    );
+  });
+
   /** Abre o modal de pitaco direto na listagem (sem navegar). */
   protected openPredictionFor(match: IMatchResponse): void {
     this.predictionError.set(null);
@@ -940,10 +1163,7 @@ export class TournamentDetailComponent implements OnInit {
     this.predictionError.set(null);
 
     this._predictionsService
-      .upsertMine(t.id, m.id, {
-        homeScore: payload.homeScore,
-        awayScore: payload.awayScore,
-      })
+      .upsertMine(t.id, m.id, payload)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (prediction) => {
@@ -1159,8 +1379,14 @@ export class TournamentDetailComponent implements OnInit {
           this.ranking.set(ranking);
           this.myPredictions.set(myPredictions);
           this._validateMatchesFilters();
+          this._validateRankingFilters();
           this.loading.set(false);
           this._scheduleAnchorScroll();
+          // O forkJoin trouxe o ranking sem filtro; se há filtro persistido
+          // válido, re-busca o recorte correspondente.
+          if (this.rankingHasActiveFilter()) {
+            this._loadRanking();
+          }
         },
         error: (err: unknown) => {
           this.loading.set(false);

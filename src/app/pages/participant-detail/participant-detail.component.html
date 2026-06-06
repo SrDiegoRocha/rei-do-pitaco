@@ -1,4 +1,9 @@
 <section class="page">
+  <app-page-header
+    [title]="pageTitle()"
+    [backTo]="backHref()"
+    [backQueryParams]="{ tab: 'ranking' }"
+  />
 
   @if (loading()) {
     <div class="page__skeleton">
@@ -54,50 +59,61 @@
     <div class="tab-body" [@tabSlide]="activeTabIndex()">
       @if (activeTab() === 'info') {
         <article class="stats">
-          <div class="stats__grid">
-            <div class="stat stat--accent">
-              <span class="stat__value">{{ p.totalPoints }}</span>
-              <span class="stat__label">Pontos</span>
+
+          <!-- Seção 1: pontos e posição -->
+          <div class="stats__primary">
+            <div class="stat-hero stat-hero--accent">
+              <span class="stat-hero__value">{{ p.totalPoints }}</span>
+              <span class="stat-hero__label">pontos</span>
             </div>
-            <div class="stat">
-              <span class="stat__value">{{ accuracy() }}%</span>
-              <span class="stat__label">Aproveitamento</span>
-            </div>
-            <div class="stat">
-              <span class="stat__value">{{ p.position }}º</span>
-              <span class="stat__label">Posição</span>
-            </div>
-            <div class="stat">
-              <span class="stat__value stat__value--exact">
-                {{ p.exactScoreHits }}
-              </span>
-              <span class="stat__label">Placar exato</span>
-            </div>
-            <div class="stat">
-              <span class="stat__value stat__value--winner">
-                {{ p.winnerHits }}
-              </span>
-              <span class="stat__label">Acertou vencedor</span>
-            </div>
-            <div class="stat">
-              <span class="stat__value stat__value--wrong">
-                {{ p.wrongs }}
-              </span>
-              <span class="stat__label">Erros</span>
-            </div>
-            <div class="stat">
-              <span class="stat__value">{{ p.totalPredictions }}</span>
-              <span class="stat__label">Pitacos</span>
-            </div>
-            <div class="stat">
-              <span class="stat__value">{{ pointsPerPrediction() }}</span>
-              <span class="stat__label">Pts / pitaco</span>
+            <div class="stat-hero">
+              <span class="stat-hero__value">{{ p.position }}º</span>
+              <span class="stat-hero__label">posição</span>
             </div>
           </div>
+
+          <!-- Seção 2: resultado dos pitacos -->
+          <div class="stats__perf">
+            <p class="stats__group-label">Resultados</p>
+            <div class="stats__perf-row">
+              <div class="stat-result stat-result--exact">
+                <span class="stat-result__value">{{ p.exactScoreHits }}</span>
+                <span class="stat-result__label">Placar exato</span>
+              </div>
+              <div class="stat-result stat-result--winner">
+                <span class="stat-result__value">{{ p.winnerHits }}</span>
+                <span class="stat-result__label">Acertou vencedor</span>
+              </div>
+              <div class="stat-result stat-result--wrong">
+                <span class="stat-result__value">{{ p.wrongs }}</span>
+                <span class="stat-result__label">Erros</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seção 3: eficiência -->
+          <div class="stats__eff">
+            <div class="stat-eff">
+              <span class="stat-eff__value">{{ p.totalPredictions }}</span>
+              <span class="stat-eff__label">pitacos</span>
+            </div>
+            <div class="stats__eff-sep" aria-hidden="true"></div>
+            <div class="stat-eff">
+              <span class="stat-eff__value">{{ accuracy() }}%</span>
+              <span class="stat-eff__label">aproveitamento</span>
+            </div>
+            <div class="stats__eff-sep" aria-hidden="true"></div>
+            <div class="stat-eff">
+              <span class="stat-eff__value">{{ pointsPerPrediction() }}</span>
+              <span class="stat-eff__label">pts / pitaco</span>
+            </div>
+          </div>
+
           <p class="stats__hint">
             Aproveitamento = acertos (exato + vencedor) sobre os
             {{ resolvedCount() }} pitacos já resolvidos.
           </p>
+
         </article>
 
         <article class="compare">

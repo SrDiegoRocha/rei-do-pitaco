@@ -1,39 +1,47 @@
 <article class="tournament-card">
-  <header class="tournament-card__header">
+  <div class="tournament-card__top">
+    <span class="tournament-card__emblem" aria-hidden="true">
+      <lucide-icon [img]="trophyIcon" [size]="22" />
+    </span>
+
+    <div class="tournament-card__heading">
+      <h3 class="tournament-card__name">{{ tournament().name }}</h3>
+      @if (showOwner()) {
+        <p class="tournament-card__owner">
+          por <span>{{ tournament().owner.name }}</span>
+        </p>
+      }
+    </div>
+
     <span [class]="statusClass()">{{ statusLabel() }}</span>
+  </div>
+
+  @if (tournament().description) {
+    <p class="tournament-card__description">{{ tournament().description }}</p>
+  }
+
+  <footer class="tournament-card__footer">
+    <span class="tournament-card__metric" [attr.aria-label]="'Participantes'">
+      <lucide-icon [img]="usersIcon" [size]="15" />
+      <span class="tournament-card__metric-value">{{ memberCountLabel() }}</span>
+    </span>
+
+    <span class="tournament-card__metric" [attr.aria-label]="'Times'">
+      <lucide-icon [img]="shieldIcon" [size]="15" />
+      <span class="tournament-card__metric-value">{{ teamCountLabel() }}</span>
+    </span>
+
     <span
       class="tournament-card__privacy"
       [attr.aria-label]="privacyLabel()"
       [title]="privacyLabel()"
     >
       @if (tournament().privacy === 'PRIVATE') {
-        <lucide-icon [img]="lockIcon" [size]="14" />
+        <lucide-icon [img]="lockIcon" [size]="13" />
       } @else {
-        <lucide-icon [img]="globeIcon" [size]="14" />
+        <lucide-icon [img]="globeIcon" [size]="13" />
       }
-    </span>
-  </header>
-
-  <div class="tournament-card__body">
-    <h3 class="tournament-card__name">{{ tournament().name }}</h3>
-    @if (tournament().description) {
-      <p class="tournament-card__description">{{ tournament().description }}</p>
-    }
-    @if (showOwner()) {
-      <p class="tournament-card__owner">
-        por <span>{{ tournament().owner.name }}</span>
-      </p>
-    }
-  </div>
-
-  <footer class="tournament-card__footer">
-    <span class="tournament-card__metric" [attr.aria-label]="'Participantes'">
-      <lucide-icon [img]="usersIcon" [size]="14" />
-      {{ memberCountLabel() }}
-    </span>
-    <span class="tournament-card__metric" [attr.aria-label]="'Times'">
-      <lucide-icon [img]="trophyIcon" [size]="14" />
-      {{ teamCountLabel() }}
+      {{ privacyLabel() }}
     </span>
   </footer>
 </article>

@@ -28,6 +28,7 @@ import { TournamentsService } from '@core/services/tournaments.service';
 import { knockoutRoundLabel } from '@core/utils/round-label';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { PredictionCardComponent } from '@shared/components/prediction-card/prediction-card.component';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { tabSlide } from '@shared/animations/animations';
@@ -76,6 +77,7 @@ interface ICompareMetric {
     AvatarComponent,
     PredictionCardComponent,
     EmptyStateComponent,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './participant-detail.component.html',
@@ -109,6 +111,12 @@ export class ParticipantDetailComponent implements OnInit {
   protected readonly loadError = signal<string | null>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly ranking = signal<IRankingRowResponse[]>([]);
+
+  protected readonly backHref = computed(() => {
+    const tid = this._route.snapshot.paramMap.get('id');
+    return tid ? `/tournaments/${tid}` : '/tournaments';
+  });
+  protected readonly pageTitle = computed(() => this.participant()?.name ?? '');
   protected readonly matches = signal<IMatchResponse[]>([]);
   protected readonly phases = signal<IPhaseResponse[]>([]);
   protected readonly predictions = signal<IPredictionResponse[]>([]);

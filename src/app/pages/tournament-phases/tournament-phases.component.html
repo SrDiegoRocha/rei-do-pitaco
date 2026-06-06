@@ -2,6 +2,7 @@
   <app-page-header
     title="Fases"
     [subtitle]="tournament()?.name ?? ''"
+    [backTo]="backHref()"
   />
 
   @if (loading()) {

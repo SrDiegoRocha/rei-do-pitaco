@@ -29,6 +29,14 @@ export interface IMatchResponse {
   status: MatchStatus;
   createdAt: string;
   updatedAt: string;
+
+  // ── Apoio ao palpite de pênaltis ─────────────────────────────────────
+  /** true em jogo único de KO ou na perna de volta de um ida-e-volta. */
+  penaltyShootoutEligible: boolean;
+  /** Gols do mandante DESTA partida nas pernas anteriores do confronto
+   *  (orientado ao mandante/visitante desta partida). 0/0 em jogo único. */
+  aggregateBeforeHome: number;
+  aggregateBeforeAway: number;
 }
 
 export interface ICreateMatchRequest {

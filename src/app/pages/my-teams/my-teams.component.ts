@@ -14,6 +14,7 @@ import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
 import { listStagger, tabSlide } from '@shared/animations/animations';
+import { ScrollContainerService } from '@shared/services/scroll-container.service';
 import { SectionPagerService } from '@shared/services/section-pager.service';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
@@ -60,6 +61,7 @@ export class MyTeamsComponent implements OnInit {
   private readonly _sectionPager = inject(SectionPagerService);
   private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
+  private readonly _scrollContainer = inject(ScrollContainerService);
 
   protected readonly shieldIcon = Shield;
   protected readonly plusIcon = Plus;
@@ -124,9 +126,7 @@ export class MyTeamsComponent implements OnInit {
     if (this.loading()) return;
     this.currentPage.set(page);
     this._load();
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    this._scrollContainer.scrollToTop();
   }
 
   private _load(): void {

@@ -33,6 +33,7 @@ import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confir
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
 import { MatchRowComponent } from '@shared/components/match-row/match-row.component';
+import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ToastService } from '@shared/services/toast.service';
 import { ScrollReturnService } from '@shared/services/scroll-return.service';
 import { BracketService } from '@core/services/bracket.service';
@@ -51,7 +52,16 @@ interface IGroupOption {
   name: string;
 }
 
-const ROUND_KEY = 'reidopitaco.phaseMatches.round';
+/** Em mata-mata, a Final e a Disputa de 3º lugar compartilham a rodada, mas
+ *  viram "baldes" (buckets) distintos no filtro/agrupamento. */
+type MatchBucketKind = 'REGULAR' | 'THIRD_PLACE';
+
+interface IBucketOption {
+  key: string;
+  label: string;
+}
+
+const BUCKET_KEY = 'reidopitaco.phaseMatches.bucket';
 const GROUP_KEY = 'reidopitaco.phaseMatches.group';
 
 function readStored(key: string): string | null {
@@ -82,6 +92,7 @@ function writeStored(key: string, value: string | null): void {
     FabComponent,
     ButtonComponent,
     ConfirmDialogComponent,
+    PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './phase-matches.component.html',
@@ -114,23 +125,22 @@ export class PhaseMatchesComponent implements OnInit {
   protected readonly loadError = signal<string | null>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly phase = signal<IPhaseResponse | null>(null);
+
+  protected readonly backHref = computed(() => {
+    const t = this.tournament();
+    const p = this.phase();
+    return t && p ? `/tournaments/${t.id}/phases/${p.id}` : '/tournaments';
+  });
   protected readonly matches = signal<IMatchResponse[]>([]);
 
   // Filtros iniciam no último valor escolhido pelo usuário (persistido).
   // São validados contra os dados após a carga (ver _applyStoredFilters).
-  protected readonly selectedRound = signal<number | null>(
-    PhaseMatchesComponent._readStoredRound(),
+  protected readonly selectedBucketKey = signal<string | null>(
+    readStored(BUCKET_KEY),
   );
   protected readonly selectedGroupId = signal<string | null>(
     readStored(GROUP_KEY),
   );
-
-  private static _readStoredRound(): number | null {
-    const raw = readStored(ROUND_KEY);
-    if (raw === null || raw === '') return null;
-    const n = Number(raw);
-    return Number.isInteger(n) ? n : null;
-  }
 
   protected readonly generateDialogOpen = signal(false);
   protected readonly generating = signal(false);
@@ -275,10 +285,28 @@ export class PhaseMatchesComponent implements OnInit {
     return 'Gera todas as rodadas usando o algoritmo de Berger. Esta fase precisa estar sem partidas.';
   });
 
-  protected readonly rounds = computed<number[]>(() => {
-    const set = new Set<number>();
-    for (const m of this.matches()) set.add(m.round);
-    return Array.from(set).sort((a, b) => a - b);
+  protected readonly buckets = computed<IBucketOption[]>(() => {
+    const seen = new Map<
+      string,
+      IBucketOption & { round: number; kind: MatchBucketKind }
+    >();
+    for (const m of this.matches()) {
+      const kind = this._bucketKind(m);
+      const key = `${m.round}:${kind}`;
+      if (seen.has(key)) continue;
+      seen.set(key, {
+        key,
+        label: this._bucketLabel(m.round, kind),
+        round: m.round,
+        kind,
+      });
+    }
+    return Array.from(seen.values())
+      .sort((a, b) => {
+        if (a.round !== b.round) return a.round - b.round;
+        return a.kind === b.kind ? 0 : a.kind === 'REGULAR' ? -1 : 1;
+      })
+      .map(({ key, label }) => ({ key, label }));
   });
 
   protected readonly groups = computed<IGroupOption[]>(() => {
@@ -296,26 +324,46 @@ export class PhaseMatchesComponent implements OnInit {
 
   protected readonly filteredMatches = computed<IMatchResponse[]>(() => {
     let list = this.matches();
-    const round = this.selectedRound();
+    const bucket = this.selectedBucketKey();
     const groupId = this.selectedGroupId();
-    if (round !== null) list = list.filter((m) => m.round === round);
+    if (bucket !== null) {
+      list = list.filter((m) => `${m.round}:${this._bucketKind(m)}` === bucket);
+    }
     if (groupId !== null) list = list.filter((m) => m.groupId === groupId);
     return list;
   });
 
-  protected readonly matchesByRound = computed<
-    { round: number; matches: IMatchResponse[] }[]
+  protected readonly matchesByBucket = computed<
+    { key: string; label: string; matches: IMatchResponse[] }[]
   >(() => {
     const filtered = this.filteredMatches();
-    const map = new Map<number, IMatchResponse[]>();
+    const map = new Map<
+      string,
+      { round: number; kind: MatchBucketKind; matches: IMatchResponse[] }
+    >();
     for (const m of filtered) {
-      if (!map.has(m.round)) map.set(m.round, []);
-      const arr = map.get(m.round);
-      if (arr) arr.push(m);
+      const kind = this._bucketKind(m);
+      const key = `${m.round}:${kind}`;
+      let entry = map.get(key);
+      if (!entry) {
+        entry = { round: m.round, kind, matches: [] };
+        map.set(key, entry);
+      }
+      entry.matches.push(m);
     }
     return Array.from(map.entries())
-      .map(([round, matches]) => ({ round, matches }))
-      .sort((a, b) => a.round - b.round);
+      .map(([key, v]) => ({
+        key,
+        label: this._bucketLabel(v.round, v.kind),
+        matches: v.matches,
+        round: v.round,
+        kind: v.kind,
+      }))
+      .sort((a, b) => {
+        if (a.round !== b.round) return a.round - b.round;
+        return a.kind === b.kind ? 0 : a.kind === 'REGULAR' ? -1 : 1;
+      })
+      .map(({ key, label, matches }) => ({ key, label, matches }));
   });
 
   public ngOnInit(): void {
@@ -403,9 +451,9 @@ export class PhaseMatchesComponent implements OnInit {
       });
   }
 
-  protected selectRound(round: number | null): void {
-    this.selectedRound.set(round);
-    writeStored(ROUND_KEY, round === null ? null : String(round));
+  protected selectBucket(key: string | null): void {
+    this.selectedBucketKey.set(key);
+    writeStored(BUCKET_KEY, key);
   }
 
   protected selectGroup(groupId: string | null): void {
@@ -418,18 +466,27 @@ export class PhaseMatchesComponent implements OnInit {
    * de outra fase, grupo inexistente) — evita cair num filtro vazio.
    */
   private _applyStoredFilters(): void {
-    const round = this.selectedRound();
-    if (round !== null && !this.rounds().includes(round)) {
-      this.selectedRound.set(null);
+    const bucket = this.selectedBucketKey();
+    if (bucket !== null && !this.buckets().some((b) => b.key === bucket)) {
+      this.selectedBucketKey.set(null);
+      writeStored(BUCKET_KEY, null);
     }
     const groupId = this.selectedGroupId();
     if (groupId !== null && !this.groups().some((g) => g.id === groupId)) {
       this.selectedGroupId.set(null);
+      writeStored(GROUP_KEY, null);
     }
   }
 
-  /** Rótulo amigável da rodada: usa "Oitavas/Quartas/..." em mata-mata. */
-  protected roundLabel(round: number): string {
+  private _bucketKind(m: IMatchResponse): MatchBucketKind {
+    return this.isKnockoutPhase() && m.matchType === 'THIRD_PLACE'
+      ? 'THIRD_PLACE'
+      : 'REGULAR';
+  }
+
+  /** Rótulo do balde: etapa de mata-mata, "Disputa de 3º lugar" ou "Rodada N". */
+  private _bucketLabel(round: number, kind: MatchBucketKind): string {
+    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     const p = this.phase();
     if (p?.phaseType === 'KNOCKOUT') {
       return knockoutRoundLabel(round, p.teamCount);

@@ -76,4 +76,10 @@
       />
     </div>
   </div>
+
+  @if (penaltyPickName(); as pen) {
+    <p class="pcard__pen">
+      Nos pênaltis, avança: <strong>{{ pen }}</strong>
+    </p>
+  }
 </a>

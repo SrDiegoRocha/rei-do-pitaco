@@ -1,0 +1,44 @@
+@if (push.showPrePrompt()) {
+  <aside class="notify" role="complementary" aria-label="Ativar notificações">
+    <div class="notify__icon" aria-hidden="true">
+      <lucide-icon [img]="bellIcon" [size]="20" />
+    </div>
+
+    <div class="notify__body">
+      <strong class="notify__title">Ative os avisos das partidas</strong>
+      <span class="notify__desc">
+        Receba um lembrete antes de cada jogo para não esquecer de dar seu
+        pitaco — e saiba na hora quando o resultado sair.
+      </span>
+    </div>
+
+    <div class="notify__actions">
+      <app-button variant="primary" size="sm" (buttonClick)="onEnable()">
+        Ativar
+      </app-button>
+      <button type="button" class="notify__later" (click)="onDismiss()">
+        Agora não
+      </button>
+    </div>
+  </aside>
+} @else if (push.showDeniedBanner()) {
+  <aside class="notify" role="complementary" aria-label="Notificações bloqueadas">
+    <div class="notify__icon notify__icon--muted" aria-hidden="true">
+      <lucide-icon [img]="bellOffIcon" [size]="20" />
+    </div>
+
+    <div class="notify__body">
+      <strong class="notify__title">Notificações bloqueadas</strong>
+      <span class="notify__desc">
+        Para voltar a receber os avisos das partidas, reative as notificações
+        nas <strong>configurações do navegador</strong> para este site.
+      </span>
+    </div>
+
+    <div class="notify__actions">
+      <button type="button" class="notify__later" (click)="onDismiss()">
+        Entendi
+      </button>
+    </div>
+  </aside>
+}

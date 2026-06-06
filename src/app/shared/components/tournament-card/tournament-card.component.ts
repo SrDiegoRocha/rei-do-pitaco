@@ -9,7 +9,14 @@ import {
   TournamentStatus,
 } from '@core/interfaces/enums';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
-import { Globe, Lock, LucideAngularModule, Trophy, Users } from 'lucide-angular';
+import {
+  Globe,
+  Lock,
+  LucideAngularModule,
+  Shield,
+  Trophy,
+  Users,
+} from 'lucide-angular';
 
 const STATUS_LABEL: Record<TournamentStatus, string> = {
   DRAFT: 'Rascunho',
@@ -38,6 +45,7 @@ export class TournamentCardComponent {
   protected readonly globeIcon = Globe;
   protected readonly lockIcon = Lock;
   protected readonly trophyIcon = Trophy;
+  protected readonly shieldIcon = Shield;
   protected readonly usersIcon = Users;
 
   protected readonly statusLabel = computed(

@@ -1,4 +1,6 @@
 <section class="page">
+  <app-page-header [title]="pageTitle()" backTo="/tournaments" />
+
   @if (loading()) {
     <div class="page__skeleton">
       <div class="u-skeleton page__skeleton-hero"></div>
@@ -77,12 +79,114 @@
 
     <div class="tab-body" [@tabSlide]="activeTabIndex()">
       @if (activeTab() === 'ranking') {
+        @if (matchesPhaseOptions().length > 1) {
+          <div class="phase-filters" role="tablist" aria-label="Filtro de fase">
+            <button
+              type="button"
+              role="tab"
+              class="phase-filters__chip"
+              [class.phase-filters__chip--active]="selectedRankingPhaseId() === null"
+              [attr.aria-selected]="selectedRankingPhaseId() === null"
+              (click)="selectRankingPhase(null)"
+            >
+              Geral
+            </button>
+            @for (phase of matchesPhaseOptions(); track phase.id) {
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip"
+                [class.phase-filters__chip--active]="selectedRankingPhaseId() === phase.id"
+                [attr.aria-selected]="selectedRankingPhaseId() === phase.id"
+                (click)="selectRankingPhase(phase.id)"
+              >
+                {{ phase.name }}
+              </button>
+            }
+          </div>
+        }
+
+        @if (rankingBucketOptions().length > 1) {
+          <div
+            class="phase-filters phase-filters--sub"
+            role="tablist"
+            aria-label="Filtro de rodada ou etapa"
+          >
+            <button
+              type="button"
+              role="tab"
+              class="phase-filters__chip phase-filters__chip--sub"
+              [class.phase-filters__chip--active]="selectedRankingBucketKey() === null"
+              [attr.aria-selected]="selectedRankingBucketKey() === null"
+              (click)="selectRankingBucket(null)"
+            >
+              Todas
+            </button>
+            @for (opt of rankingBucketOptions(); track opt.key) {
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip phase-filters__chip--sub"
+                [class.phase-filters__chip--active]="selectedRankingBucketKey() === opt.key"
+                [attr.aria-selected]="selectedRankingBucketKey() === opt.key"
+                (click)="selectRankingBucket(opt.key)"
+              >
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+        }
+
+        @if (rankingGroupOptions().length > 1) {
+          <div
+            class="phase-filters phase-filters--sub"
+            role="tablist"
+            aria-label="Filtro de grupo"
+          >
+            <button
+              type="button"
+              role="tab"
+              class="phase-filters__chip phase-filters__chip--sub"
+              [class.phase-filters__chip--active]="selectedRankingGroupId() === null"
+              [attr.aria-selected]="selectedRankingGroupId() === null"
+              (click)="selectRankingGroup(null)"
+            >
+              Todos os grupos
+            </button>
+            @for (g of rankingGroupOptions(); track g.id) {
+              <button
+                type="button"
+                role="tab"
+                class="phase-filters__chip phase-filters__chip--sub"
+                [class.phase-filters__chip--active]="selectedRankingGroupId() === g.id"
+                [attr.aria-selected]="selectedRankingGroupId() === g.id"
+                (click)="selectRankingGroup(g.id)"
+              >
+                Grupo {{ g.name }}
+              </button>
+            }
+          </div>
+        }
+
+        <div
+          class="rank-content"
+          [class.rank-content--loading]="rankingLoading()"
+          [attr.aria-busy]="rankingLoading()"
+        >
         @if (ranking().length === 0) {
-          <app-empty-state
-            [icon]="medalIcon"
-            title="Ainda sem ranking"
-            description="A pontuação aparece aqui assim que os primeiros resultados forem lançados."
-          />
+          @if (rankingHasActiveFilter()) {
+            <app-empty-state
+              [icon]="medalIcon"
+              title="Sem pontuação neste recorte"
+              description="Nenhum pitaco pontuou nas partidas deste filtro. Ajuste ou limpe o filtro acima."
+            />
+          } @else {
+            <app-empty-state
+              [icon]="medalIcon"
+              title="Ainda sem ranking"
+              description="A pontuação aparece aqui assim que os primeiros resultados forem lançados."
+            />
+          }
         } @else {
           @if (podium().length > 0) {
             <div class="podium">
@@ -154,6 +258,7 @@
             </ul>
           }
         }
+        </div>
       }
 
       @if (activeTab() === 'matches') {
@@ -705,6 +810,7 @@
         [description]="ctx.description"
         [confirmLabel]="ctx.confirmLabel"
         [variant]="ctx.variant"
+        [draggable]="true"
         [loading]="changingStatus()"
         (confirmed)="confirmStatusChange()"
         (cancelled)="cancelStatusChange()"
@@ -739,6 +845,10 @@
       [current]="predictionCurrent()"
       [submitting]="predictionSubmitting()"
       [serverError]="predictionError()"
+      [penaltyEligible]="predictionPenaltyEligible()"
+      [aggregateBeforeHome]="predictionAggregateBeforeHome()"
+      [aggregateBeforeAway]="predictionAggregateBeforeAway()"
+      [penaltyTwoLegged]="predictionTwoLegged()"
       (confirmed)="submitPrediction($event)"
       (cancelled)="closePrediction()"
     />

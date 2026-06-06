@@ -1,4 +1,5 @@
 <section class="page">
+  <app-page-header title="Partidas" [backTo]="backHref()" />
 
   @if (loading()) {
     <div class="page__skeleton">
@@ -116,27 +117,31 @@
     }
 
     <div class="filters">
-      <div class="filters__row" role="tablist" aria-label="Filtro de rodada">
+      <div
+        class="filters__row"
+        role="tablist"
+        aria-label="Filtro de rodada ou etapa"
+      >
         <button
           type="button"
           role="tab"
           class="filters__chip"
-          [class.filters__chip--active]="selectedRound() === null"
-          [attr.aria-selected]="selectedRound() === null"
-          (click)="selectRound(null)"
+          [class.filters__chip--active]="selectedBucketKey() === null"
+          [attr.aria-selected]="selectedBucketKey() === null"
+          (click)="selectBucket(null)"
         >
           Todas
         </button>
-        @for (round of rounds(); track round) {
+        @for (opt of buckets(); track opt.key) {
           <button
             type="button"
             role="tab"
             class="filters__chip"
-            [class.filters__chip--active]="selectedRound() === round"
-            [attr.aria-selected]="selectedRound() === round"
-            (click)="selectRound(round)"
+            [class.filters__chip--active]="selectedBucketKey() === opt.key"
+            [attr.aria-selected]="selectedBucketKey() === opt.key"
+            (click)="selectBucket(opt.key)"
           >
-            {{ roundLabel(round) }}
+            {{ opt.label }}
           </button>
         }
       </div>
@@ -177,11 +182,11 @@
       />
     } @else {
       <div class="match-groups" [@listStagger]="filteredMatches().length">
-        @for (entry of matchesByRound(); track entry.round) {
+        @for (entry of matchesByBucket(); track entry.key) {
           <section class="match-group">
             <header class="match-group__header">
               <span class="match-group__phase">{{ phase()?.name }}</span>
-              <span class="match-group__round">{{ roundLabel(entry.round) }}</span>
+              <span class="match-group__round">{{ entry.label }}</span>
             </header>
 
             @if (roundSubgroups(entry.matches); as subgroups) {

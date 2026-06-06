@@ -82,7 +82,20 @@
       "Bash(./mvnw -q -o compile)",
       "Bash(./mvnw -q compile)",
       "Bash(xargs grep -l \"matches\\\\|Match\" -i)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(ls src/main/java/com/example/reidopitaco/entity/)",
+      "Bash(ls src/main/java/com/example/reidopitaco/repository/)",
+      "Bash(ls src/main/java/com/example/reidopitaco/service/)",
+      "Bash(grep -rln \"class Prediction\\\\|class TournamentMember\\\\|class Match\\\\b\" src/main/java)",
+      "Bash(npx --yes web-push generate-vapid-keys)",
+      "Bash(sed -n '55,62p' src/main/java/com/example/reidopitaco/service/UserService.java)",
+      "Bash(sed -n '97,103p' src/main/java/com/example/reidopitaco/service/AuthService.java)",
+      "Bash(node -e \"const l=require\\('lucide-angular'\\); console.log\\('Bell:', !!l.Bell, 'BellOff:', !!l.BellOff\\)\")",
+      "Bash(git check-ignore *)",
+      "Bash(npx tsc *)",
+      "Bash(del *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\diego\\\\WebstormProjects\\\\rei-do-pitaco\\\\src\\\\app\\\\pages\\\\tournament-detail\" -Recurse)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

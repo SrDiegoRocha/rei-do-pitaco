@@ -2,6 +2,7 @@
   <app-page-header
     title="Editar torneio"
     [subtitle]="tournament()?.name ?? ''"
+    [historyBack]="true"
   />
 
   @if (loading()) {
