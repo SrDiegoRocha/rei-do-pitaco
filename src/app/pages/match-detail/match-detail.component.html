@@ -125,14 +125,15 @@
           <article class="crowd">
             <h3 class="crowd__title">Previsão da Galera</h3>
 
-            <div class="crowd__row">
+            <div class="crowd__bubbles">
               <div
-                class="crowd__side"
-                [class.crowd__side--lead]="
+                class="crowd__bubble crowd__bubble--team"
+                [class.crowd__bubble--lead]="
                   stats.homeWinPct >= stats.drawPct &&
                   stats.homeWinPct >= stats.awayWinPct
                 "
-                [style.--side-color]="homePctColor()"
+                [style.--side-color]="homeTeamColor()"
+                [style.--side-pct-color]="homePctColor()"
                 [attr.aria-label]="
                   m.homeTeam.name + ': ' + stats.homeWinPct + '%'
                 "
@@ -144,14 +145,14 @@
                   [primaryColor]="homeTeamColor()"
                   [teamType]="m.homeTeam.teamType"
                   [countryCode]="m.homeTeam.countryCode"
-                  [size]="22"
+                  [size]="24"
                 />
                 <span class="crowd__pct">{{ stats.homeWinPct }}%</span>
               </div>
 
               <div
-                class="crowd__side"
-                [class.crowd__side--lead]="
+                class="crowd__bubble crowd__bubble--draw"
+                [class.crowd__bubble--lead]="
                   stats.drawPct > stats.homeWinPct &&
                   stats.drawPct >= stats.awayWinPct
                 "
@@ -162,17 +163,17 @@
               </div>
 
               <div
-                class="crowd__side"
-                [class.crowd__side--lead]="
+                class="crowd__bubble crowd__bubble--team"
+                [class.crowd__bubble--lead]="
                   stats.awayWinPct > stats.homeWinPct &&
                   stats.awayWinPct > stats.drawPct
                 "
-                [style.--side-color]="awayPctColor()"
+                [style.--side-color]="awayTeamColor()"
+                [style.--side-pct-color]="awayPctColor()"
                 [attr.aria-label]="
                   m.awayTeam.name + ': ' + stats.awayWinPct + '%'
                 "
               >
-                <span class="crowd__pct">{{ stats.awayWinPct }}%</span>
                 <app-team-badge
                   [name]="m.awayTeam.name"
                   [shortName]="m.awayTeam.shortName"
@@ -180,33 +181,10 @@
                   [primaryColor]="awayTeamColor()"
                   [teamType]="m.awayTeam.teamType"
                   [countryCode]="m.awayTeam.countryCode"
-                  [size]="22"
+                  [size]="24"
                 />
+                <span class="crowd__pct">{{ stats.awayWinPct }}%</span>
               </div>
-            </div>
-
-            <!-- Distribuição visual: segmentos proporcionais aos percentuais. -->
-            <div class="crowd__bar" aria-hidden="true">
-              @if (stats.homeWinPct > 0) {
-                <span
-                  class="crowd__seg"
-                  [style.flex-grow]="stats.homeWinPct"
-                  [style.background-color]="homeTeamColor()"
-                ></span>
-              }
-              @if (stats.drawPct > 0) {
-                <span
-                  class="crowd__seg"
-                  [style.flex-grow]="stats.drawPct"
-                ></span>
-              }
-              @if (stats.awayWinPct > 0) {
-                <span
-                  class="crowd__seg"
-                  [style.flex-grow]="stats.awayWinPct"
-                  [style.background-color]="awayTeamColor()"
-                ></span>
-              }
             </div>
           </article>
         }

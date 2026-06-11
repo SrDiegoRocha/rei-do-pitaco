@@ -369,52 +369,76 @@
   letter-spacing: 0.06em;
 }
 
-.crowd__row {
+/* Três bolhas independentes (mandante / empate / visitante), sem barra
+   contínua — evita o "vazio" do empate, que não tem cor. */
+.crowd__bubbles {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  align-items: stretch;
+  gap: var(--space-2);
 }
 
-.crowd__side {
+.crowd__bubble {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+}
+
+[data-theme='dark'] .crowd__bubble {
+  background-color: var(--bg-elevated);
+}
+
+/* Bolhas dos times: tingidas com a cor do time (como os segmentos antigos). */
+.crowd__bubble--team {
+  border-color: color-mix(in srgb, var(--side-color) 35%, var(--border-default));
+  background-color: color-mix(in srgb, var(--side-color) 8%, var(--bg-surface));
+}
+
+[data-theme='dark'] .crowd__bubble--team {
+  background-color: color-mix(in srgb, var(--side-color) 14%, var(--bg-elevated));
+}
+
+/* A opção mais votada ganha destaque mais forte. */
+.crowd__bubble--team.crowd__bubble--lead {
+  border-color: var(--side-color);
+  background-color: color-mix(in srgb, var(--side-color) 16%, var(--bg-surface));
+}
+
+[data-theme='dark'] .crowd__bubble--team.crowd__bubble--lead {
+  background-color: color-mix(in srgb, var(--side-color) 22%, var(--bg-elevated));
+}
+
+.crowd__bubble--draw.crowd__bubble--lead {
+  border-color: color-mix(in srgb, var(--text-tertiary) 50%, var(--border-default));
 }
 
 .crowd__draw {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: var(--font-bold);
   color: var(--text-tertiary);
   line-height: 1;
 }
 
 .crowd__pct {
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
   color: var(--text-secondary);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.crowd__side--lead .crowd__pct {
+.crowd__bubble--team .crowd__pct {
+  color: var(--side-pct-color, var(--text-primary));
+}
+
+.crowd__bubble--lead .crowd__pct {
   font-weight: var(--font-bold);
-  color: var(--side-color, var(--text-primary));
-}
-
-/* Barra de distribuição: segmentos proporcionais, estilo livescore. */
-.crowd__bar {
-  display: flex;
-  gap: 3px;
-  height: 6px;
-}
-
-.crowd__seg {
-  flex-basis: 0;
-  min-width: 4px;
-  border-radius: 999px;
-  background-color: color-mix(in srgb, var(--text-tertiary) 35%, transparent);
 }
 
 /* Predictions list card */
