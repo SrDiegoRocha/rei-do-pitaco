@@ -34,10 +34,10 @@
         <div class="u-skeleton page__skeleton-card"></div>
       }
     </div>
-  } @else if (errorMessage(); as err) {
+  } @else if (loadError(); as err) {
     <app-error-state
       title="Não foi possível carregar os torneios"
-      [message]="err"
+      [error]="err"
       [canRetry]="true"
       [retrying]="loading()"
       (retry)="retry()"

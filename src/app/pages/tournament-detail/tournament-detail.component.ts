@@ -275,8 +275,20 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly gridIcon = Grid3x3;
 
   protected readonly loading = signal(true);
-  protected readonly loadError = signal<string | null>(null);
+  // Guarda o erro bruto (ApiException, string custom ou outro) para o
+  // error-state derivar a mensagem amigável e detectar sessão expirada.
+  protected readonly loadError = signal<unknown>(null);
   protected readonly tournament = signal<ITournamentResponse | null>(null);
+
+  /** Mensagem específica do recurso; sessão expirada (401/403) é tratada pelo error-state. */
+  protected readonly loadErrorMessage = computed(() => {
+    const err = this.loadError();
+    if (typeof err === 'string') return err;
+    if (err instanceof ApiException && err.isNotFound) {
+      return 'Torneio não encontrado.';
+    }
+    return '';
+  });
 
   protected readonly pageTitle = computed(() => this.tournament()?.name ?? '');
   protected readonly phases = signal<IPhaseResponse[]>([]);
@@ -290,11 +302,11 @@ export class TournamentDetailComponent implements OnInit {
     Record<string, IStandingsResponse>
   >({});
   protected readonly standingsLoading = signal<Record<string, boolean>>({});
-  protected readonly standingsError = signal<Record<string, string | null>>({});
+  protected readonly standingsError = signal<Record<string, unknown>>({});
 
   protected readonly bracketCache = signal<Record<string, IBracketResponse>>({});
   protected readonly bracketLoading = signal<Record<string, boolean>>({});
-  protected readonly bracketError = signal<Record<string, string | null>>({});
+  protected readonly bracketError = signal<Record<string, unknown>>({});
 
   protected readonly bracketViewMode = signal<BracketViewMode>(
     readStored(BRACKET_MODE_KEY) === 'tree' ? 'tree' : 'cards',
@@ -907,7 +919,7 @@ export class TournamentDetailComponent implements OnInit {
     return this.standingsLoading()[phase.id] === true;
   });
 
-  protected readonly activeStandingsError = computed<string | null>(() => {
+  protected readonly activeStandingsError = computed<unknown>(() => {
     const phase = this.activePhase();
     if (!phase) return null;
     return this.standingsError()[phase.id] ?? null;
@@ -925,7 +937,7 @@ export class TournamentDetailComponent implements OnInit {
     return this.bracketLoading()[phase.id] === true;
   });
 
-  protected readonly activeBracketError = computed<string | null>(() => {
+  protected readonly activeBracketError = computed<unknown>(() => {
     const phase = this.activePhase();
     if (!phase) return null;
     return this.bracketError()[phase.id] ?? null;
@@ -1390,17 +1402,7 @@ export class TournamentDetailComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          if (err instanceof ApiException && err.isNotFound) {
-            this.loadError.set('Torneio não encontrado.');
-          } else if (err instanceof ApiException && err.isForbidden) {
-            this.loadError.set('Você não tem acesso a este torneio.');
-          } else {
-            this.loadError.set(
-              err instanceof ApiException
-                ? err.message
-                : 'Não foi possível carregar o torneio.',
-            );
-          }
+          this.loadError.set(err);
         },
       });
   }
@@ -1447,13 +1449,7 @@ export class TournamentDetailComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.standingsLoading.update((s) => ({...s, [phaseId]: false}));
-          this.standingsError.update((s) => ({
-            ...s,
-            [phaseId]:
-              err instanceof ApiException
-                ? err.message
-                : 'Não foi possível carregar a classificação desta fase.',
-          }));
+          this.standingsError.update((s) => ({...s, [phaseId]: err}));
         },
       });
   }
@@ -1473,13 +1469,7 @@ export class TournamentDetailComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.bracketLoading.update((s) => ({...s, [phaseId]: false}));
-          this.bracketError.update((s) => ({
-            ...s,
-            [phaseId]:
-              err instanceof ApiException
-                ? err.message
-                : 'Não foi possível carregar o chaveamento.',
-          }));
+          this.bracketError.update((s) => ({...s, [phaseId]: err}));
         },
       });
   }

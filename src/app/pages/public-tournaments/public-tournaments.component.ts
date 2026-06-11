@@ -9,12 +9,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { ApiException } from '@core/errors/api-error';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger } from '@shared/animations/animations';
-import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TournamentCardComponent } from '@shared/components/tournament-card/tournament-card.component';
 import { ScrollContainerService } from '@shared/services/scroll-container.service';
@@ -31,7 +30,7 @@ const SORT = 'createdAt,desc';
   imports: [
     TournamentCardComponent,
     EmptyStateComponent,
-    ButtonComponent,
+    ErrorStateComponent,
     PaginationComponent,
     RouterLink,
   ],
@@ -56,7 +55,7 @@ export class PublicTournamentsComponent implements OnInit {
 
   protected readonly loading = signal(true);
   protected readonly items = signal<ITournamentResponse[]>([]);
-  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly loadError = signal<unknown>(null);
   protected readonly currentPage = signal(0);
   protected readonly totalPages = signal(1);
   protected readonly totalElements = signal(0);
@@ -65,7 +64,7 @@ export class PublicTournamentsComponent implements OnInit {
     () =>
       !this.loading() &&
       this.items().length === 0 &&
-      this.errorMessage() === null,
+      this.loadError() === null,
   );
 
   public ngOnInit(): void {
@@ -88,7 +87,7 @@ export class PublicTournamentsComponent implements OnInit {
 
   private _load(): void {
     this.loading.set(true);
-    this.errorMessage.set(null);
+    this.loadError.set(null);
     this._service
       .listPublic({
         page: this.currentPage(),
@@ -104,11 +103,7 @@ export class PublicTournamentsComponent implements OnInit {
           this.loading.set(false);
         },
         error: (err: unknown) => {
-          this.errorMessage.set(
-            err instanceof ApiException
-              ? err.message
-              : 'Não foi possível carregar os torneios.',
-          );
+          this.loadError.set(err);
           this.loading.set(false);
         },
       });

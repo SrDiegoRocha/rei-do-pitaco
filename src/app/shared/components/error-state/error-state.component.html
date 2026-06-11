@@ -4,24 +4,38 @@
   </span>
   <div class="error-state__body">
     <h3 class="error-state__title">{{ title() }}</h3>
-    @if (message()) {
-      <p class="error-state__message">{{ message() }}</p>
+    @if (displayMessage(); as msg) {
+      <p class="error-state__message">{{ msg }}</p>
     }
   </div>
-  @if (canRetry()) {
-    <button
-      type="button"
-      class="error-state__retry"
-      [disabled]="retrying()"
-      (click)="onRetry()"
-    >
-      <lucide-icon
-        class="error-state__retry-icon"
-        [class.error-state__retry-icon--spinning]="retrying()"
-        [img]="refreshIcon"
-        [size]="14"
-      />
-      {{ retryLabel() }}
-    </button>
+  @if (canRetry() || sessionExpired()) {
+    <div class="error-state__actions">
+      @if (canRetry()) {
+        <button
+          type="button"
+          class="error-state__retry"
+          [disabled]="retrying()"
+          (click)="onRetry()"
+        >
+          <lucide-icon
+            class="error-state__retry-icon"
+            [class.error-state__retry-icon--spinning]="retrying()"
+            [img]="refreshIcon"
+            [size]="14"
+          />
+          {{ retryLabel() }}
+        </button>
+      }
+      @if (sessionExpired()) {
+        <button
+          type="button"
+          class="error-state__login"
+          (click)="onLogin()"
+        >
+          <lucide-icon [img]="loginIcon" [size]="14" />
+          Entrar novamente
+        </button>
+      }
+    </div>
   }
 </div>

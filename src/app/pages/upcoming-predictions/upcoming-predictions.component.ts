@@ -10,7 +10,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
-import { ApiException } from '@core/errors/api-error';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
@@ -60,7 +59,7 @@ export class UpcomingPredictionsComponent implements OnInit {
   protected readonly chevronRightIcon = ChevronRight;
 
   protected readonly loading = signal(true);
-  protected readonly loadError = signal<string | null>(null);
+  protected readonly loadError = signal<unknown>(null);
   protected readonly upcoming = signal<IUpcomingMatch[]>([]);
 
   protected readonly pendingCount = computed(
@@ -145,11 +144,7 @@ export class UpcomingPredictionsComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.loadError.set(
-            err instanceof ApiException
-              ? err.message
-              : 'Não foi possível carregar os próximos pitacos.',
-          );
+          this.loadError.set(err);
         },
       });
   }

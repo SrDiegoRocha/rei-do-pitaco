@@ -701,6 +701,7 @@ export class MatchDetailComponent implements OnInit {
             }
             return [...list, prediction];
           });
+          this._loadPredictionStats(t.id, m.id);
         },
         error: (err: unknown) => {
           this.predictionSubmitting.set(false);
@@ -744,6 +745,7 @@ export class MatchDetailComponent implements OnInit {
               list.filter((p) => p.id !== removedId),
             );
           }
+          this._loadPredictionStats(t.id, m.id);
           this._toast.success('Pitaco removido.');
         },
         error: (err: unknown) => {

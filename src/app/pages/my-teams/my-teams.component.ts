@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { ApiException } from '@core/errors/api-error';
 import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
@@ -17,8 +16,8 @@ import { listStagger, tabSlide } from '@shared/animations/animations';
 import { ScrollContainerService } from '@shared/services/scroll-container.service';
 import { SectionPagerService } from '@shared/services/section-pager.service';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
-import { ButtonComponent } from '@shared/components/button/button.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { TeamCardComponent } from '@shared/components/team-card/team-card.component';
@@ -46,7 +45,7 @@ const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
   imports: [
     TeamCardComponent,
     EmptyStateComponent,
-    ButtonComponent,
+    ErrorStateComponent,
     FabComponent,
     PaginationComponent,
     RouterLink,
@@ -69,7 +68,7 @@ export class MyTeamsComponent implements OnInit {
   protected readonly group = signal<TeamGroup>('mine');
   protected readonly loading = signal(true);
   protected readonly items = signal<ITeamResponse[]>([]);
-  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly loadError = signal<unknown>(null);
   protected readonly currentPage = signal(0);
   protected readonly totalPages = signal(1);
   protected readonly totalElements = signal(0);
@@ -80,7 +79,7 @@ export class MyTeamsComponent implements OnInit {
     () =>
       !this.loading() &&
       this.items().length === 0 &&
-      this.errorMessage() === null,
+      this.loadError() === null,
   );
 
   public ngOnInit(): void {
@@ -131,7 +130,7 @@ export class MyTeamsComponent implements OnInit {
 
   private _load(): void {
     this.loading.set(true);
-    this.errorMessage.set(null);
+    this.loadError.set(null);
     const query = GROUP_QUERY[this.group()];
     const params: ITeamListParams = {
       page: this.currentPage(),
@@ -151,11 +150,7 @@ export class MyTeamsComponent implements OnInit {
           this.loading.set(false);
         },
         error: (err: unknown) => {
-          this.errorMessage.set(
-            err instanceof ApiException
-              ? err.message
-              : 'Não foi possível carregar seus times.',
-          );
+          this.loadError.set(err);
           this.loading.set(false);
         },
       });

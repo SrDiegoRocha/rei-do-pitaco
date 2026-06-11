@@ -34,6 +34,15 @@ export class ApiException extends Error {
     return this.status === 403;
   }
 
+  /**
+   * Falha de autenticação: token ausente, expirado ou inválido. Neste backend
+   * um token expirado volta como 403, por isso 401 e 403 entram aqui — em ambos
+   * os casos tentar novamente não resolve; o usuário precisa logar de novo.
+   */
+  public get isAuthError(): boolean {
+    return this.isUnauthorized || this.isForbidden;
+  }
+
   public get isNotFound(): boolean {
     return this.status === 404;
   }
@@ -45,6 +54,14 @@ export class ApiException extends Error {
   public fieldError(field: string): string | null {
     return this.fieldErrors.find((f) => f.field === field)?.message ?? null;
   }
+}
+
+/**
+ * Sessão expirada / sem autenticação válida (401 ou 403). Centraliza a regra
+ * usada pela UI para decidir quando oferecer o botão de login.
+ */
+export function isSessionExpiredError(err: unknown): boolean {
+  return err instanceof ApiException && err.isAuthError;
 }
 
 function isApiError(value: unknown): value is IApiError {

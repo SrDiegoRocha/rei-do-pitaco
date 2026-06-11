@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { ApiException } from '@core/errors/api-error';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { listStagger, tabSlide } from '@shared/animations/animations';
@@ -71,7 +70,7 @@ export class MyTournamentsComponent implements OnInit {
   protected readonly tab = signal<Tab>(readStoredTab());
   protected readonly loading = signal(true);
   protected readonly items = signal<ITournamentResponse[]>([]);
-  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly loadError = signal<unknown>(null);
   protected readonly currentPage = signal(0);
   protected readonly totalPages = signal(1);
   protected readonly totalElements = signal(0);
@@ -80,7 +79,7 @@ export class MyTournamentsComponent implements OnInit {
     () =>
       !this.loading() &&
       this.items().length === 0 &&
-      this.errorMessage() === null,
+      this.loadError() === null,
   );
 
   protected readonly showJoined = computed(() => this.tab() === 'joined');
@@ -142,7 +141,7 @@ export class MyTournamentsComponent implements OnInit {
 
   private _load(): void {
     this.loading.set(true);
-    this.errorMessage.set(null);
+    this.loadError.set(null);
 
     const params = {
       page: this.currentPage(),
@@ -164,11 +163,7 @@ export class MyTournamentsComponent implements OnInit {
           this.loading.set(false);
         },
         error: (err: unknown) => {
-          this.errorMessage.set(
-            err instanceof ApiException
-              ? err.message
-              : 'Não foi possível carregar os torneios.',
-          );
+          this.loadError.set(err);
           this.loading.set(false);
         },
       });

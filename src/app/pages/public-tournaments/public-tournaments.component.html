@@ -12,17 +12,14 @@
         <div class="u-skeleton page__skeleton-card"></div>
       }
     </div>
-  } @else if (errorMessage(); as err) {
-    <div class="page__error" role="alert">
-      <p class="page__error-text">{{ err }}</p>
-      <app-button
-        variant="brand-outline"
-        size="md"
-        (buttonClick)="retry()"
-      >
-        Tentar novamente
-      </app-button>
-    </div>
+  } @else if (loadError(); as err) {
+    <app-error-state
+      title="Não foi possível carregar os torneios"
+      [error]="err"
+      [canRetry]="true"
+      [retrying]="loading()"
+      (retry)="retry()"
+    />
   } @else if (isEmpty()) {
     <app-empty-state
       [icon]="globeIcon"

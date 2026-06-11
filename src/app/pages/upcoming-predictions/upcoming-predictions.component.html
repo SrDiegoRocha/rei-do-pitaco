@@ -14,7 +14,7 @@
   } @else if (loadError(); as err) {
     <app-error-state
       title="Não foi possível carregar os próximos pitacos"
-      [message]="err"
+      [error]="err"
       [canRetry]="true"
       [retrying]="loading()"
       (retry)="retry()"

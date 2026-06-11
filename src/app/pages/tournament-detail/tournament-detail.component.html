@@ -10,7 +10,8 @@
   } @else if (loadError(); as err) {
     <app-error-state
       title="Não foi possível carregar o torneio"
-      [message]="err"
+      [error]="err"
+      [message]="loadErrorMessage()"
       [canRetry]="true"
       [retrying]="loading()"
       (retry)="retry()"
@@ -446,7 +447,7 @@
           } @else if (activeBracketError(); as err) {
             <app-error-state
               title="Não foi possível carregar o chaveamento"
-              [message]="err"
+              [error]="err"
               [canRetry]="false"
             />
           } @else if (activeBracket(); as b) {
@@ -504,7 +505,7 @@
           } @else if (activeStandingsError(); as err) {
             <app-error-state
               title="Não foi possível carregar a classificação"
-              [message]="err"
+              [error]="err"
               [canRetry]="false"
             />
           } @else if (activeStandings(); as s) {
