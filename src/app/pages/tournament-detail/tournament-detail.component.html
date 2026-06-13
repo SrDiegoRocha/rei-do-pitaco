@@ -211,7 +211,10 @@
                   />
                   <span class="podium__name">{{ row.name }}</span>
                   <span class="podium__pts">{{ row.totalPoints }}</span>
-                  <span class="podium__pts-label">pts</span>
+                  <span class="podium__breakdown">
+                    {{ row.exactScoreHits }}E · {{ row.winnerHits }}V ·
+                    {{ row.wrongs }}X
+                  </span>
                 </a>
               }
             </div>
@@ -236,9 +239,6 @@
                     />
                     <div class="rank-row__info">
                       <span class="rank-row__name">{{ row.name }}</span>
-                      <span class="rank-row__meta">
-                        {{ accuracyLabel(row) }}
-                      </span>
                     </div>
                     <div class="rank-row__stats">
                       <span class="rank-row__pts">{{ row.totalPoints }}</span>

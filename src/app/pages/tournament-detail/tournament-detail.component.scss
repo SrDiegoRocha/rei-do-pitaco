@@ -291,11 +291,12 @@
   line-height: 1.1;
 }
 
-.podium__pts-label {
+.podium__breakdown {
   font-size: var(--text-2xs, 10px);
   color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .rank-list {
@@ -356,6 +357,7 @@
 .rank-row__info {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2px;
   min-width: 0;
 }
@@ -367,11 +369,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.rank-row__meta {
-  font-size: var(--text-2xs, 10px);
-  color: var(--text-tertiary);
 }
 
 .rank-row__stats {

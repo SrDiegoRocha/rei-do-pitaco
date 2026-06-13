@@ -1089,13 +1089,6 @@ export class TournamentDetailComponent implements OnInit {
     return TIEBREAK_LABEL[criterion];
   }
 
-  protected accuracyLabel(row: IRankingRowResponse): string {
-    if (row.totalPredictions === 0) return 'sem pitacos';
-    const evaluated = row.exactScoreHits + row.winnerHits + row.wrongs;
-    if (evaluated === 0) return 'aguardando resultados';
-    return `${row.exactScoreHits} exato${row.exactScoreHits === 1 ? '' : 's'}`;
-  }
-
   protected podiumIcon(position: number) {
     return position === 1 ? this.crownIcon : this.medalIcon;
   }
