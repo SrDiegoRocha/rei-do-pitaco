@@ -34,6 +34,26 @@
       (deleteTournament)="requestDelete()"
       (cancelForm)="cancel()"
     />
+
+    @if (canRecalculate()) {
+      <section class="page__recalc">
+        <p class="page__recalc-title">Recalcular pontos dos participantes</p>
+        <p class="page__recalc-text">
+          Mudou a pontuação com o torneio em andamento? A nova regra só vale para
+          os próximos jogos. Recalcule para reaplicar a pontuação atual também às
+          partidas que já acabaram.
+        </p>
+        <app-button
+          type="button"
+          variant="brand-outline"
+          size="md"
+          [loading]="recalculating()"
+          (buttonClick)="requestRecalculate()"
+        >
+          Recalcular pontos
+        </app-button>
+      </section>
+    }
   }
 
   <app-confirm-dialog
@@ -45,5 +65,15 @@
     [loading]="deleting()"
     (confirmed)="confirmDelete()"
     (cancelled)="cancelDelete()"
+  />
+
+  <app-confirm-dialog
+    [open]="confirmRecalcOpen()"
+    title="Recalcular pontos?"
+    description="Todos os palpites já lançados serão reavaliados com a pontuação atual do torneio, inclusive das partidas que já acabaram. O ranking é atualizado em seguida."
+    confirmLabel="Recalcular pontos"
+    [loading]="recalculating()"
+    (confirmed)="confirmRecalculate()"
+    (cancelled)="cancelRecalculate()"
   />
 </section>

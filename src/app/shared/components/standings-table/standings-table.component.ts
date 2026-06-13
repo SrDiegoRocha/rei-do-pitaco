@@ -60,7 +60,7 @@ const STAT_COLUMNS: Record<StatKey, IStatColumn> = {
 };
 
 const STATS_BY_MODE: Record<StandingsViewMode, StatKey[]> = {
-  simple: ['played', 'wins'],
+  simple: ['played', 'goalDifference'],
   full: [
     'played',
     'wins',

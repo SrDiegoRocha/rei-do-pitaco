@@ -5,6 +5,7 @@ import {
   IPlacePredictionRequest,
   IPredictionResponse,
   IPredictionStatsResponse,
+  IRecalculationResponse,
 } from '@core/interfaces/prediction.interface';
 import { API_BASE_URL } from '@core/services/api-config';
 
@@ -56,6 +57,19 @@ export class PredictionsService {
   ): Observable<IPredictionResponse[]> {
     return this._http.get<IPredictionResponse[]>(
       `${this._baseUrl}/api/tournaments/${tournamentId}/predictions/me`,
+    );
+  }
+
+  /**
+   * Reaplica a pontuação vigente do torneio a todos os palpites já existentes,
+   * inclusive das partidas que já acabaram. Owner-only. Sem body.
+   */
+  public recalculatePoints(
+    tournamentId: string,
+  ): Observable<IRecalculationResponse> {
+    return this._http.post<IRecalculationResponse>(
+      `${this._baseUrl}/api/tournaments/${tournamentId}/predictions/recalculate`,
+      {},
     );
   }
 

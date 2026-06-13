@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   inject,
   OnInit,
@@ -8,11 +9,13 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
 import {
   ICreateTournamentRequest,
   ITournamentResponse,
 } from '@core/interfaces/tournament.interface';
+import { PredictionsService } from '@core/services/predictions.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -35,6 +38,8 @@ import { ToastService } from '@shared/services/toast.service';
 })
 export class EditTournamentComponent implements OnInit {
   private readonly _service = inject(TournamentsService);
+  private readonly _predictions = inject(PredictionsService);
+  private readonly _authState = inject(AuthState);
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
@@ -49,6 +54,25 @@ export class EditTournamentComponent implements OnInit {
   protected readonly serverError = signal<string | null>(null);
 
   protected readonly confirmDeleteOpen = signal(false);
+
+  protected readonly recalculating = signal(false);
+  protected readonly confirmRecalcOpen = signal(false);
+
+  /**
+   * O recálculo só faz sentido quando o owner pode ter mudado a pontuação com
+   * partidas já lançadas — ou seja, torneio em andamento. Antes de começar não
+   * há jogos concluídos; finalizado tem tudo congelado.
+   */
+  protected readonly canRecalculate = computed(() => {
+    const t = this.tournament();
+    const user = this._authState.user();
+    return !!(
+      t &&
+      user &&
+      t.owner.id === user.id &&
+      t.status === 'IN_PROGRESS'
+    );
+  });
 
   public ngOnInit(): void {
     const id = this._route.snapshot.paramMap.get('id');
@@ -123,6 +147,43 @@ export class EditTournamentComponent implements OnInit {
 
   protected cancelDelete(): void {
     this.confirmDeleteOpen.set(false);
+  }
+
+  protected requestRecalculate(): void {
+    this.confirmRecalcOpen.set(true);
+  }
+
+  protected confirmRecalculate(): void {
+    const current = this.tournament();
+    if (!current) return;
+
+    this.recalculating.set(true);
+
+    this._predictions
+      .recalculatePoints(current.id)
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.recalculating.set(false);
+          this.confirmRecalcOpen.set(false);
+          this._toast.success(
+            `${result.predictionsUpdated} palpite(s) recalculado(s) em ${result.matchesProcessed} partida(s).`,
+          );
+        },
+        error: (err: unknown) => {
+          this.recalculating.set(false);
+          this.confirmRecalcOpen.set(false);
+          const message =
+            err instanceof ApiException
+              ? err.message
+              : 'Não foi possível recalcular os pontos.';
+          this._toast.error(message);
+        },
+      });
+  }
+
+  protected cancelRecalculate(): void {
+    this.confirmRecalcOpen.set(false);
   }
 
   protected cancel(): void {

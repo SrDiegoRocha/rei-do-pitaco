@@ -23,6 +23,19 @@ export interface IPlacePredictionRequest {
 }
 
 /**
+ * Resultado do recálculo de pontos de todos os palpites do torneio,
+ * reaplicando a pontuação vigente às partidas já lançadas.
+ */
+export interface IRecalculationResponse {
+  /** Total de partidas no torneio. */
+  totalMatches: number;
+  /** Partidas que tinham ao menos um palpite e foram reavaliadas. */
+  matchesProcessed: number;
+  /** Palpites cujo `points` efetivamente mudou no recálculo. */
+  predictionsUpdated: number;
+}
+
+/**
  * Agregado dos pitacos de uma partida (sem revelar pitacos individuais).
  * Usado na "Previsão da Galera".
  */
