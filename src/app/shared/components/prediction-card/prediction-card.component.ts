@@ -7,6 +7,11 @@ import {
 import { RouterLink } from '@angular/router';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
+import {
+  classifyPredictionOutcome,
+  IPredictionScoring,
+  PredictionOutcome,
+} from '@core/utils/prediction-outcome';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 
 type CardStatus = 'done' | 'cancelled' | 'scheduled';
@@ -25,6 +30,8 @@ export class PredictionCardComponent {
   public readonly tournamentId = input<string | null>(null);
   /** Rótulo de contexto (ex.: nome da fase). Se ausente, deriva grupo/rodada. */
   public readonly context = input<string | null>(null);
+  /** Pontuação vigente do torneio; colore o badge (exato/vencedor/erro). */
+  public readonly scoring = input<IPredictionScoring | null>(null);
 
   protected readonly link = computed<unknown[] | null>(() => {
     const tid = this.tournamentId();
@@ -76,6 +83,11 @@ export class PredictionCardComponent {
     if (!this.resultRevealed() || !p || p.points === null) return null;
     return p.points;
   });
+
+  /** Faixa do palpite (exato/vencedor/erro) para colorir o badge. */
+  protected readonly outcome = computed<PredictionOutcome | null>(() =>
+    classifyPredictionOutcome(this.points(), this.scoring()),
+  );
 
   protected readonly dateLabel = computed(() => {
     const iso = this.match().scheduledAt;

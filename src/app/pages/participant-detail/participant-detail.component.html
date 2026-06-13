@@ -304,6 +304,7 @@
                   [match]="row.match"
                   [prediction]="row.prediction"
                   [tournamentId]="tournament()?.id ?? null"
+                  [scoring]="tournament()?.settings ?? null"
                   (click)="rememberReturn(row.prediction.id)"
                 />
               }

@@ -7,6 +7,10 @@ import {
 } from '@angular/core';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
+import {
+  classifyPredictionOutcome,
+  IPredictionScoring,
+} from '@core/utils/prediction-outcome';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { LucideAngularModule, Sparkles } from 'lucide-angular';
 
@@ -23,6 +27,8 @@ export class MatchRowComponent {
   public readonly myPrediction = input<IPredictionResponse | null>(null);
   public readonly isActiveMember = input<boolean>(false);
   public readonly tournamentInProgress = input<boolean>(false);
+  /** Pontuação vigente do torneio; colore o chip de pontos (exato/vencedor/erro). */
+  public readonly scoring = input<IPredictionScoring | null>(null);
 
   /** Emitido ao clicar no chip "Palpitar" (sem navegar para a partida). */
   public readonly predictClick = output<IMatchResponse>();
@@ -103,7 +109,15 @@ export class MatchRowComponent {
 
   protected readonly chip = computed<{
     label: string;
-    kind: 'pending' | 'done' | 'pts' | 'pts-zero' | 'locked' | 'idle';
+    kind:
+      | 'pending'
+      | 'done'
+      | 'pts'
+      | 'pts-zero'
+      | 'pts-winner'
+      | 'pts-wrong'
+      | 'locked'
+      | 'idle';
   } | null>(() => {
     if (!this.isActiveMember()) return null;
     const m = this.match();
@@ -111,10 +125,14 @@ export class MatchRowComponent {
 
     const mine = this.myPrediction();
     if (mine && m.status === 'COMPLETED') {
-      return {
-        label: `+${mine.points}`,
-        kind: mine.points > 0 ? 'pts' : 'pts-zero',
-      };
+      const outcome = classifyPredictionOutcome(mine.points, this.scoring());
+      // Sem `scoring`: cai no comportamento antigo (verde p/ pontos > 0, cinza p/ 0).
+      let kind: 'pts' | 'pts-zero' | 'pts-winner' | 'pts-wrong' =
+        mine.points > 0 ? 'pts' : 'pts-zero';
+      if (outcome === 'winner') kind = 'pts-winner';
+      else if (outcome === 'wrong') kind = 'pts-wrong';
+      else if (outcome === 'exact') kind = 'pts';
+      return { label: `+${mine.points}`, kind };
     }
     if (mine) {
       return { label: `${mine.homeScore}×${mine.awayScore}`, kind: 'done' };

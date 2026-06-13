@@ -320,7 +320,9 @@
                       @if (m.status === 'COMPLETED' && canRevealScores()) {
                         <span
                           class="pred-row__pts"
-                          [class.pred-row__pts--zero]="p.points === 0"
+                          [class.pred-row__pts--winner]="predictionOutcome(p.points) === 'winner'"
+                          [class.pred-row__pts--wrong]="predictionOutcome(p.points) === 'wrong'"
+                          [class.pred-row__pts--zero]="predictionOutcome(p.points) === null && p.points === 0"
                         >
                           +{{ p.points }}
                         </span>

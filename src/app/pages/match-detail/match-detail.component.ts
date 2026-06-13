@@ -45,6 +45,10 @@ import { tabSlide } from '@shared/animations/animations';
 import { ThemeService } from '@shared/services/theme.service';
 import { ToastService } from '@shared/services/toast.service';
 import { readableAccent } from '@core/utils/color-contrast';
+import {
+  classifyPredictionOutcome,
+  PredictionOutcome,
+} from '@core/utils/prediction-outcome';
 import { knockoutRoundLabel } from '@core/utils/round-label';
 import {
   ArrowLeftRight,
@@ -287,6 +291,11 @@ export class MatchDetailComponent implements OnInit {
 
   /** Aba "Detalhes": visível para todos (traz compartilhar + ações do dono). */
   protected readonly showInfoTab = computed(() => this.match() !== null);
+
+  /** Faixa do palpite (exato/vencedor/erro) p/ colorir o badge de pontos. */
+  protected predictionOutcome(points: number): PredictionOutcome | null {
+    return classifyPredictionOutcome(points, this.tournament()?.settings);
+  }
 
   // "Previsão da Galera" — agregado dos pitacos antes do jogo começar.
   protected readonly predictionStats =

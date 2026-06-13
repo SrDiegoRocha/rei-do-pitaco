@@ -76,6 +76,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.pcard__pts--winner {
+  color: var(--info);
+  background-color: color-mix(in srgb, var(--info) 14%, transparent);
+}
+
+.pcard__pts--wrong {
+  color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
 .pcard__pts--zero {
   color: var(--text-tertiary);
   background-color: var(--bg-muted);

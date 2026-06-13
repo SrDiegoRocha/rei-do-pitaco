@@ -179,6 +179,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.row__chip[data-kind='pts-winner'] {
+  background-color: color-mix(in srgb, var(--info) 18%, transparent);
+  color: var(--info);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__chip[data-kind='pts-wrong'] {
+  background-color: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
 .row__chip[data-kind='pts-zero'] {
   background-color: var(--bg-muted);
   color: var(--text-tertiary);

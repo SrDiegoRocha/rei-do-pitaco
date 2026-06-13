@@ -403,6 +403,7 @@
                                 [myPrediction]="myPredictionFor(match.id)"
                                 [isActiveMember]="isActiveMember()"
                                 [tournamentInProgress]="tournamentInProgress()"
+                                [scoring]="tournament()?.settings ?? null"
                                 (predictClick)="openPredictionFor($event)"
                               />
                             </a>
@@ -425,6 +426,7 @@
                           [myPrediction]="myPredictionFor(match.id)"
                           [isActiveMember]="isActiveMember()"
                           [tournamentInProgress]="tournamentInProgress()"
+                          [scoring]="tournament()?.settings ?? null"
                           (predictClick)="openPredictionFor($event)"
                         />
                       </a>
@@ -538,6 +540,7 @@
                 [prediction]="row.prediction"
                 [context]="row.phaseName"
                 [tournamentId]="tournament()?.id ?? null"
+                [scoring]="tournament()?.settings ?? null"
                 (click)="rememberMyPredReturn(row.prediction.id)"
               />
             }

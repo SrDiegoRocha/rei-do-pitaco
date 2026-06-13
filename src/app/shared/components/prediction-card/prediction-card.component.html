@@ -8,7 +8,12 @@
     <span class="pcard__ctx">{{ contextLabel() }}</span>
     @if (statusKind() === 'done') {
       @if (points() !== null) {
-        <span class="pcard__pts" [class.pcard__pts--zero]="points() === 0">
+        <span
+          class="pcard__pts"
+          [class.pcard__pts--winner]="outcome() === 'winner'"
+          [class.pcard__pts--wrong]="outcome() === 'wrong'"
+          [class.pcard__pts--zero]="outcome() === null && points() === 0"
+        >
           +{{ points() }} pts
         </span>
       } @else {

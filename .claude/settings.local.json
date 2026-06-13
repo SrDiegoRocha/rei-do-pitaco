@@ -95,7 +95,8 @@
       "Bash(npx tsc *)",
       "Bash(del *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\diego\\\\WebstormProjects\\\\rei-do-pitaco\\\\src\\\\app\\\\pages\\\\tournament-detail\" -Recurse)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(xargs grep -l \"prediction\\\\|score\")"
     ]
   }
 }
