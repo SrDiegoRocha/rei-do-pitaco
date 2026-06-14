@@ -1,12 +1,20 @@
 <nav class="bottom-nav" aria-label="Navegação principal">
   <a
     class="bottom-nav__item"
+    routerLink="/matches"
+    routerLinkActive="bottom-nav__item--active"
+  >
+    <lucide-icon class="bottom-nav__icon" [img]="calendarIcon" [size]="22" />
+    <span class="bottom-nav__label">Partidas</span>
+  </a>
+  <a
+    class="bottom-nav__item"
     routerLink="/tournaments"
     [routerLinkActiveOptions]="{ exact: true }"
     routerLinkActive="bottom-nav__item--active"
   >
     <lucide-icon class="bottom-nav__icon" [img]="trophyIcon" [size]="22" />
-    <span class="bottom-nav__label">Meus torneios</span>
+    <span class="bottom-nav__label">Torneios</span>
   </a>
   <a
     class="bottom-nav__item"

@@ -1,0 +1,138 @@
+<section class="page feed">
+  <app-page-header
+    title="Partidas"
+    subtitle="Seus jogos de todos os torneios, em ordem"
+  />
+
+  @if (pendingCount() > 0) {
+    <div class="feed__pending" role="status">
+      <lucide-icon [img]="sparklesIcon" [size]="16" aria-hidden="true" />
+      <span>
+        <strong>{{ pendingCount() }}</strong>
+        {{ pendingCount() === 1 ? 'jogo esperando' : 'jogos esperando' }}
+        seu pitaco
+      </span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="feed__skeleton">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="u-skeleton feed__skeleton-row"></div>
+      }
+    </div>
+  } @else if (loadError(); as err) {
+    <app-error-state
+      [error]="err"
+      message="Não foi possível carregar suas partidas."
+      [canRetry]="true"
+      (retry)="retry()"
+    />
+  } @else if (dayGroups().length === 0) {
+    <app-empty-state
+      [icon]="calendarIcon"
+      title="Nenhuma partida agendada"
+      description="Quando os jogos dos seus torneios tiverem data marcada, eles aparecem aqui — prontos para você palpitar."
+    />
+  } @else {
+    <div #topSentinel class="feed__sentinel" aria-hidden="true"></div>
+
+    @if (loadingPast()) {
+      <div class="feed__more" role="status">
+        <span class="feed__more-spinner" aria-hidden="true"></span>
+        Carregando jogos anteriores…
+      </div>
+    }
+
+    <div class="feed__timeline">
+      @for (day of dayGroups(); track day.key) {
+        <section
+          class="day"
+          [id]="'feed-day-' + day.key"
+          [class.day--today]="day.isToday"
+        >
+          <header class="day__sep">
+            <span class="day__label">{{ day.label }}</span>
+            <span class="day__count">
+              {{ day.total }} {{ day.total === 1 ? 'jogo' : 'jogos' }}
+            </span>
+          </header>
+
+          <div class="day__cards" [@listStagger]="day.blocks.length">
+            @for (block of day.blocks; track block.tournamentId) {
+              <article class="feed-card">
+                <header class="feed-card__ctx">
+                  <span class="feed-card__tournament">
+                    <lucide-icon
+                      class="feed-card__tournament-icon"
+                      [img]="trophyIcon"
+                      [size]="13"
+                    />
+                    <span class="feed-card__tournament-name">
+                      {{ block.tournament.name }}
+                    </span>
+                  </span>
+                  @if (block.items.length === 1) {
+                    <span class="feed-card__meta">
+                      {{ contextLabel(block.items[0]) }}
+                    </span>
+                  }
+                </header>
+
+                <div class="feed-card__list">
+                  @for (item of block.items; track item.match.id) {
+                    <a class="feed-card__entry" [routerLink]="matchLink(item)">
+                      @if (block.items.length > 1) {
+                        <span class="feed-card__submeta">
+                          {{ contextLabel(item) }}
+                        </span>
+                      }
+                      <app-match-row
+                        [match]="item.match"
+                        [myPrediction]="predictionFor(item)"
+                        [isActiveMember]="true"
+                        [tournamentInProgress]="tournamentInProgress(item)"
+                        [scoring]="block.tournament.scoring"
+                        (predictClick)="openPredictionFor($event)"
+                      />
+                    </a>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    @if (loadingFuture()) {
+      <div class="feed__more" role="status">
+        <span class="feed__more-spinner" aria-hidden="true"></span>
+        Carregando próximos jogos…
+      </div>
+    }
+
+    <div #bottomSentinel class="feed__sentinel" aria-hidden="true"></div>
+  }
+
+  @if (showJumpToToday()) {
+    <button type="button" class="jump-today" (click)="jumpToToday()">
+      <lucide-icon [img]="todayIcon" [size]="16" />
+      Hoje
+    </button>
+  }
+</section>
+
+<app-prediction-dialog
+  [open]="predictionItem() !== null"
+  [match]="predictionMatch()"
+  [current]="predictionCurrent()"
+  [submitting]="predictionSubmitting()"
+  [serverError]="predictionError()"
+  [penaltyEligible]="predictionPenaltyEligible()"
+  [aggregateBeforeHome]="predictionAggregateBeforeHome()"
+  [aggregateBeforeAway]="predictionAggregateBeforeAway()"
+  [penaltyTwoLegged]="predictionTwoLegged()"
+  (confirmed)="submitPrediction($event)"
+  (cancelled)="closePrediction()"
+/>

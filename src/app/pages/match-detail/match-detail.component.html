@@ -12,7 +12,23 @@
       <p class="page__error-text">{{ err }}</p>
     </div>
   } @else if (match(); as m) {
-    <article class="hero" [class.hero--cancelled]="m.status === 'CANCELLED'">
+    <article
+      class="hero hero--clickable"
+      [class.hero--cancelled]="m.status === 'CANCELLED'"
+      role="button"
+      tabindex="0"
+      [attr.aria-label]="
+        'Ver ' + pageTitle() + ' na aba de partidas do torneio'
+      "
+      (click)="goToTournamentMatches()"
+      (keydown.enter)="goToTournamentMatches()"
+      (keydown.space)="$event.preventDefault(); goToTournamentMatches()"
+    >
+      <span class="hero__open" aria-hidden="true">
+        Partidas
+        <lucide-icon [img]="chevronRightIcon" [size]="14" />
+      </span>
+
       <div class="hero__pill" aria-hidden="true">
         @if (m.scheduledAt) {
           <span>{{ dateLabel() }}</span>

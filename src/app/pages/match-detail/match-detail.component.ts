@@ -24,6 +24,7 @@ import { MatchesService } from '@core/services/matches.service';
 import { PhasesService } from '@core/services/phases.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { TournamentMembersService } from '@core/services/tournament-members.service';
+import { TournamentReturnService } from '@core/services/tournament-return.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { ITournamentMemberResponse } from '@core/interfaces/tournament-member.interface';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
@@ -99,6 +100,7 @@ export class MatchDetailComponent implements OnInit {
   private readonly _matchesService = inject(MatchesService);
   private readonly _predictionsService = inject(PredictionsService);
   private readonly _membersService = inject(TournamentMembersService);
+  private readonly _returnService = inject(TournamentReturnService);
   private readonly _authState = inject(AuthState);
   private readonly _theme = inject(ThemeService);
   private readonly _toast = inject(ToastService);
@@ -488,6 +490,21 @@ export class MatchDetailComponent implements OnInit {
 
   protected setTab(tab: MatchTab): void {
     this.activeTab.set(tab);
+  }
+
+  /**
+   * Clique no hero → volta ao torneio, na aba de partidas, rolando até esta
+   * partida. Usa o mesmo mecanismo de retorno das demais sub-páginas do
+   * torneio (TournamentReturnService + âncora `match-<id>`).
+   */
+  protected goToTournamentMatches(): void {
+    const t = this.tournament();
+    const m = this.match();
+    if (!t || !m) return;
+    this._returnService.set(t.id, `match-${m.id}`, 'matches');
+    void this._router.navigate(['/tournaments', t.id], {
+      queryParams: { tab: 'matches' },
+    });
   }
 
   /** Compartilha o link desta partida (Web Share API, com fallback de cópia). */

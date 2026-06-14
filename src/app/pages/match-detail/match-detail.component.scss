@@ -60,6 +60,56 @@
   background-color: var(--bg-elevated);
 }
 
+/* Hero clicável → volta ao torneio, na aba de partidas. */
+.hero--clickable {
+  position: relative;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast, 160ms) var(--easing-default, ease),
+    transform var(--duration-fast, 160ms) var(--easing-default, ease);
+}
+
+.hero--clickable:hover {
+  border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+.hero--clickable:active {
+  transform: scale(0.995);
+}
+
+.hero--clickable:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hero__open {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline-end: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-2xs, 10px);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  transition: color var(--duration-fast, 160ms) var(--easing-default, ease);
+}
+
+.hero--clickable:hover .hero__open {
+  color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero--clickable {
+    transition: none;
+  }
+  .hero--clickable:active {
+    transform: none;
+  }
+}
+
 .hero--cancelled {
   background: var(--bg-surface);
 }

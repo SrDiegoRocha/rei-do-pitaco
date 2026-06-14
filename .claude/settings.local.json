@@ -96,7 +96,13 @@
       "Bash(del *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\diego\\\\WebstormProjects\\\\rei-do-pitaco\\\\src\\\\app\\\\pages\\\\tournament-detail\" -Recurse)",
       "Bash(Select-Object FullName)",
-      "Bash(xargs grep -l \"prediction\\\\|score\")"
+      "Bash(xargs grep -l \"prediction\\\\|score\")",
+      "PowerShell(npm run *)",
+      "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/services/user-matches.service.ts src/app/core/interfaces/user-match.interface.ts src/app/shared/components/bottom-nav src/app/shared/components/sidebar 2>&1 | Select-Object -Last 40)",
+      "PowerShell(npx eslint src/app/pages/matches-feed 2>&1 | Select-Object -Last 30)",
+      "PowerShell(npx eslint src/app/pages/match-detail 2>&1 | Select-Object -Last 30)",
+      "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/services/user-matches.service.ts src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 30)",
+      "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 20)"
     ]
   }
 }

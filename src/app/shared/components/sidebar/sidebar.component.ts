@@ -12,6 +12,7 @@ import { LogoComponent } from '@shared/components/logo/logo.component';
 import { ThemeService } from '@shared/services/theme.service';
 import {
   Bell,
+  CalendarDays,
   Globe,
   LogOut,
   LucideAngularModule,
@@ -50,6 +51,7 @@ export class SidebarComponent {
     () => this._themeService.resolved() === 'dark',
   );
 
+  protected readonly calendarIcon = CalendarDays;
   protected readonly trophyIcon = Trophy;
   protected readonly globeIcon = Globe;
   protected readonly shieldIcon = Shield;

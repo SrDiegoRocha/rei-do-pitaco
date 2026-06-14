@@ -6,6 +6,14 @@
   <nav class="sidebar__nav" aria-label="Páginas">
     <a
       class="sidebar__item"
+      routerLink="/matches"
+      routerLinkActive="sidebar__item--active"
+    >
+      <lucide-icon [img]="calendarIcon" [size]="20" />
+      <span>Partidas</span>
+    </a>
+    <a
+      class="sidebar__item"
       routerLink="/tournaments"
       [routerLinkActiveOptions]="{ exact: true }"
       routerLinkActive="sidebar__item--active"

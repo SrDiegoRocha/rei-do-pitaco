@@ -39,6 +39,15 @@ export const routes: Routes = [
       ),
     children: [
       {
+        path: 'matches',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('@pages/matches-feed/matches-feed.component').then(
+            (m) => m.MatchesFeedComponent,
+          ),
+        title: 'Partidas · Rei do Pitaco',
+      },
+      {
         path: 'tournaments',
         pathMatch: 'full',
         loadComponent: () =>
@@ -296,7 +305,7 @@ export const routes: Routes = [
           ).then((m) => m.UpcomingPredictionsComponent),
         title: 'Próximos pitacos · Rei do Pitaco',
       },
-      { path: '', pathMatch: 'full', redirectTo: 'tournaments' },
+      { path: '', pathMatch: 'full', redirectTo: 'matches' },
     ],
   },
   {

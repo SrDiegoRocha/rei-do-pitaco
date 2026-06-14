@@ -70,6 +70,7 @@ export class MainLayoutComponent {
 
   /** Ordem das seções principais (mesma do menu inferior). */
   private static readonly _sections = [
+    'matches',
     'tournaments',
     'tournaments/public',
     'teams',
