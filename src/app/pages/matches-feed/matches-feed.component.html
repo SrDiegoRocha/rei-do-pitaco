@@ -72,30 +72,31 @@
                       {{ block.tournament.name }}
                     </span>
                   </span>
-                  @if (block.items.length === 1) {
+                  @if (block.subgroups.length === 1) {
                     <span class="feed-card__meta">
-                      {{ contextLabel(block.items[0]) }}
+                      {{ block.subgroups[0].label }}
                     </span>
                   }
                 </header>
 
                 <div class="feed-card__list">
-                  @for (item of block.items; track item.match.id) {
-                    <a class="feed-card__entry" [routerLink]="matchLink(item)">
-                      @if (block.items.length > 1) {
-                        <span class="feed-card__submeta">
-                          {{ contextLabel(item) }}
-                        </span>
-                      }
-                      <app-match-row
-                        [match]="item.match"
-                        [myPrediction]="predictionFor(item)"
-                        [isActiveMember]="true"
-                        [tournamentInProgress]="tournamentInProgress(item)"
-                        [scoring]="block.tournament.scoring"
-                        (predictClick)="openPredictionFor($event)"
-                      />
-                    </a>
+                  @for (sub of block.subgroups; track sub.key) {
+                    @if (block.subgroups.length > 1) {
+                      <span class="feed-card__submeta">{{ sub.label }}</span>
+                    }
+                    @for (item of sub.items; track item.match.id) {
+                      <a class="feed-card__entry" [routerLink]="matchLink(item)">
+                        <app-match-row
+                          [match]="item.match"
+                          [myPrediction]="predictionFor(item)"
+                          [isActiveMember]="true"
+                          [tournamentInProgress]="tournamentInProgress(item)"
+                          [scoring]="block.tournament.scoring"
+                          [hideDate]="true"
+                          (predictClick)="openPredictionFor($event)"
+                        />
+                      </a>
+                    }
                   }
                 </div>
               </article>

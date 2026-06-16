@@ -102,7 +102,8 @@
       "PowerShell(npx eslint src/app/pages/matches-feed 2>&1 | Select-Object -Last 30)",
       "PowerShell(npx eslint src/app/pages/match-detail 2>&1 | Select-Object -Last 30)",
       "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/services/user-matches.service.ts src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 30)",
-      "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 20)"
+      "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 20)",
+      "PowerShell(npx eslint src/app/pages/matches-feed src/app/shared/components/match-row 2>&1 | Select-Object -Last 20)"
     ]
   }
 }

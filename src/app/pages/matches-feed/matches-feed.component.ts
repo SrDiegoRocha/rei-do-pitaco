@@ -37,13 +37,23 @@ import {
 } from 'lucide-angular';
 
 /**
+ * Sub-bloco de partidas que compartilham o mesmo cabeçalho de contexto
+ * (mesma fase + grupo + rodada) — renderiza o subheader uma única vez.
+ */
+interface ITournamentDaySubgroup {
+  key: string;
+  label: string;
+  items: IUserMatchResponse[];
+}
+
+/**
  * Bloco de partidas de um mesmo torneio dentro de um dia — vira um único card,
  * economizando espaço quando há vários jogos da mesma competição no mesmo dia.
  */
 interface ITournamentDayBlock {
   tournamentId: string;
   tournament: IUserMatchResponse['tournament'];
-  items: IUserMatchResponse[];
+  subgroups: ITournamentDaySubgroup[];
 }
 
 /** Um dia da timeline, com as partidas daquele dia agrupadas por torneio. */
@@ -232,8 +242,8 @@ export class MatchesFeedComponent implements OnInit {
     ];
   }
 
-  /** Cabeçalho de contexto do card: "Fase de Grupos · Grupo A · Rodada 2". */
-  protected contextLabel(item: IUserMatchResponse): string {
+  /** Cabeçalho de contexto: "Fase de Grupos · Grupo A · Rodada 2". */
+  private _contextLabel(item: IUserMatchResponse): string {
     const parts: string[] = [item.phase.name];
     if (item.group) parts.push(item.group.name);
     if (item.phase.phaseType === 'KNOCKOUT') {
@@ -242,6 +252,16 @@ export class MatchesFeedComponent implements OnInit {
       parts.push(`Rodada ${item.match.round}`);
     }
     return parts.join(' · ');
+  }
+
+  /** Chave que identifica o subheader (fase + grupo + rodada + tipo). */
+  private _contextKey(item: IUserMatchResponse): string {
+    return [
+      item.phase.id,
+      item.match.round,
+      item.match.matchType,
+      item.group?.id ?? '',
+    ].join('|');
   }
 
   protected predictionFor(item: IUserMatchResponse): IPredictionResponse | null {
@@ -541,25 +561,52 @@ export class MatchesFeedComponent implements OnInit {
   }
 
   /**
-   * Agrupa as partidas de um dia por torneio, preservando a ordem do primeiro
-   * jogo de cada torneio (a lista já vem por horário).
+   * Agrupa as partidas de um dia por torneio (preservando a ordem do primeiro
+   * jogo de cada torneio), e dentro de cada torneio agrupa por subheader
+   * (fase + grupo + rodada) para não repetir o cabeçalho de contexto.
    */
   private _groupByTournament(
     items: IUserMatchResponse[],
   ): ITournamentDayBlock[] {
-    const map = new Map<string, ITournamentDayBlock>();
+    const map = new Map<string, IUserMatchResponse[]>();
     const order: string[] = [];
     for (const item of items) {
       const id = item.tournament.id;
-      let block = map.get(id);
-      if (!block) {
-        block = { tournamentId: id, tournament: item.tournament, items: [] };
-        map.set(id, block);
+      let list = map.get(id);
+      if (!list) {
+        list = [];
+        map.set(id, list);
         order.push(id);
       }
-      block.items.push(item);
+      list.push(item);
     }
-    return order.map((id) => map.get(id)!);
+    return order.map((id) => {
+      const list = map.get(id)!;
+      return {
+        tournamentId: id,
+        tournament: list[0].tournament,
+        subgroups: this._groupBySubheader(list),
+      };
+    });
+  }
+
+  /** Agrupa partidas de um torneio por subheader, na ordem de aparição. */
+  private _groupBySubheader(
+    items: IUserMatchResponse[],
+  ): ITournamentDaySubgroup[] {
+    const map = new Map<string, ITournamentDaySubgroup>();
+    const order: string[] = [];
+    for (const item of items) {
+      const key = this._contextKey(item);
+      let group = map.get(key);
+      if (!group) {
+        group = { key, label: this._contextLabel(item), items: [] };
+        map.set(key, group);
+        order.push(key);
+      }
+      group.items.push(item);
+    }
+    return order.map((key) => map.get(key)!);
   }
 
   // ── Datas ────────────────────────────────────────────────────────────

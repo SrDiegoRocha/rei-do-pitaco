@@ -27,6 +27,8 @@ export class MatchRowComponent {
   public readonly myPrediction = input<IPredictionResponse | null>(null);
   public readonly isActiveMember = input<boolean>(false);
   public readonly tournamentInProgress = input<boolean>(false);
+  /** Oculta a data, deixando só o horário — útil quando a lista já é agrupada por dia. */
+  public readonly hideDate = input<boolean>(false);
   /** Pontuação vigente do torneio; colore o chip de pontos (exato/vencedor/erro). */
   public readonly scoring = input<IPredictionScoring | null>(null);
 

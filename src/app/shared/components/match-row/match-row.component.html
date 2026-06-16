@@ -3,8 +3,8 @@
   class="row"
   [class.row--cancelled]="m.status === 'CANCELLED'"
 >
-  <div class="row__when" [class.row__when--solo]="!dateLabel()">
-    @if (dateLabel(); as d) {
+  <div class="row__when" [class.row__when--solo]="!dateLabel() || hideDate()">
+    @if (!hideDate() && dateLabel(); as d) {
       <span class="row__date">{{ d }}</span>
     }
     <span class="row__status" [attr.data-kind]="statusKind()">

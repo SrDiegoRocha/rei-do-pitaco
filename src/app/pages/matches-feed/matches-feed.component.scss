@@ -197,15 +197,22 @@
   background-color: color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
-/* Contexto por partida (só quando há vários jogos no card). */
+/* Subheader compartilhado por fase/grupo/rodada (vários subgrupos no card). */
 .feed-card__submeta {
   display: block;
-  padding: var(--space-2) var(--space-3) 0;
+  padding: var(--space-2) var(--space-3) var(--space-1);
   font-size: var(--text-2xs, 10px);
   font-weight: var(--font-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-tertiary);
+}
+
+/* A partir do 2º subgrupo, separa do grupo anterior. */
+.feed-card__submeta:not(:first-child) {
+  border-top: 1px solid var(--border-subtle, var(--border-default));
+  margin-top: var(--space-1);
+  padding-top: var(--space-3);
 }
 
 .feed-card__tournament {
