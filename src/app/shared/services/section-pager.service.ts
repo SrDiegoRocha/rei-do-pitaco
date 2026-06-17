@@ -3,9 +3,14 @@ import { Router } from '@angular/router';
 
 /**
  * Ordem das seções principais (mesma do menu inferior), para navegação por
- * swipe entre elas: Meus torneios → Públicos → Times.
+ * swipe entre elas: Partidas → Meus torneios → Públicos → Times.
  */
-const SECTIONS = ['/tournaments', '/tournaments/public', '/teams'] as const;
+const SECTIONS = [
+  '/matches',
+  '/tournaments',
+  '/tournaments/public',
+  '/teams',
+] as const;
 
 @Injectable({ providedIn: 'root' })
 export class SectionPagerService {

@@ -27,6 +27,8 @@ import {
   IPredictionPayload,
   PredictionDialogComponent,
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
+import { SectionPagerService } from '@shared/services/section-pager.service';
+import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { ToastService } from '@shared/services/toast.service';
 import {
   CalendarClock,
@@ -101,6 +103,8 @@ export class MatchesFeedComponent implements OnInit {
   private readonly _userMatches = inject(UserMatchesService);
   private readonly _predictions = inject(PredictionsService);
   private readonly _toast = inject(ToastService);
+  private readonly _sectionPager = inject(SectionPagerService);
+  private readonly _swipeReg = inject(SwipeNavRegistry);
   private readonly _destroyRef = inject(DestroyRef);
   private readonly _injector = inject(Injector);
   private readonly _host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -222,8 +226,16 @@ export class MatchesFeedComponent implements OnInit {
   );
 
   public ngOnInit(): void {
+    const swipe = (delta: 1 | -1) => this.swipeSection(delta);
+    this._swipeReg.set(swipe);
+    this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
     this._destroyRef.onDestroy(() => this._disconnectObservers());
     this._load();
+  }
+
+  /** Swipe entre seções (sem abas internas aqui). */
+  protected swipeSection(delta: 1 | -1): void {
+    this._sectionPager.navigate('/matches', delta);
   }
 
   protected retry(): void {
