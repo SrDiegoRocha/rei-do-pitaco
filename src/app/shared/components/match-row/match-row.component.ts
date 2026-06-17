@@ -12,12 +12,13 @@ import {
   IPredictionScoring,
 } from '@core/utils/prediction-outcome';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { ScoreDisplayPipe } from '@shared/pipes/score-display.pipe';
 import { LucideAngularModule, Sparkles } from 'lucide-angular';
 
 @Component({
   selector: 'app-match-row',
   standalone: true,
-  imports: [TeamBadgeComponent, LucideAngularModule],
+  imports: [TeamBadgeComponent, LucideAngularModule, ScoreDisplayPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-row.component.html',
   styleUrl: './match-row.component.scss',

@@ -13,13 +13,14 @@ import {
   PredictionOutcome,
 } from '@core/utils/prediction-outcome';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { ScoreDisplayPipe } from '@shared/pipes/score-display.pipe';
 
 type CardStatus = 'done' | 'cancelled' | 'scheduled';
 
 @Component({
   selector: 'app-prediction-card',
   standalone: true,
-  imports: [RouterLink, TeamBadgeComponent],
+  imports: [RouterLink, TeamBadgeComponent, ScoreDisplayPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prediction-card.component.html',
   styleUrl: './prediction-card.component.scss',

@@ -15,6 +15,10 @@ import { ITeamRef } from '@core/interfaces/match.interface';
 import { knockoutRoundLabel } from '@core/utils/round-label';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import {
+  formatScoreDisplay,
+  ScoreDisplayPipe,
+} from '@shared/pipes/score-display.pipe';
+import {
   Calendar,
   Crown,
   LucideAngularModule,
@@ -27,7 +31,7 @@ export type BracketViewMode = 'tree' | 'cards';
 @Component({
   selector: 'app-bracket-view',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, TeamBadgeComponent],
+  imports: [RouterLink, LucideAngularModule, TeamBadgeComponent, ScoreDisplayPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bracket-view.component.html',
   styleUrl: './bracket-view.component.scss',
@@ -75,7 +79,9 @@ export class BracketViewComponent {
   /** Placar agregado ou "-" quando ainda não jogou. */
   protected scoreText(tie: IBracketTie, side: 'home' | 'away'): string {
     if (!this.hasResult(tie)) return '-';
-    return String(side === 'home' ? tie.homeAggregate : tie.awayAggregate);
+    return formatScoreDisplay(
+      side === 'home' ? tie.homeAggregate : tie.awayAggregate,
+    );
   }
 
   /** O time desse lado perdeu o confronto? (para apagar levemente) */

@@ -103,7 +103,9 @@
       "PowerShell(npx eslint src/app/pages/match-detail 2>&1 | Select-Object -Last 30)",
       "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/services/user-matches.service.ts src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 30)",
       "PowerShell(npx eslint src/app/pages/matches-feed src/app/core/interfaces/user-match.interface.ts 2>&1 | Select-Object -Last 20)",
-      "PowerShell(npx eslint src/app/pages/matches-feed src/app/shared/components/match-row 2>&1 | Select-Object -Last 20)"
+      "PowerShell(npx eslint src/app/pages/matches-feed src/app/shared/components/match-row 2>&1 | Select-Object -Last 20)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.app.json 2>&1 | Select-Object -First 40)",
+      "PowerShell(npx ng build --configuration development 2>&1 | Select-Object -Last 30)"
     ]
   }
 }

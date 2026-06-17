@@ -47,16 +47,16 @@
     <div class="pcard__center">
       @if (hasGuess()) {
         <span class="pcard__guess">
-          {{ prediction()!.homeScore }}
+          {{ prediction()!.homeScore | scoreDisplay }}
           <span class="pcard__guess-sep">×</span>
-          {{ prediction()!.awayScore }}
+          {{ prediction()!.awayScore | scoreDisplay }}
         </span>
       } @else {
         <span class="pcard__guess pcard__guess--hidden">? × ?</span>
       }
       @if (resultRevealed()) {
         <span class="pcard__actual">
-          resultado {{ m.homeScore }}×{{ m.awayScore }}
+          resultado {{ m.homeScore | scoreDisplay }}×{{ m.awayScore | scoreDisplay }}
         </span>
       } @else {
         <span class="pcard__guess-label">pitaco</span>

@@ -107,9 +107,9 @@
                       }
                       <span class="bv-leg__score">
                         @if (leg.status === 'COMPLETED') {
-                          <strong>{{ leg.homeScore }}</strong>
+                          <strong>{{ leg.homeScore | scoreDisplay }}</strong>
                           <span>×</span>
-                          <strong>{{ leg.awayScore }}</strong>
+                          <strong>{{ leg.awayScore | scoreDisplay }}</strong>
                           @if (leg.homePenalties !== null && leg.awayPenalties !== null) {
                             <span class="bv-leg__pen">
                               pên {{ leg.homePenalties }}×{{ leg.awayPenalties }}

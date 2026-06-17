@@ -41,6 +41,7 @@ import {
 import { MarqueeDirective } from '@shared/directives/marquee.directive';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import { ScoreDisplayPipe } from '@shared/pipes/score-display.pipe';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
 import { tabSlide } from '@shared/animations/animations';
 import { ThemeService } from '@shared/services/theme.service';
@@ -88,6 +89,7 @@ type MatchTab = 'predictions' | 'info';
     ConfirmDialogComponent,
     MarqueeDirective,
     PageHeaderComponent,
+    ScoreDisplayPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-detail.component.html',

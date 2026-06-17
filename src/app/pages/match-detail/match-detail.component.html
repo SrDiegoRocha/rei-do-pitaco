@@ -62,14 +62,14 @@
                 class="hero__score-val"
                 [class.hero__score-val--loser]="winnerSide() === 'away'"
               >
-                {{ m.homeScore }}
+                {{ m.homeScore | scoreDisplay }}
               </span>
               <span class="hero__score-sep">−</span>
               <span
                 class="hero__score-val"
                 [class.hero__score-val--loser]="winnerSide() === 'home'"
               >
-                {{ m.awayScore }}
+                {{ m.awayScore | scoreDisplay }}
               </span>
             </div>
             @if (hasPenalties()) {
@@ -292,7 +292,7 @@
                       </span>
                       @if (myPrediction(); as mine) {
                         <span class="pred-row__score">
-                          {{ mine.homeScore }}<span class="pred-row__sep">×</span>{{ mine.awayScore }}
+                          {{ mine.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ mine.awayScore | scoreDisplay }}
                         </span>
                       }
                       <lucide-icon
@@ -321,12 +321,12 @@
                       </span>
                       @if (canRevealScores()) {
                         <span class="pred-row__score">
-                          {{ p.homeScore }}<span class="pred-row__sep">×</span>{{ p.awayScore }}
+                          {{ p.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ p.awayScore | scoreDisplay }}
                         </span>
                       } @else if (p.id === myPrediction()?.id && myPrediction(); as mine) {
                         <!-- O próprio pitaco é sempre visível pro autor. -->
                         <span class="pred-row__score">
-                          {{ mine.homeScore }}<span class="pred-row__sep">×</span>{{ mine.awayScore }}
+                          {{ mine.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ mine.awayScore | scoreDisplay }}
                         </span>
                       } @else {
                         <span class="pred-row__score pred-row__score--muted">

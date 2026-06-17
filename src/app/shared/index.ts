@@ -33,5 +33,7 @@ export * from './components/tournament-card/tournament-card.component';
 export * from './components/tournament-form/tournament-form.component';
 export * from './components/zone-form/zone-form.component';
 
+export * from './pipes/score-display.pipe';
+
 export * from './services/theme.service';
 export * from './services/toast.service';
