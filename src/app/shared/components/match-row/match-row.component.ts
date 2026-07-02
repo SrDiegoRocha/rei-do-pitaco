@@ -8,9 +8,10 @@ import {
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
 import {
-  classifyPredictionOutcome,
+  classifyScorePair,
   IPredictionScoring,
 } from '@core/utils/prediction-outcome';
+import { matchDisplayScore, matchWinnerSide } from '@core/utils/match-score';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ScoreDisplayPipe } from '@shared/pipes/score-display.pipe';
 import { LucideAngularModule, Sparkles } from 'lucide-angular';
@@ -94,14 +95,7 @@ export class MatchRowComponent {
     () => {
       const m = this.match();
       if (m.status !== 'COMPLETED') return null;
-      if (m.homeScore === null || m.awayScore === null) return null;
-      if (m.homeScore > m.awayScore) return 'home';
-      if (m.awayScore > m.homeScore) return 'away';
-      if (m.homePenalties !== null && m.awayPenalties !== null) {
-        if (m.homePenalties > m.awayPenalties) return 'home';
-        if (m.awayPenalties > m.homePenalties) return 'away';
-      }
-      return 'draw';
+      return matchWinnerSide(m);
     },
   );
 
@@ -109,6 +103,11 @@ export class MatchRowComponent {
     const m = this.match();
     return m.homePenalties !== null && m.awayPenalties !== null;
   });
+
+  /** Placar exibido: prorrogação quando houve, senão o do tempo normal. */
+  protected readonly displayScore = computed(() =>
+    matchDisplayScore(this.match()),
+  );
 
   protected readonly chip = computed<{
     label: string;
@@ -128,8 +127,13 @@ export class MatchRowComponent {
 
     const mine = this.myPrediction();
     if (mine && m.status === 'COMPLETED') {
-      const outcome = classifyPredictionOutcome(mine.points, this.scoring());
-      // Sem `scoring`: cai no comportamento antigo (verde p/ pontos > 0, cinza p/ 0).
+      // Cor pelo placar do tempo normal (o `points` virou soma de blocos).
+      const outcome = classifyScorePair(
+        mine.homeScore,
+        mine.awayScore,
+        m.homeScore,
+        m.awayScore,
+      );
       let kind: 'pts' | 'pts-zero' | 'pts-winner' | 'pts-wrong' =
         mine.points > 0 ? 'pts' : 'pts-zero';
       if (outcome === 'winner') kind = 'pts-winner';

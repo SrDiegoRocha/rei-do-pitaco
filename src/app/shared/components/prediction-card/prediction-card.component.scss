@@ -188,3 +188,13 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.pcard__actual-tag {
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--bg-muted);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

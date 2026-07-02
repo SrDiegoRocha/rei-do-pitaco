@@ -62,16 +62,19 @@
                 class="hero__score-val"
                 [class.hero__score-val--loser]="winnerSide() === 'away'"
               >
-                {{ m.homeScore | scoreDisplay }}
+                {{ displayScore()?.home | scoreDisplay }}
               </span>
               <span class="hero__score-sep">−</span>
               <span
                 class="hero__score-val"
                 [class.hero__score-val--loser]="winnerSide() === 'home'"
               >
-                {{ m.awayScore | scoreDisplay }}
+                {{ displayScore()?.away | scoreDisplay }}
               </span>
             </div>
+            @if (hasExtraTime()) {
+              <p class="hero__score-note">após prorrogação</p>
+            }
             @if (hasPenalties()) {
               <p class="hero__pen-line">
                 Pênaltis:
@@ -281,26 +284,33 @@
                       class="pred-row pred-row--mine pred-row--editable"
                       (click)="openPredictionDialog()"
                     >
-                      <app-avatar
-                        [name]="p.userName"
-                        [imageUrl]="avatarUrlFor(p.userId)"
-                        [size]="32"
-                      />
-                      <span class="pred-row__name">
-                        {{ p.userName }}
-                        <span class="pred-row__tag">você</span>
-                      </span>
-                      @if (myPrediction(); as mine) {
-                        <span class="pred-row__score">
-                          {{ mine.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ mine.awayScore | scoreDisplay }}
+                      <div class="pred-row__main">
+                        <app-avatar
+                          [name]="p.userName"
+                          [imageUrl]="avatarUrlFor(p.userId)"
+                          [size]="32"
+                        />
+                        <span class="pred-row__name">
+                          {{ p.userName }}
+                          <span class="pred-row__tag">você</span>
                         </span>
+                        @if (myPrediction(); as mine) {
+                          <ng-container
+                            *ngTemplateOutlet="scoreInline; context: { $implicit: mine }"
+                          />
+                        }
+                        <lucide-icon
+                          class="pred-row__chev"
+                          [img]="pencilIcon"
+                          [size]="14"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      @if (myPrediction(); as mine) {
+                        <ng-container
+                          *ngTemplateOutlet="extras; context: { $implicit: mine }"
+                        />
                       }
-                      <lucide-icon
-                        class="pred-row__chev"
-                        [img]="pencilIcon"
-                        [size]="14"
-                        aria-hidden="true"
-                      />
                     </button>
                   } @else {
                     <a
@@ -308,47 +318,50 @@
                       [class.pred-row--mine]="p.id === myPrediction()?.id"
                       [routerLink]="participantLink(p.userId)"
                     >
-                      <app-avatar
-                        [name]="p.userName"
-                        [imageUrl]="avatarUrlFor(p.userId)"
-                        [size]="32"
-                      />
-                      <span class="pred-row__name">
-                        {{ p.userName }}
-                        @if (p.id === myPrediction()?.id) {
-                          <span class="pred-row__tag">você</span>
+                      <div class="pred-row__main">
+                        <app-avatar
+                          [name]="p.userName"
+                          [imageUrl]="avatarUrlFor(p.userId)"
+                          [size]="32"
+                        />
+                        <span class="pred-row__name">
+                          {{ p.userName }}
+                          @if (p.id === myPrediction()?.id) {
+                            <span class="pred-row__tag">você</span>
+                          }
+                        </span>
+                        @if (rowPrediction(p); as shown) {
+                          <ng-container
+                            *ngTemplateOutlet="scoreInline; context: { $implicit: shown }"
+                          />
+                        } @else {
+                          <span class="pred-row__score pred-row__score--muted">
+                            ?<span class="pred-row__sep">×</span>?
+                          </span>
                         }
-                      </span>
-                      @if (canRevealScores()) {
-                        <span class="pred-row__score">
-                          {{ p.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ p.awayScore | scoreDisplay }}
-                        </span>
-                      } @else if (p.id === myPrediction()?.id && myPrediction(); as mine) {
-                        <!-- O próprio pitaco é sempre visível pro autor. -->
-                        <span class="pred-row__score">
-                          {{ mine.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ mine.awayScore | scoreDisplay }}
-                        </span>
-                      } @else {
-                        <span class="pred-row__score pred-row__score--muted">
-                          ?<span class="pred-row__sep">×</span>?
-                        </span>
+                        @if (m.status === 'COMPLETED' && canRevealScores()) {
+                          <span
+                            class="pred-row__pts"
+                            [class.pred-row__pts--winner]="predictionOutcome(p) === 'winner'"
+                            [class.pred-row__pts--wrong]="predictionOutcome(p) === 'wrong'"
+                            [class.pred-row__pts--zero]="predictionOutcome(p) === null && p.points === 0"
+                            [attr.title]="pointsBreakdownLabel(p)"
+                          >
+                            +{{ p.points }}
+                          </span>
+                        }
+                        <lucide-icon
+                          class="pred-row__chev"
+                          [img]="chevronRightIcon"
+                          [size]="14"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      @if (rowPrediction(p); as shown) {
+                        <ng-container
+                          *ngTemplateOutlet="extras; context: { $implicit: shown }"
+                        />
                       }
-                      @if (m.status === 'COMPLETED' && canRevealScores()) {
-                        <span
-                          class="pred-row__pts"
-                          [class.pred-row__pts--winner]="predictionOutcome(p.points) === 'winner'"
-                          [class.pred-row__pts--wrong]="predictionOutcome(p.points) === 'wrong'"
-                          [class.pred-row__pts--zero]="predictionOutcome(p.points) === null && p.points === 0"
-                        >
-                          +{{ p.points }}
-                        </span>
-                      }
-                      <lucide-icon
-                        class="pred-row__chev"
-                        [img]="chevronRightIcon"
-                        [size]="14"
-                        aria-hidden="true"
-                      />
                     </a>
                   }
                 </li>
@@ -356,6 +369,45 @@
             </ul>
           }
         </article>
+
+        <!-- Placar dos 90' do palpite, inline no cabeçalho da row. -->
+        <ng-template #scoreInline let-pred>
+          <span class="pred-row__score">
+            {{ pred.homeScore | scoreDisplay }}<span class="pred-row__sep">×</span>{{ pred.awayScore | scoreDisplay }}
+          </span>
+        </ng-template>
+
+        <!-- Segunda linha: só quando o palpite tem prorrogação e/ou pênaltis. -->
+        <ng-template #extras let-pred>
+          @if (predictionHasExtras(pred)) {
+            <div class="pred-row__extras">
+              @if (pred.homeExtraTimeScore !== null && pred.awayExtraTimeScore !== null) {
+                <span class="pred-chip">
+                  <span class="pred-chip__label">Prorr.</span>
+                  {{ pred.homeExtraTimeScore }}<span class="pred-chip__sep">×</span>{{ pred.awayExtraTimeScore }}
+                </span>
+              }
+              @if (penaltyPickTeam(pred); as pen) {
+                <span
+                  class="pred-chip pred-chip--pen"
+                  [attr.title]="pen.name + ' avança nos pênaltis'"
+                  [attr.aria-label]="'Nos pênaltis, avança ' + pen.name"
+                >
+                  <span class="pred-chip__label">Pên.</span>
+                  <app-team-badge
+                    [name]="pen.name"
+                    [shortName]="pen.shortName"
+                    [badgeUrl]="pen.badgeUrl"
+                    [primaryColor]="pen.primaryColor ?? '#10B981'"
+                    [teamType]="pen.teamType"
+                    [countryCode]="pen.countryCode"
+                    [size]="16"
+                  />
+                </span>
+              }
+            </div>
+          }
+        </ng-template>
       }
 
       @if (activeTab() === 'info') {
@@ -491,6 +543,7 @@
   [open]="resultDialogOpen()"
   [match]="match()"
   [phaseType]="phase()?.phaseType ?? null"
+  [twoLegged]="isTwoLegged()"
   [submitting]="resultSubmitting()"
   [serverError]="resultError()"
   (confirmed)="submitResult($event)"

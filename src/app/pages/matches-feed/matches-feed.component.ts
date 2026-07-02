@@ -317,6 +317,8 @@ export class MatchesFeedComponent implements OnInit {
             id: prediction.id,
             homeScore: prediction.homeScore,
             awayScore: prediction.awayScore,
+            homeExtraTimeScore: prediction.homeExtraTimeScore,
+            awayExtraTimeScore: prediction.awayExtraTimeScore,
             penaltyWinner: prediction.penaltyWinner,
             points: prediction.points,
           });
@@ -365,6 +367,8 @@ export class MatchesFeedComponent implements OnInit {
       userName: '',
       homeScore: p.homeScore,
       awayScore: p.awayScore,
+      homeExtraTimeScore: p.homeExtraTimeScore,
+      awayExtraTimeScore: p.awayExtraTimeScore,
       penaltyWinner: p.penaltyWinner,
       points: p.points,
       createdAt: '',

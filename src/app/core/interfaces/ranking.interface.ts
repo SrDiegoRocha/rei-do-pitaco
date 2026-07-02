@@ -21,4 +21,9 @@ export interface IRankingFilterParams {
   groupId?: string;
   round?: number;
   matchType?: 'REGULAR' | 'THIRD_PLACE';
+  /**
+   * Restringe o ranking aos membros cujo vínculo está nesse status.
+   * Omitido = todos que palpitaram, independente do status atual.
+   */
+  memberStatus?: 'ACTIVE' | 'LEFT' | 'BANNED';
 }

@@ -690,9 +690,9 @@
 
         <article class="info-card">
           <header class="info-card__header">
-            <h3 class="info-card__title">Pontuação dos participantes</h3>
+            <h3 class="info-card__title">Pontuação dos pitacos (tempo normal)</h3>
             <p class="info-card__subtitle">
-              Pontos que cada participante ganha por palpite no ranking.
+              Pontos por palpite no placar dos 90 minutos.
             </p>
           </header>
           <ul class="score-list">
@@ -725,6 +725,53 @@
               </div>
               <span class="score-row__value">
                 {{ t.settings.wrongPoints }}
+                <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+          </ul>
+        </article>
+
+        <article class="info-card">
+          <header class="info-card__header">
+            <h3 class="info-card__title">Prorrogação e pênaltis</h3>
+            <p class="info-card__subtitle">
+              Só no mata-mata de jogo único. Somam à pontuação do tempo normal.
+            </p>
+          </header>
+          <ul class="score-list">
+            <li class="score-row score-row--good">
+              <div class="score-row__text">
+                <span class="score-row__label">Placar exato da prorrogação</span>
+                <span class="score-row__desc">
+                  Acertou o placar exato da prorrogação
+                </span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.extraTimeExactScorePoints }}
+                <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+            <li class="score-row score-row--good">
+              <div class="score-row__text">
+                <span class="score-row__label">Vencedor da prorrogação</span>
+                <span class="score-row__desc">
+                  Acertou quem venceu a prorrogação, mas não o placar
+                </span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.extraTimeWinnerPoints }}
+                <span class="score-row__unit">pts</span>
+              </span>
+            </li>
+            <li class="score-row score-row--good">
+              <div class="score-row__text">
+                <span class="score-row__label">Quem passa nos pênaltis</span>
+                <span class="score-row__desc">
+                  Acertou o time que avança na disputa de pênaltis
+                </span>
+              </div>
+              <span class="score-row__value">
+                {{ t.settings.penaltyWinnerPoints }}
                 <span class="score-row__unit">pts</span>
               </span>
             </li>

@@ -38,6 +38,10 @@ export interface IUserMatchScoringRef {
   exactScorePoints: number;
   winnerPoints: number;
   wrongPoints: number;
+  /** Componentes de mata-mata (prorrogação e pênaltis). */
+  extraTimeExactScorePoints: number;
+  extraTimeWinnerPoints: number;
+  penaltyWinnerPoints: number;
 }
 
 export interface IUserMatchPhaseRef {
@@ -58,6 +62,9 @@ export interface IUserMatchPrediction {
   id: string;
   homeScore: number;
   awayScore: number;
+  /** Placar palpitado da prorrogação (cumulativo); null se não palpitou. */
+  homeExtraTimeScore: number | null;
+  awayExtraTimeScore: number | null;
   /** Quem passa nos pênaltis; null quando o palpite não envolve pênaltis. */
   penaltyWinner: PenaltyWinner | null;
   /** Pontos já apurados (0 enquanto a partida não fecha). */

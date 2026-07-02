@@ -229,6 +229,15 @@
   text-align: center;
 }
 
+.hero__score-note {
+  margin: 2px 0 0;
+  font-size: var(--text-2xs, 10px);
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 .hero__pen-line strong {
   color: var(--text-secondary);
   font-weight: var(--font-semibold);
@@ -580,10 +589,9 @@
 }
 
 .pred-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background-color: var(--bg-muted);
   border-radius: var(--radius-md);
@@ -596,6 +604,13 @@
 
 .pred-row:hover {
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+/* Linha principal: avatar, nome, placar dos 90', pontos e chevron — tudo inline. */
+.pred-row__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 /* Variante <button> da row (pitaco do próprio usuário → edita no clique). */
@@ -625,6 +640,7 @@
 }
 
 .pred-row__name {
+  flex: 1;
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--text-primary);
@@ -644,13 +660,16 @@
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   font-weight: var(--font-medium);
+  flex-shrink: 0;
 }
 
+/* Placar dos 90' — inline na linha principal. */
 .pred-row__score {
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .pred-row__score--muted {
@@ -661,6 +680,41 @@
 .pred-row__sep {
   color: var(--text-tertiary);
   margin: 0 4px;
+}
+
+/* Segunda linha (só com prorrogação/pênaltis), centralizada na row. */
+.pred-row__extras {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.pred-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pred-chip__label {
+  font-size: var(--text-2xs, 10px);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+}
+
+.pred-chip__sep {
+  color: var(--text-tertiary);
+  margin: 0 3px;
 }
 
 .pred-row__pts {

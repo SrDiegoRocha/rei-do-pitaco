@@ -8,10 +8,11 @@ import { RouterLink } from '@angular/router';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
 import {
-  classifyPredictionOutcome,
+  classifyScorePair,
   IPredictionScoring,
   PredictionOutcome,
 } from '@core/utils/prediction-outcome';
+import { matchDisplayScore, matchWinnerSide } from '@core/utils/match-score';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ScoreDisplayPipe } from '@shared/pipes/score-display.pipe';
 
@@ -63,6 +64,15 @@ export class PredictionCardComponent {
     return team.shortName ?? team.name;
   });
 
+  /** Placar palpitado da prorrogação (ex.: "2 × 2"), ou null se não palpitou. */
+  protected readonly extraTimeGuess = computed<string | null>(() => {
+    const p = this.prediction();
+    if (!p || p.homeExtraTimeScore === null || p.awayExtraTimeScore === null) {
+      return null;
+    }
+    return `${p.homeExtraTimeScore} × ${p.awayExtraTimeScore}`;
+  });
+
   protected readonly resultRevealed = computed(() => {
     const m = this.match();
     return (
@@ -85,10 +95,17 @@ export class PredictionCardComponent {
     return p.points;
   });
 
-  /** Faixa do palpite (exato/vencedor/erro) para colorir o badge. */
-  protected readonly outcome = computed<PredictionOutcome | null>(() =>
-    classifyPredictionOutcome(this.points(), this.scoring()),
-  );
+  /**
+   * Faixa do palpite (exato/vencedor/erro) para colorir o badge, pelo placar do
+   * tempo normal — o `points` virou soma de blocos e não identifica mais a faixa.
+   */
+  protected readonly outcome = computed<PredictionOutcome | null>(() => {
+    if (!this.resultRevealed()) return null;
+    const p = this.prediction();
+    if (!p) return null;
+    const m = this.match();
+    return classifyScorePair(p.homeScore, p.awayScore, m.homeScore, m.awayScore);
+  });
 
   protected readonly dateLabel = computed(() => {
     const iso = this.match().scheduledAt;
@@ -107,15 +124,15 @@ export class PredictionCardComponent {
 
   /** Lado perdedor pelo resultado real (para apagar levemente). */
   protected readonly loserSide = computed<'home' | 'away' | null>(() => {
-    const m = this.match();
     if (!this.resultRevealed()) return null;
-    if (m.homeScore === null || m.awayScore === null) return null;
-    if (m.homeScore > m.awayScore) return 'away';
-    if (m.awayScore > m.homeScore) return 'home';
-    if (m.homePenalties !== null && m.awayPenalties !== null) {
-      if (m.homePenalties > m.awayPenalties) return 'away';
-      if (m.awayPenalties > m.homePenalties) return 'home';
-    }
+    const winner = matchWinnerSide(this.match());
+    if (winner === 'home') return 'away';
+    if (winner === 'away') return 'home';
     return null;
   });
+
+  /** Placar real exibido: prorrogação quando houve, senão o do tempo normal. */
+  protected readonly displayScore = computed(() =>
+    matchDisplayScore(this.match()),
+  );
 }

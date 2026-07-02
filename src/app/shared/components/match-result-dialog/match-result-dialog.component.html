@@ -106,7 +106,106 @@
         </div>
       </div>
 
-      @if (isKnockout()) {
+      @if (showExtraTime()) {
+        <div class="penalties">
+          <div class="penalties__heading">
+            <span class="penalties__heading-name">Prorrogação</span>
+            <span class="penalties__heading-desc">
+              Empate no tempo normal — placar cumulativo (já inclui o 90').
+            </span>
+          </div>
+          <div class="penalties__score">
+            <div class="penalties__side">
+              <span class="penalties__label">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
+              <div class="stepper stepper--sm">
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || homeExtra() <= homeScore()"
+                  [attr.aria-label]="'Diminuir prorrogação de ' + m.homeTeam.name"
+                  (click)="decExtraHome()"
+                >
+                  <lucide-icon [img]="minusIcon" [size]="16" />
+                </button>
+                <input
+                  type="number"
+                  class="stepper__input stepper__input--sm"
+                  inputmode="numeric"
+                  [min]="homeScore()"
+                  max="99"
+                  [value]="homeExtra()"
+                  [disabled]="submitting()"
+                  [attr.aria-label]="'Prorrogação de ' + m.homeTeam.name"
+                  (input)="onExtraHomeInput($event)"
+                />
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || homeExtra() >= 99"
+                  [attr.aria-label]="'Aumentar prorrogação de ' + m.homeTeam.name"
+                  (click)="incExtraHome()"
+                >
+                  <lucide-icon [img]="plusIcon" [size]="16" />
+                </button>
+              </div>
+            </div>
+
+            <span class="penalties__sep" aria-hidden="true">×</span>
+
+            <div class="penalties__side">
+              <span class="penalties__label">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
+              <div class="stepper stepper--sm">
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || awayExtra() <= awayScore()"
+                  [attr.aria-label]="'Diminuir prorrogação de ' + m.awayTeam.name"
+                  (click)="decExtraAway()"
+                >
+                  <lucide-icon [img]="minusIcon" [size]="16" />
+                </button>
+                <input
+                  type="number"
+                  class="stepper__input stepper__input--sm"
+                  inputmode="numeric"
+                  [min]="awayScore()"
+                  max="99"
+                  [value]="awayExtra()"
+                  [disabled]="submitting()"
+                  [attr.aria-label]="'Prorrogação de ' + m.awayTeam.name"
+                  (input)="onExtraAwayInput($event)"
+                />
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || awayExtra() >= 99"
+                  [attr.aria-label]="'Aumentar prorrogação de ' + m.awayTeam.name"
+                  (click)="incExtraAway()"
+                >
+                  <lucide-icon [img]="plusIcon" [size]="16" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (showSingleLegPenalties()) {
+        <div class="penalties">
+          <div class="penalties__heading">
+            <span class="penalties__heading-name">Pênaltis</span>
+            <span class="penalties__heading-desc">
+              Empate na prorrogação — informe a disputa.
+            </span>
+          </div>
+          <ng-container *ngTemplateOutlet="penScore" />
+          @if (penaltyError(); as err) {
+            <p class="penalties__warn" role="alert">{{ err }}</p>
+          }
+        </div>
+      }
+
+      @if (showTwoLeggedToggle()) {
         <div class="penalties">
           <button
             type="button"
@@ -133,86 +232,89 @@
           </button>
 
           @if (hasPenalties()) {
-            <div class="penalties__score">
-              <div class="penalties__side">
-                <span class="penalties__label">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
-                <div class="stepper stepper--sm">
-                  <button
-                    type="button"
-                    class="stepper__btn"
-                    [disabled]="submitting() || homePen() <= 0"
-                    [attr.aria-label]="'Diminuir pênaltis de ' + m.homeTeam.name"
-                    (click)="decHomePen()"
-                  >
-                    <lucide-icon [img]="minusIcon" [size]="16" />
-                  </button>
-                  <input
-                    type="number"
-                    class="stepper__input stepper__input--sm"
-                    inputmode="numeric"
-                    min="0"
-                    max="30"
-                    [value]="homePen()"
-                    [disabled]="submitting()"
-                    [attr.aria-label]="'Pênaltis de ' + m.homeTeam.name"
-                    (input)="onHomePenInput($event)"
-                  />
-                  <button
-                    type="button"
-                    class="stepper__btn"
-                    [disabled]="submitting() || homePen() >= 30"
-                    [attr.aria-label]="'Aumentar pênaltis de ' + m.homeTeam.name"
-                    (click)="incHomePen()"
-                  >
-                    <lucide-icon [img]="plusIcon" [size]="16" />
-                  </button>
-                </div>
-              </div>
-
-              <span class="penalties__sep" aria-hidden="true">×</span>
-
-              <div class="penalties__side">
-                <span class="penalties__label">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
-                <div class="stepper stepper--sm">
-                  <button
-                    type="button"
-                    class="stepper__btn"
-                    [disabled]="submitting() || awayPen() <= 0"
-                    [attr.aria-label]="'Diminuir pênaltis de ' + m.awayTeam.name"
-                    (click)="decAwayPen()"
-                  >
-                    <lucide-icon [img]="minusIcon" [size]="16" />
-                  </button>
-                  <input
-                    type="number"
-                    class="stepper__input stepper__input--sm"
-                    inputmode="numeric"
-                    min="0"
-                    max="30"
-                    [value]="awayPen()"
-                    [disabled]="submitting()"
-                    [attr.aria-label]="'Pênaltis de ' + m.awayTeam.name"
-                    (input)="onAwayPenInput($event)"
-                  />
-                  <button
-                    type="button"
-                    class="stepper__btn"
-                    [disabled]="submitting() || awayPen() >= 30"
-                    [attr.aria-label]="'Aumentar pênaltis de ' + m.awayTeam.name"
-                    (click)="incAwayPen()"
-                  >
-                    <lucide-icon [img]="plusIcon" [size]="16" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
+            <ng-container *ngTemplateOutlet="penScore" />
             @if (penaltyError(); as err) {
               <p class="penalties__warn" role="alert">{{ err }}</p>
             }
           }
         </div>
       }
+
+      <ng-template #penScore>
+        <div class="penalties__score">
+          <div class="penalties__side">
+            <span class="penalties__label">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
+            <div class="stepper stepper--sm">
+              <button
+                type="button"
+                class="stepper__btn"
+                [disabled]="submitting() || homePen() <= 0"
+                [attr.aria-label]="'Diminuir pênaltis de ' + m.homeTeam.name"
+                (click)="decHomePen()"
+              >
+                <lucide-icon [img]="minusIcon" [size]="16" />
+              </button>
+              <input
+                type="number"
+                class="stepper__input stepper__input--sm"
+                inputmode="numeric"
+                min="0"
+                max="30"
+                [value]="homePen()"
+                [disabled]="submitting()"
+                [attr.aria-label]="'Pênaltis de ' + m.homeTeam.name"
+                (input)="onHomePenInput($event)"
+              />
+              <button
+                type="button"
+                class="stepper__btn"
+                [disabled]="submitting() || homePen() >= 30"
+                [attr.aria-label]="'Aumentar pênaltis de ' + m.homeTeam.name"
+                (click)="incHomePen()"
+              >
+                <lucide-icon [img]="plusIcon" [size]="16" />
+              </button>
+            </div>
+          </div>
+
+          <span class="penalties__sep" aria-hidden="true">×</span>
+
+          <div class="penalties__side">
+            <span class="penalties__label">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
+            <div class="stepper stepper--sm">
+              <button
+                type="button"
+                class="stepper__btn"
+                [disabled]="submitting() || awayPen() <= 0"
+                [attr.aria-label]="'Diminuir pênaltis de ' + m.awayTeam.name"
+                (click)="decAwayPen()"
+              >
+                <lucide-icon [img]="minusIcon" [size]="16" />
+              </button>
+              <input
+                type="number"
+                class="stepper__input stepper__input--sm"
+                inputmode="numeric"
+                min="0"
+                max="30"
+                [value]="awayPen()"
+                [disabled]="submitting()"
+                [attr.aria-label]="'Pênaltis de ' + m.awayTeam.name"
+                (input)="onAwayPenInput($event)"
+              />
+              <button
+                type="button"
+                class="stepper__btn"
+                [disabled]="submitting() || awayPen() >= 30"
+                [attr.aria-label]="'Aumentar pênaltis de ' + m.awayTeam.name"
+                (click)="incAwayPen()"
+              >
+                <lucide-icon [img]="plusIcon" [size]="16" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-template>
 
       @if (serverError(); as err) {
         <p class="dialog__error" role="alert">{{ err }}</p>

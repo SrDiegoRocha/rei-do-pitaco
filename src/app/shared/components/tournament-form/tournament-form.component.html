@@ -146,7 +146,8 @@
     </div>
 
     <div class="tform__points-section">
-      <h3 class="tform__subsection">Pitacos</h3>
+      <h3 class="tform__subsection">Tempo normal (90 min)</h3>
+      <p class="tform__hint">Pontos do palpite no placar dos 90 minutos.</p>
       <div class="tform__grid-3">
         <app-input
           formControlName="exactScorePoints"
@@ -170,6 +171,49 @@
           label="Errou tudo"
           inputmode="numeric"
           [errorText]="pointsError('wrongPoints')"
+          [required]="true"
+        />
+      </div>
+    </div>
+
+    <div class="tform__points-section">
+      <h3 class="tform__subsection">Prorrogação</h3>
+      <p class="tform__hint">
+        Só em mata-mata de jogo único. Soma à pontuação do tempo normal quando o
+        confronto vai à prorrogação.
+      </p>
+      <div class="tform__grid-2">
+        <app-input
+          formControlName="extraTimeExactScorePoints"
+          type="number"
+          label="Placar exato"
+          inputmode="numeric"
+          [errorText]="pointsError('extraTimeExactScorePoints')"
+          [required]="true"
+        />
+        <app-input
+          formControlName="extraTimeWinnerPoints"
+          type="number"
+          label="Acertou vencedor"
+          inputmode="numeric"
+          [errorText]="pointsError('extraTimeWinnerPoints')"
+          [required]="true"
+        />
+      </div>
+    </div>
+
+    <div class="tform__points-section">
+      <h3 class="tform__subsection">Pênaltis</h3>
+      <p class="tform__hint">
+        Só em mata-mata. Soma quando o confronto é decidido nos pênaltis.
+      </p>
+      <div class="tform__grid-3">
+        <app-input
+          formControlName="penaltyWinnerPoints"
+          type="number"
+          label="Acertou quem passa"
+          inputmode="numeric"
+          [errorText]="pointsError('penaltyWinnerPoints')"
           [required]="true"
         />
       </div>

@@ -8,6 +8,9 @@ export interface IPredictionResponse {
   userName: string;
   homeScore: number;
   awayScore: number;
+  /** Placar palpitado da prorrogação (cumulativo); null se não palpitou. Só KO jogo único. */
+  homeExtraTimeScore: number | null;
+  awayExtraTimeScore: number | null;
   /** Quem passa nos pênaltis; null quando o palpite não envolve pênaltis. */
   penaltyWinner: PenaltyWinner | null;
   points: number;
@@ -18,6 +21,9 @@ export interface IPredictionResponse {
 export interface IPlacePredictionRequest {
   homeScore: number;
   awayScore: number;
+  /** Placar da prorrogação (cumulativo). Só quando empatou no 90' de KO jogo único. */
+  homeExtraTimeScore?: number | null;
+  awayExtraTimeScore?: number | null;
   /** Só em mata-mata elegível + palpite de empate (no agregado, em ida-e-volta). */
   penaltyWinner?: PenaltyWinner;
 }

@@ -8,6 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TournamentPhaseType } from '@core/interfaces/enums';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { backdropFade, dialogFade } from '@shared/animations/animations';
@@ -20,6 +21,8 @@ import { LucideAngularModule, Minus, Plus } from 'lucide-angular';
 export interface IMatchResultPayload {
   homeScore: number;
   awayScore: number;
+  homeExtraTimeScore?: number | null;
+  awayExtraTimeScore?: number | null;
   homePenalties?: number | null;
   awayPenalties?: number | null;
 }
@@ -36,6 +39,7 @@ const MAX_PEN = 30;
     LucideAngularModule,
     DraggableSheetDirective,
     MarqueeDirective,
+    NgTemplateOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-result-dialog.component.html',
@@ -46,6 +50,8 @@ export class MatchResultDialogComponent {
   public readonly open = input<boolean>(false);
   public readonly match = input<IMatchResponse | null>(null);
   public readonly phaseType = input<TournamentPhaseType | null>(null);
+  /** Ida-e-volta: sem prorrogação; o desempate vai direto aos pênaltis do agregado. */
+  public readonly twoLegged = input<boolean>(false);
   public readonly submitting = input<boolean>(false);
   public readonly serverError = input<string | null>(null);
 
@@ -57,6 +63,8 @@ export class MatchResultDialogComponent {
 
   protected readonly homeScore = signal(0);
   protected readonly awayScore = signal(0);
+  protected readonly homeExtra = signal(0);
+  protected readonly awayExtra = signal(0);
   protected readonly hasPenalties = signal(false);
   protected readonly homePen = signal(0);
   protected readonly awayPen = signal(0);
@@ -93,8 +101,34 @@ export class MatchResultDialogComponent {
     () => this.homeScore() === this.awayScore(),
   );
 
+  /** Prorrogação: KO de jogo único cujo tempo normal terminou empatado. */
+  protected readonly showExtraTime = computed(
+    () => this.isKnockout() && !this.twoLegged() && this.aggregateTied(),
+  );
+
+  protected readonly extraTimeTied = computed(
+    () => this.homeExtra() === this.awayExtra(),
+  );
+
+  /** Jogo único: os pênaltis são obrigatórios quando a prorrogação empata. */
+  protected readonly showSingleLegPenalties = computed(
+    () => this.showExtraTime() && this.extraTimeTied(),
+  );
+
+  /** Ida-e-volta: o organizador liga os pênaltis manualmente (agregado empatado). */
+  protected readonly showTwoLeggedToggle = computed(
+    () => this.isKnockout() && this.twoLegged(),
+  );
+
+  /** Há disputa de pênaltis a informar (jogo único auto, ou ida-e-volta ligada). */
+  protected readonly penaltiesActive = computed(
+    () =>
+      this.showSingleLegPenalties() ||
+      (this.showTwoLeggedToggle() && this.hasPenalties()),
+  );
+
   protected readonly penaltyError = computed<string | null>(() => {
-    if (!this.hasPenalties()) return null;
+    if (!this.penaltiesActive()) return null;
     if (this.homePen() === this.awayPen()) {
       return 'Pênaltis não podem terminar empatados.';
     }
@@ -110,8 +144,12 @@ export class MatchResultDialogComponent {
       const m = this.match();
       const isOpen = this.open();
       if (isOpen && m) {
-        this.homeScore.set(m.homeScore ?? 0);
-        this.awayScore.set(m.awayScore ?? 0);
+        const home = m.homeScore ?? 0;
+        const away = m.awayScore ?? 0;
+        this.homeScore.set(home);
+        this.awayScore.set(away);
+        this.homeExtra.set(Math.max(home, m.homeExtraTimeScore ?? home));
+        this.awayExtra.set(Math.max(away, m.awayExtraTimeScore ?? away));
         const hasPen =
           m.homePenalties !== null && m.awayPenalties !== null;
         this.hasPenalties.set(hasPen);
@@ -121,9 +159,46 @@ export class MatchResultDialogComponent {
     });
   }
 
+  /** Prorrogação nunca abaixo do placar do 90' (placar cumulativo). */
+  private _syncExtraTimeFloor(): void {
+    this.homeExtra.update((v) => Math.max(v, this.homeScore()));
+    this.awayExtra.update((v) => Math.max(v, this.awayScore()));
+  }
+
+  protected incExtraHome(): void {
+    if (this.submitting()) return;
+    this.homeExtra.update((v) => Math.min(MAX_SCORE, v + 1));
+  }
+
+  protected decExtraHome(): void {
+    if (this.submitting()) return;
+    this.homeExtra.update((v) => Math.max(this.homeScore(), v - 1));
+  }
+
+  protected incExtraAway(): void {
+    if (this.submitting()) return;
+    this.awayExtra.update((v) => Math.min(MAX_SCORE, v + 1));
+  }
+
+  protected decExtraAway(): void {
+    if (this.submitting()) return;
+    this.awayExtra.update((v) => Math.max(this.awayScore(), v - 1));
+  }
+
+  protected onExtraHomeInput(event: Event): void {
+    const raw = this._parseScore((event.target as HTMLInputElement).value);
+    this.homeExtra.set(Math.max(this.homeScore(), raw));
+  }
+
+  protected onExtraAwayInput(event: Event): void {
+    const raw = this._parseScore((event.target as HTMLInputElement).value);
+    this.awayExtra.set(Math.max(this.awayScore(), raw));
+  }
+
   protected incHome(): void {
     if (this.submitting()) return;
     this.homeScore.update((v) => Math.min(MAX_SCORE, v + 1));
+    this._syncExtraTimeFloor();
   }
 
   protected decHome(): void {
@@ -134,6 +209,7 @@ export class MatchResultDialogComponent {
   protected incAway(): void {
     if (this.submitting()) return;
     this.awayScore.update((v) => Math.min(MAX_SCORE, v + 1));
+    this._syncExtraTimeFloor();
   }
 
   protected decAway(): void {
@@ -144,11 +220,13 @@ export class MatchResultDialogComponent {
   protected onHomeInput(event: Event): void {
     const value = this._parseScore((event.target as HTMLInputElement).value);
     this.homeScore.set(value);
+    this._syncExtraTimeFloor();
   }
 
   protected onAwayInput(event: Event): void {
     const value = this._parseScore((event.target as HTMLInputElement).value);
     this.awayScore.set(value);
+    this._syncExtraTimeFloor();
   }
 
   protected togglePenalties(): void {
@@ -202,7 +280,14 @@ export class MatchResultDialogComponent {
       homeScore: this.homeScore(),
       awayScore: this.awayScore(),
     };
-    if (this.isKnockout() && this.hasPenalties()) {
+    if (this.showExtraTime()) {
+      payload.homeExtraTimeScore = this.homeExtra();
+      payload.awayExtraTimeScore = this.awayExtra();
+    } else {
+      payload.homeExtraTimeScore = null;
+      payload.awayExtraTimeScore = null;
+    }
+    if (this.penaltiesActive()) {
       payload.homePenalties = this.homePen();
       payload.awayPenalties = this.awayPen();
     } else {

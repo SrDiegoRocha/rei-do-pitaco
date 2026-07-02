@@ -24,6 +24,9 @@ export interface IMatchResponse {
   scheduledAt: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  /** Placar da prorrogação (cumulativo); null se não houve prorrogação. */
+  homeExtraTimeScore: number | null;
+  awayExtraTimeScore: number | null;
   homePenalties: number | null;
   awayPenalties: number | null;
   status: MatchStatus;
@@ -61,6 +64,9 @@ export interface IUpdateMatchRequest {
 export interface ISetMatchResultRequest {
   homeScore: number;
   awayScore: number;
+  /** Placar da prorrogação (cumulativo). Só KO jogo único com 90' empatado. */
+  homeExtraTimeScore?: number | null;
+  awayExtraTimeScore?: number | null;
   homePenalties?: number | null;
   awayPenalties?: number | null;
 }

@@ -262,6 +262,24 @@
   line-height: var(--lh-base);
 }
 
+.penalties__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.penalties__heading-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.penalties__heading-desc {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: var(--lh-base);
+}
+
 .penalties__score {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

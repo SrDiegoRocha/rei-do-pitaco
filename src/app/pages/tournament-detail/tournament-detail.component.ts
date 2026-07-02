@@ -751,7 +751,8 @@ export class TournamentDetailComponent implements OnInit {
   }
 
   private _rankingFilterParams(): IRankingFilterParams {
-    const params: IRankingFilterParams = {};
+    // A aba de ranking lista apenas membros ativos — esconde quem saiu/foi banido.
+    const params: IRankingFilterParams = { memberStatus: 'ACTIVE' };
     const pid = this.effectiveRankingPhaseId();
     if (pid) params.phaseId = pid;
     const gid = this.selectedRankingGroupId();
@@ -1362,7 +1363,7 @@ export class TournamentDetailComponent implements OnInit {
         .listForTournament(id)
         .pipe(catchError(() => of<IMatchResponse[]>([]))),
       ranking: this._rankingService
-        .list(id)
+        .list(id, { memberStatus: 'ACTIVE' })
         .pipe(catchError(() => of<IRankingRowResponse[]>([]))),
       myPredictions: this._predictionsService.listMineInTournament(id).pipe(
         catchError((err: unknown) => {

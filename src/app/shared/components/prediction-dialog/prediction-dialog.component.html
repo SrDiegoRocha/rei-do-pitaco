@@ -106,10 +106,92 @@
         </div>
       </div>
 
-      @if (isPenaltyDraw()) {
+      @if (showExtraTime()) {
+        <div class="extra">
+          <p class="extra__title">Empate no tempo normal — palpite da prorrogação</p>
+          <p class="extra__hint">
+            Placar cumulativo: já inclui os gols do tempo normal.
+          </p>
+          <div class="extra__score">
+            <div class="extra__side">
+              <span class="extra__label">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
+              <div class="stepper stepper--sm">
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || homeExtraTimeScore() <= homeScore()"
+                  [attr.aria-label]="'Diminuir prorrogação de ' + m.homeTeam.name"
+                  (click)="decExtraHome()"
+                >
+                  <lucide-icon [img]="minusIcon" [size]="16" />
+                </button>
+                <input
+                  type="number"
+                  class="stepper__input stepper__input--sm"
+                  inputmode="numeric"
+                  [min]="homeScore()"
+                  max="99"
+                  [value]="homeExtraTimeScore()"
+                  [disabled]="submitting()"
+                  [attr.aria-label]="'Prorrogação de ' + m.homeTeam.name"
+                  (input)="onExtraHomeInput($event)"
+                />
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || homeExtraTimeScore() >= 99"
+                  [attr.aria-label]="'Aumentar prorrogação de ' + m.homeTeam.name"
+                  (click)="incExtraHome()"
+                >
+                  <lucide-icon [img]="plusIcon" [size]="16" />
+                </button>
+              </div>
+            </div>
+
+            <span class="extra__sep" aria-hidden="true">×</span>
+
+            <div class="extra__side">
+              <span class="extra__label">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
+              <div class="stepper stepper--sm">
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || awayExtraTimeScore() <= awayScore()"
+                  [attr.aria-label]="'Diminuir prorrogação de ' + m.awayTeam.name"
+                  (click)="decExtraAway()"
+                >
+                  <lucide-icon [img]="minusIcon" [size]="16" />
+                </button>
+                <input
+                  type="number"
+                  class="stepper__input stepper__input--sm"
+                  inputmode="numeric"
+                  [min]="awayScore()"
+                  max="99"
+                  [value]="awayExtraTimeScore()"
+                  [disabled]="submitting()"
+                  [attr.aria-label]="'Prorrogação de ' + m.awayTeam.name"
+                  (input)="onExtraAwayInput($event)"
+                />
+                <button
+                  type="button"
+                  class="stepper__btn"
+                  [disabled]="submitting() || awayExtraTimeScore() >= 99"
+                  [attr.aria-label]="'Aumentar prorrogação de ' + m.awayTeam.name"
+                  (click)="incExtraAway()"
+                >
+                  <lucide-icon [img]="plusIcon" [size]="16" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (showPenalty()) {
         <div class="pens">
           <p class="pens__title">
-            {{ penaltyTwoLegged() ? 'Empate no agregado' : 'Empate no tempo normal' }} — quem avança?
+            {{ penaltyPromptLabel() }} — quem avança?
           </p>
           <div class="pens__options" role="group" aria-label="Quem avança nos pênaltis">
             <button

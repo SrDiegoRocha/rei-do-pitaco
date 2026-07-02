@@ -7,13 +7,14 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
 import { MatchStatus } from '@core/interfaces/enums';
-import { IMatchResponse } from '@core/interfaces/match.interface';
+import { IMatchResponse, ITeamRef } from '@core/interfaces/match.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import {
   IPredictionResponse,
@@ -48,10 +49,12 @@ import { ThemeService } from '@shared/services/theme.service';
 import { ToastService } from '@shared/services/toast.service';
 import { readableAccent } from '@core/utils/color-contrast';
 import {
-  classifyPredictionOutcome,
+  buildPointsBreakdown,
+  classifyScorePair,
   PredictionOutcome,
 } from '@core/utils/prediction-outcome';
 import { knockoutRoundLabel } from '@core/utils/round-label';
+import { matchDisplayScore, matchWinnerSide } from '@core/utils/match-score';
 import {
   ArrowLeftRight,
   Ban,
@@ -80,6 +83,7 @@ type MatchTab = 'predictions' | 'info';
   standalone: true,
   imports: [
     RouterLink,
+    NgTemplateOutlet,
     LucideAngularModule,
     TeamBadgeComponent,
     AvatarComponent,
@@ -240,16 +244,15 @@ export class MatchDetailComponent implements OnInit {
     () => {
       const m = this.match();
       if (!m || m.status !== 'COMPLETED') return null;
-      if (m.homeScore === null || m.awayScore === null) return null;
-      if (m.homeScore > m.awayScore) return 'home';
-      if (m.awayScore > m.homeScore) return 'away';
-      if (m.homePenalties !== null && m.awayPenalties !== null) {
-        if (m.homePenalties > m.awayPenalties) return 'home';
-        if (m.awayPenalties > m.homePenalties) return 'away';
-      }
-      return 'draw';
+      return matchWinnerSide(m);
     },
   );
+
+  /** Placar principal exibido: prorrogação quando houve, senão o do tempo normal. */
+  protected readonly displayScore = computed(() => {
+    const m = this.match();
+    return m ? matchDisplayScore(m) : null;
+  });
 
   protected readonly hasPenalties = computed(() => {
     const m = this.match();
@@ -296,10 +299,40 @@ export class MatchDetailComponent implements OnInit {
   /** Aba "Detalhes": visível para todos (traz compartilhar + ações do dono). */
   protected readonly showInfoTab = computed(() => this.match() !== null);
 
-  /** Faixa do palpite (exato/vencedor/erro) p/ colorir o badge de pontos. */
-  protected predictionOutcome(points: number): PredictionOutcome | null {
-    return classifyPredictionOutcome(points, this.tournament()?.settings);
+  /**
+   * Faixa do palpite (exato/vencedor/erro) p/ colorir o badge de pontos. Com o
+   * `points` agora sendo uma SOMA (90' + prorrogação + pênaltis), a cor reflete
+   * o placar do tempo normal — comparado direto ao resultado, não ao total.
+   */
+  protected predictionOutcome(p: IPredictionResponse): PredictionOutcome | null {
+    const m = this.match();
+    if (!m) return null;
+    return classifyScorePair(p.homeScore, p.awayScore, m.homeScore, m.awayScore);
   }
+
+  /**
+   * Detalhamento dos pontos do palpite (ex.: "Placar 90′ +5 · Prorrogação +2 ·
+   * Pênaltis +2"), exposto como tooltip do chip. `null` quando não há blocos
+   * extras a mostrar (jogo decidido no tempo normal).
+   */
+  protected pointsBreakdownLabel(p: IPredictionResponse): string | null {
+    const m = this.match();
+    const scoring = this.tournament()?.settings;
+    if (!m || !scoring) return null;
+    const parts = buildPointsBreakdown(p, m, scoring);
+    if (parts.length <= 1) return null;
+    return parts.map((c) => `${c.label} +${c.points}`).join(' · ');
+  }
+
+  /** Houve prorrogação nesta partida (resultado lançado). */
+  protected readonly hasExtraTime = computed(() => {
+    const m = this.match();
+    return (
+      m !== null &&
+      m.homeExtraTimeScore !== null &&
+      m.awayExtraTimeScore !== null
+    );
+  });
 
   // "Previsão da Galera" — agregado dos pitacos antes do jogo começar.
   protected readonly predictionStats =
@@ -689,6 +722,39 @@ export class MatchDetailComponent implements OnInit {
   /** A row é do próprio usuário e pode virar edição de pitaco? */
   protected isEditableMyRow(p: IPredictionResponse): boolean {
     return p.id === this.myPrediction()?.id && this.canPredict();
+  }
+
+  /**
+   * Palpite a exibir na linha: o próprio quando os placares já foram revelados;
+   * senão, apenas o do próprio usuário (sempre visível pra ele); `null` quando
+   * está oculto (palpite alheio antes da revelação).
+   */
+  protected rowPrediction(p: IPredictionResponse): IPredictionResponse | null {
+    if (this.canRevealScores()) return p;
+    if (p.id === this.myPrediction()?.id) return this.myPrediction();
+    return null;
+  }
+
+  /**
+   * O palpite tem prorrogação ou pênaltis? Só então a linha vira duas linhas
+   * (essas informações descem pra segunda). Sem isso, mantém tudo inline.
+   */
+  protected predictionHasExtras(p: IPredictionResponse): boolean {
+    return (
+      (p.homeExtraTimeScore !== null && p.awayExtraTimeScore !== null) ||
+      p.penaltyWinner !== null
+    );
+  }
+
+  /**
+   * Time que o palpiteiro escolheu para avançar nos pênaltis (só existe em
+   * palpite de empate elegível a pênaltis); `null` quando o pitaco não envolve
+   * pênaltis. Usado para estampar o escudo do escolhido no placar do pitaco.
+   */
+  protected penaltyPickTeam(p: IPredictionResponse | null): ITeamRef | null {
+    const m = this.match();
+    if (!m || !p || !p.penaltyWinner) return null;
+    return p.penaltyWinner === 'HOME' ? m.homeTeam : m.awayTeam;
   }
 
   /** "Remover pitaco" acionado de dentro do dialog de edição. */

@@ -23,6 +23,9 @@ import { LucideAngularModule, Minus, Plus } from 'lucide-angular';
 export interface IPredictionPayload {
   homeScore: number;
   awayScore: number;
+  /** Placar da prorrogação (cumulativo); enviado só em empate no 90' de KO jogo único. */
+  homeExtraTimeScore?: number | null;
+  awayExtraTimeScore?: number | null;
   penaltyWinner?: PenaltyWinner;
 }
 
@@ -68,22 +71,61 @@ export class PredictionDialogComponent {
 
   protected readonly homeScore = signal(0);
   protected readonly awayScore = signal(0);
+  protected readonly homeExtraTimeScore = signal(0);
+  protected readonly awayExtraTimeScore = signal(0);
   protected readonly penaltyWinner = signal<PenaltyWinner | null>(null);
 
   /**
-   * Empate que vai aos pênaltis: jogo elegível + placar agregado empatado.
-   * Em jogo único o agregado é 0/0, então reduz a "placar palpitado empatado".
+   * KO de jogo único: elegível a pênaltis mas fora do modo ida-e-volta. Só
+   * nesse caso existe prorrogação (no ida-e-volta o desempate vai direto aos
+   * pênaltis do agregado).
    */
-  protected readonly isPenaltyDraw = computed(
-    () =>
+  protected readonly extraTimeEligible = computed(
+    () => this.penaltyEligible() && !this.penaltyTwoLegged(),
+  );
+
+  /** Empate no tempo normal (jogo único) — abre o palpite de prorrogação. */
+  protected readonly regularDraw = computed(
+    () => this.homeScore() === this.awayScore(),
+  );
+
+  /** Mostra os campos de prorrogação: KO jogo único com 90' empatado. */
+  protected readonly showExtraTime = computed(
+    () => this.extraTimeEligible() && this.regularDraw(),
+  );
+
+  /** Empate palpitado na prorrogação — leva aos pênaltis. */
+  protected readonly extraTimeDraw = computed(
+    () => this.homeExtraTimeScore() === this.awayExtraTimeScore(),
+  );
+
+  /**
+   * Empate que vai aos pênaltis. Em KO jogo único é preciso empatar no 90' e na
+   * prorrogação; em ida-e-volta basta o agregado (pernas anteriores + palpite)
+   * empatar. Comanda a exibição do seletor "quem avança".
+   */
+  protected readonly showPenalty = computed(() => {
+    if (this.extraTimeEligible()) {
+      return this.showExtraTime() && this.extraTimeDraw();
+    }
+    return (
       this.penaltyEligible() &&
       this.aggregateBeforeHome() + this.homeScore() ===
-        this.aggregateBeforeAway() + this.awayScore(),
-  );
+        this.aggregateBeforeAway() + this.awayScore()
+    );
+  });
+
+  /** Texto do bloco de pênaltis conforme a origem do empate. */
+  protected readonly penaltyPromptLabel = computed(() => {
+    if (this.extraTimeEligible()) return 'Empate na prorrogação';
+    return this.penaltyTwoLegged()
+      ? 'Empate no agregado'
+      : 'Empate no tempo normal';
+  });
 
   /** Bloqueia o envio enquanto o empate em pênaltis não tiver um escolhido. */
   protected readonly canConfirm = computed(
-    () => !(this.isPenaltyDraw() && this.penaltyWinner() === null),
+    () => !(this.showPenalty() && this.penaltyWinner() === null),
   );
 
   protected readonly title = computed(() =>
@@ -115,10 +157,22 @@ export class PredictionDialogComponent {
       const isOpen = this.open();
       if (!isOpen) return;
       const c = this.current();
-      this.homeScore.set(c?.homeScore ?? 0);
-      this.awayScore.set(c?.awayScore ?? 0);
+      const home = c?.homeScore ?? 0;
+      const away = c?.awayScore ?? 0;
+      this.homeScore.set(home);
+      this.awayScore.set(away);
+      // Prorrogação é cumulativa: nunca menor que o placar do 90'. Reaproveita o
+      // palpite salvo quando houver; senão parte do próprio placar do 90'.
+      this.homeExtraTimeScore.set(Math.max(home, c?.homeExtraTimeScore ?? home));
+      this.awayExtraTimeScore.set(Math.max(away, c?.awayExtraTimeScore ?? away));
       this.penaltyWinner.set(c?.penaltyWinner ?? null);
     });
+  }
+
+  /** Prorrogação nunca abaixo do placar do 90' (placar cumulativo). */
+  private _syncExtraTimeFloor(): void {
+    this.homeExtraTimeScore.update((v) => Math.max(v, this.homeScore()));
+    this.awayExtraTimeScore.update((v) => Math.max(v, this.awayScore()));
   }
 
   protected selectPenaltyWinner(side: PenaltyWinner): void {
@@ -129,6 +183,7 @@ export class PredictionDialogComponent {
   protected incHome(): void {
     if (this.submitting()) return;
     this.homeScore.update((v) => Math.min(MAX_SCORE, v + 1));
+    this._syncExtraTimeFloor();
   }
 
   protected decHome(): void {
@@ -139,6 +194,7 @@ export class PredictionDialogComponent {
   protected incAway(): void {
     if (this.submitting()) return;
     this.awayScore.update((v) => Math.min(MAX_SCORE, v + 1));
+    this._syncExtraTimeFloor();
   }
 
   protected decAway(): void {
@@ -148,10 +204,42 @@ export class PredictionDialogComponent {
 
   protected onHomeInput(event: Event): void {
     this.homeScore.set(this._parseScore((event.target as HTMLInputElement).value));
+    this._syncExtraTimeFloor();
   }
 
   protected onAwayInput(event: Event): void {
     this.awayScore.set(this._parseScore((event.target as HTMLInputElement).value));
+    this._syncExtraTimeFloor();
+  }
+
+  protected incExtraHome(): void {
+    if (this.submitting()) return;
+    this.homeExtraTimeScore.update((v) => Math.min(MAX_SCORE, v + 1));
+  }
+
+  protected decExtraHome(): void {
+    if (this.submitting()) return;
+    this.homeExtraTimeScore.update((v) => Math.max(this.homeScore(), v - 1));
+  }
+
+  protected incExtraAway(): void {
+    if (this.submitting()) return;
+    this.awayExtraTimeScore.update((v) => Math.min(MAX_SCORE, v + 1));
+  }
+
+  protected decExtraAway(): void {
+    if (this.submitting()) return;
+    this.awayExtraTimeScore.update((v) => Math.max(this.awayScore(), v - 1));
+  }
+
+  protected onExtraHomeInput(event: Event): void {
+    const raw = this._parseScore((event.target as HTMLInputElement).value);
+    this.homeExtraTimeScore.set(Math.max(this.homeScore(), raw));
+  }
+
+  protected onExtraAwayInput(event: Event): void {
+    const raw = this._parseScore((event.target as HTMLInputElement).value);
+    this.awayExtraTimeScore.set(Math.max(this.awayScore(), raw));
   }
 
   protected onBackdropClick(): void {
@@ -164,8 +252,13 @@ export class PredictionDialogComponent {
       homeScore: this.homeScore(),
       awayScore: this.awayScore(),
     };
+    // Prorrogação só quando o 90' empatou em KO jogo único (a API rejeita fora disso).
+    if (this.showExtraTime()) {
+      payload.homeExtraTimeScore = this.homeExtraTimeScore();
+      payload.awayExtraTimeScore = this.awayExtraTimeScore();
+    }
     // Só envia penaltyWinner num empate elegível (a API rejeita fora disso).
-    if (this.isPenaltyDraw() && this.penaltyWinner() !== null) {
+    if (this.showPenalty() && this.penaltyWinner() !== null) {
       payload.penaltyWinner = this.penaltyWinner()!;
     }
     this.confirmed.emit(payload);

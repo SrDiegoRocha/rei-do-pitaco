@@ -16,6 +16,12 @@ export interface ITournamentSettingsResponse {
   exactScorePoints: number;
   winnerPoints: number;
   wrongPoints: number;
+  /** Placar exato da prorrogação (KO jogo único). */
+  extraTimeExactScorePoints: number;
+  /** Só o vencedor da prorrogação. */
+  extraTimeWinnerPoints: number;
+  /** Acertar quem passa nos pênaltis. */
+  penaltyWinnerPoints: number;
   tiebreakCriteria: TiebreakCriteria[];
 }
 
@@ -43,6 +49,9 @@ export interface ITournamentSettingsPayload {
   exactScorePoints: number;
   winnerPoints: number;
   wrongPoints: number;
+  extraTimeExactScorePoints: number;
+  extraTimeWinnerPoints: number;
+  penaltyWinnerPoints: number;
   tiebreakCriteria: TiebreakCriteria[];
 }
 

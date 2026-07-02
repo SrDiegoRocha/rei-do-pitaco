@@ -114,6 +114,15 @@ export class TournamentFormComponent implements OnInit {
       wrongPoints: this._fb.nonNullable.control(0, {
         validators: [Validators.required, Validators.min(0)],
       }),
+      extraTimeExactScorePoints: this._fb.nonNullable.control(2, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      extraTimeWinnerPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      penaltyWinnerPoints: this._fb.nonNullable.control(2, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
       tiebreakCriteria: this._fb.nonNullable.control<TiebreakCriteria[]>(
         DEFAULT_TIEBREAK,
         { validators: [nonEmptyArrayValidator] },
@@ -199,6 +208,9 @@ export class TournamentFormComponent implements OnInit {
           exactScorePoints: init.settings.exactScorePoints,
           winnerPoints: init.settings.winnerPoints,
           wrongPoints: init.settings.wrongPoints,
+          extraTimeExactScorePoints: init.settings.extraTimeExactScorePoints,
+          extraTimeWinnerPoints: init.settings.extraTimeWinnerPoints,
+          penaltyWinnerPoints: init.settings.penaltyWinnerPoints,
           tiebreakCriteria: [...init.settings.tiebreakCriteria],
         },
       });
@@ -283,6 +295,9 @@ export class TournamentFormComponent implements OnInit {
         exactScorePoints: raw.settings.exactScorePoints,
         winnerPoints: raw.settings.winnerPoints,
         wrongPoints: raw.settings.wrongPoints,
+        extraTimeExactScorePoints: raw.settings.extraTimeExactScorePoints,
+        extraTimeWinnerPoints: raw.settings.extraTimeWinnerPoints,
+        penaltyWinnerPoints: raw.settings.penaltyWinnerPoints,
         tiebreakCriteria: raw.settings.tiebreakCriteria,
       },
     };

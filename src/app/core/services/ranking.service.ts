@@ -23,6 +23,9 @@ export class RankingService {
       params = params.set('round', String(filters.round));
     }
     if (filters?.matchType) params = params.set('matchType', filters.matchType);
+    if (filters?.memberStatus) {
+      params = params.set('memberStatus', filters.memberStatus);
+    }
     return this._http.get<IRankingRowResponse[]>(
       `${this._baseUrl}/api/tournaments/${tournamentId}/ranking`,
       { params },

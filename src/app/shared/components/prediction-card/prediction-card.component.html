@@ -56,7 +56,10 @@
       }
       @if (resultRevealed()) {
         <span class="pcard__actual">
-          resultado {{ m.homeScore | scoreDisplay }}×{{ m.awayScore | scoreDisplay }}
+          resultado {{ displayScore().home | scoreDisplay }}×{{ displayScore().away | scoreDisplay }}
+          @if (displayScore().isExtraTime) {
+            <span class="pcard__actual-tag">prorr.</span>
+          }
         </span>
       } @else {
         <span class="pcard__guess-label">pitaco</span>
@@ -82,6 +85,11 @@
     </div>
   </div>
 
+  @if (extraTimeGuess(); as et) {
+    <p class="pcard__pen">
+      Prorrogação: <strong>{{ et }}</strong>
+    </p>
+  }
   @if (penaltyPickName(); as pen) {
     <p class="pcard__pen">
       Nos pênaltis, avança: <strong>{{ pen }}</strong>
