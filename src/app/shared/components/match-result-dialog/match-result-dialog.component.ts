@@ -11,7 +11,12 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { TournamentPhaseType } from '@core/interfaces/enums';
 import { IMatchResponse } from '@core/interfaces/match.interface';
-import { backdropFade, dialogFade } from '@shared/animations/animations';
+import {
+  backdropFade,
+  collapseSection,
+  dialogFade,
+  scorePulse,
+} from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
 import { MarqueeDirective } from '@shared/directives/marquee.directive';
@@ -44,7 +49,7 @@ const MAX_PEN = 30;
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './match-result-dialog.component.html',
   styleUrl: './match-result-dialog.component.scss',
-  animations: [dialogFade, backdropFade],
+  animations: [dialogFade, backdropFade, collapseSection, scorePulse],
 })
 export class MatchResultDialogComponent {
   public readonly open = input<boolean>(false);

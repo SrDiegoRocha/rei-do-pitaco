@@ -44,6 +44,7 @@
               min="0"
               max="99"
               [value]="homeScore()"
+              [@scorePulse]="homeScore()"
               [disabled]="submitting()"
               [attr.aria-label]="'Placar de ' + m.homeTeam.name"
               (input)="onHomeInput($event)"
@@ -89,6 +90,7 @@
               min="0"
               max="99"
               [value]="awayScore()"
+              [@scorePulse]="awayScore()"
               [disabled]="submitting()"
               [attr.aria-label]="'Placar de ' + m.awayTeam.name"
               (input)="onAwayInput($event)"
@@ -107,7 +109,7 @@
       </div>
 
       @if (showExtraTime()) {
-        <div class="penalties">
+        <div class="penalties" @collapseSection>
           <div class="penalties__heading">
             <span class="penalties__heading-name">Prorrogação</span>
             <span class="penalties__heading-desc">
@@ -191,7 +193,7 @@
       }
 
       @if (showSingleLegPenalties()) {
-        <div class="penalties">
+        <div class="penalties" @collapseSection>
           <div class="penalties__heading">
             <span class="penalties__heading-name">Pênaltis</span>
             <span class="penalties__heading-desc">
@@ -206,7 +208,7 @@
       }
 
       @if (showTwoLeggedToggle()) {
-        <div class="penalties">
+        <div class="penalties" @collapseSection>
           <button
             type="button"
             class="penalties__toggle"
@@ -232,10 +234,12 @@
           </button>
 
           @if (hasPenalties()) {
-            <ng-container *ngTemplateOutlet="penScore" />
-            @if (penaltyError(); as err) {
-              <p class="penalties__warn" role="alert">{{ err }}</p>
-            }
+            <div class="penalties__reveal" @collapseSection>
+              <ng-container *ngTemplateOutlet="penScore" />
+              @if (penaltyError(); as err) {
+                <p class="penalties__warn" role="alert">{{ err }}</p>
+              }
+            </div>
           }
         </div>
       }

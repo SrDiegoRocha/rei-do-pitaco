@@ -11,6 +11,8 @@ import {
 
 const EASE_OUT = 'cubic-bezier(0.4, 0, 0.2, 1)';
 const EASE_DECEL = 'cubic-bezier(0, 0, 0.2, 1)';
+// Overshoot elástico leve — dá um "pop" ao mudar o placar.
+const EASE_SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
 
 /**
  * Fade cruzado entre rotas irmãs. Aplicar no container do `<router-outlet>` com
@@ -243,6 +245,49 @@ export const tabSlide = trigger('tabSlide', [
       `240ms ${EASE_OUT}`,
       style({ transform: 'translateX(0)', opacity: 1 }),
     ),
+  ]),
+]);
+
+/**
+ * Expande/colapsa uma seção condicional (prorrogação, pênaltis) suavemente,
+ * animando altura + opacidade + margem — em vez do "pulo" instantâneo quando o
+ * bloco entra ou sai do DOM.
+ *
+ * Requer que o espaçamento entre os irmãos venha de `margin-top` (não do `gap`
+ * do flex): o `gap` não é animável por item e deixaria um vão fantasma no fim
+ * da animação. Como o projeto usa `box-sizing: border-box`, animar `height`
+ * até 0 colapsa também padding e borda do bloco.
+ */
+export const collapseSection = trigger('collapseSection', [
+  transition(':enter', [
+    style({ height: '0', opacity: 0, marginTop: '0', overflow: 'hidden' }),
+    animate(
+      `260ms ${EASE_DECEL}`,
+      style({ height: '*', opacity: 1, marginTop: '*' }),
+    ),
+  ]),
+  transition(':leave', [
+    style({ overflow: 'hidden' }),
+    animate(
+      `200ms ${EASE_OUT}`,
+      style({ height: '0', opacity: 0, marginTop: '0' }),
+    ),
+  ]),
+]);
+
+/**
+ * Pulso ao mudar o placar: cresce ao incrementar, encolhe ao decrementar, com
+ * um leve overshoot elástico. Vincule ao valor numérico do campo:
+ * `[@scorePulse]="homeScore()"`. Não dispara na abertura (só em mudanças).
+ */
+export const scorePulse = trigger('scorePulse', [
+  transition(':increment', [
+    style({ transform: 'scale(1.22)' }),
+    animate(`260ms ${EASE_SPRING}`, style({ transform: 'scale(1)' })),
+  ]),
+  transition(':decrement', [
+    style({ transform: 'scale(0.82)' }),
+    animate(`260ms ${EASE_SPRING}`, style({ transform: 'scale(1)' })),
   ]),
 ]);
 

@@ -44,6 +44,7 @@
               min="0"
               max="99"
               [value]="homeScore()"
+              [@scorePulse]="homeScore()"
               [disabled]="submitting()"
               [attr.aria-label]="'Pitaco de ' + m.homeTeam.name"
               (input)="onHomeInput($event)"
@@ -89,6 +90,7 @@
               min="0"
               max="99"
               [value]="awayScore()"
+              [@scorePulse]="awayScore()"
               [disabled]="submitting()"
               [attr.aria-label]="'Pitaco de ' + m.awayTeam.name"
               (input)="onAwayInput($event)"
@@ -107,7 +109,7 @@
       </div>
 
       @if (showExtraTime()) {
-        <div class="extra">
+        <div class="extra" @collapseSection>
           <p class="extra__title">Empate no tempo normal — palpite da prorrogação</p>
           <p class="extra__hint">
             Placar cumulativo: já inclui os gols do tempo normal.
@@ -189,7 +191,7 @@
       }
 
       @if (showPenalty()) {
-        <div class="pens">
+        <div class="pens" @collapseSection>
           <p class="pens__title">
             {{ penaltyPromptLabel() }} — quem avança?
           </p>

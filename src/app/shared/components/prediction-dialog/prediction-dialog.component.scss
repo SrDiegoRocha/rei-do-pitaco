@@ -35,8 +35,13 @@
   max-width: 480px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
   box-shadow: var(--shadow-xl);
+}
+
+/* Espaçamento entre seções via margin (não `gap`): assim cada seção controla
+   a própria margem, que a animação de colapso consegue animar por item. */
+.dialog__content > * + * {
+  margin-top: var(--space-4);
 }
 
 .dialog__header {
@@ -141,13 +146,18 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color 160ms ease, border-color 160ms ease,
-    color 160ms ease, opacity 160ms ease;
+    color 160ms ease, opacity 160ms ease, transform 120ms ease;
 }
 
 .stepper__btn:hover:not(:disabled) {
   background-color: color-mix(in srgb, var(--brand) 12%, transparent);
   border-color: var(--brand);
   color: var(--brand);
+}
+
+/* Feedback tátil ao tocar/clicar: o botão "afunda" levemente. */
+.stepper__btn:active:not(:disabled) {
+  transform: scale(0.88);
 }
 
 .stepper__btn:disabled {
@@ -298,11 +308,15 @@
   font-family: var(--font-sans);
   cursor: pointer;
   transition: background-color 160ms ease, border-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease, transform 120ms ease;
 }
 
 .pens__option:hover:not(:disabled) {
   border-color: var(--brand);
+}
+
+.pens__option:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .pens__option:disabled {
@@ -341,7 +355,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .dialog__remove {
@@ -464,5 +478,13 @@
   .dialog__content {
     border-radius: var(--radius-xl);
     padding: var(--space-6);
+  }
+}
+
+/* Sem "afundar" botões para quem prefere menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  .stepper__btn:active:not(:disabled),
+  .pens__option:active:not(:disabled) {
+    transform: none;
   }
 }

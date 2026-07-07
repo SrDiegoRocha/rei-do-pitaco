@@ -13,7 +13,12 @@ import {
   IPredictionResponse,
   PenaltyWinner,
 } from '@core/interfaces/prediction.interface';
-import { backdropFade, dialogFade } from '@shared/animations/animations';
+import {
+  backdropFade,
+  collapseSection,
+  dialogFade,
+  scorePulse,
+} from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { DraggableSheetDirective } from '@shared/directives/draggable-sheet.directive';
 import { MarqueeDirective } from '@shared/directives/marquee.directive';
@@ -44,7 +49,7 @@ const MAX_SCORE = 99;
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prediction-dialog.component.html',
   styleUrl: './prediction-dialog.component.scss',
-  animations: [dialogFade, backdropFade],
+  animations: [dialogFade, backdropFade, collapseSection, scorePulse],
 })
 export class PredictionDialogComponent {
   public readonly open = input<boolean>(false);
