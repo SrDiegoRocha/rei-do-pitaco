@@ -13,6 +13,7 @@ export * from './services/phase-groups.service';
 export * from './services/phase-teams.service';
 export * from './services/zones.service';
 export * from './services/matches.service';
+export * from './services/match-analysis.service';
 export * from './services/standings.service';
 export * from './services/predictions.service';
 export * from './services/ranking.service';

@@ -124,6 +124,18 @@
       >
         Pitacos
       </button>
+      @if (showAnalysisTab()) {
+        <button
+          type="button"
+          role="tab"
+          class="tabs__btn"
+          [class.tabs__btn--active]="activeTab() === 'analysis'"
+          [attr.aria-selected]="activeTab() === 'analysis'"
+          (click)="setTab('analysis')"
+        >
+          Retrospecto
+        </button>
+      }
       @if (showInfoTab()) {
         <button
           type="button"
@@ -408,6 +420,17 @@
             </div>
           }
         </ng-template>
+      }
+
+      @if (activeTab() === 'analysis') {
+        <app-match-analysis
+          [analysis]="analysis()"
+          [loading]="analysisLoading()"
+          [error]="analysisError()"
+          [homeTeam]="m.homeTeam"
+          [awayTeam]="m.awayTeam"
+          (retry)="reloadAnalysis()"
+        />
       }
 
       @if (activeTab() === 'info') {

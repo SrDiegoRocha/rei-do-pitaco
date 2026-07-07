@@ -1,0 +1,511 @@
+@if (loading()) {
+  <div class="analysis__skeleton">
+    <div class="u-skeleton analysis__skeleton-card"></div>
+    <div class="u-skeleton analysis__skeleton-card"></div>
+    <div class="u-skeleton analysis__skeleton-card analysis__skeleton-card--tall"></div>
+  </div>
+} @else if (error()) {
+  <app-error-state
+    title="Retrospecto indisponível"
+    message="Não foi possível carregar o histórico desta partida."
+    [error]="error()"
+    [canRetry]="true"
+    (retry)="onRetry()"
+  />
+} @else if (analysis(); as a) {
+  <!-- 1. Contexto na competição ─────────────────────────────────────── -->
+  @if (hasStandingContext()) {
+    <section class="card">
+      <header class="card__head">
+        <lucide-icon [img]="trendingIcon" [size]="16" aria-hidden="true" />
+        <h3 class="card__title">{{ standingSectionTitle() }}</h3>
+      </header>
+
+      <div class="context">
+        @for (side of [home(), away()]; track $index) {
+          @if (side; as s) {
+            <div class="context__team">
+              <app-team-badge
+                [name]="s.team.name"
+                [shortName]="s.team.shortName"
+                [badgeUrl]="s.team.badgeUrl"
+                [primaryColor]="teamColor(s.team)"
+                [teamType]="s.team.teamType"
+                [countryCode]="s.team.countryCode"
+                [size]="36"
+              />
+              <span class="context__name">{{ s.team.shortName ?? s.team.name }}</span>
+
+              @if (s.standing; as ctx) {
+                <span class="context__pos" [style.--accent]="teamColor(s.team)">
+                  {{ positionLabel(ctx) }}
+                </span>
+                <span class="context__caption">{{ positionCaption(ctx) }}</span>
+                @if (ctx.points !== null) {
+                  <span class="context__pts">
+                    {{ ctx.points }} pts
+                    @if (ctx.played !== null) {
+                      · {{ ctx.played }}J
+                    }
+                  </span>
+                }
+              } @else {
+                <span class="context__pos context__pos--none">—</span>
+                <span class="context__caption">Sem posição definida</span>
+              }
+            </div>
+          }
+        }
+      </div>
+    </section>
+  }
+
+  <!-- 1a. Gols esperados na partida (projeção pela forma) ─────────────── -->
+  @if (expectedGoals(); as xg) {
+    <section class="card">
+      <header class="card__head">
+        <lucide-icon [img]="goalIcon" [size]="16" aria-hidden="true" />
+        <h3 class="card__title">Gols esperados na partida</h3>
+      </header>
+
+      <div class="xg">
+        <div class="xg__side">
+          <app-team-badge
+            [name]="home()?.team?.name"
+            [shortName]="home()?.team?.shortName"
+            [badgeUrl]="home()?.team?.badgeUrl"
+            [primaryColor]="teamColor(home()?.team)"
+            [teamType]="home()?.team?.teamType"
+            [countryCode]="home()?.team?.countryCode"
+            [size]="28"
+          />
+          <span class="xg__val" [style.--accent]="teamColor(home()?.team)">{{ xgLabel(xg.home) }}</span>
+        </div>
+        <span class="xg__sep">×</span>
+        <div class="xg__side">
+          <span class="xg__val" [style.--accent]="teamColor(away()?.team)">{{ xgLabel(xg.away) }}</span>
+          <app-team-badge
+            [name]="away()?.team?.name"
+            [shortName]="away()?.team?.shortName"
+            [badgeUrl]="away()?.team?.badgeUrl"
+            [primaryColor]="teamColor(away()?.team)"
+            [teamType]="away()?.team?.teamType"
+            [countryCode]="away()?.team?.countryCode"
+            [size]="28"
+          />
+        </div>
+      </div>
+
+      <p class="xg__note">
+        Projeção pela forma recente (ataque × defesa dos últimos jogos). Não é
+        garantia — é palpite com base em números.
+      </p>
+    </section>
+  }
+
+  <!-- 1b. Comparativo "quem chega melhor" ────────────────────────────── -->
+  @if (showCompare()) {
+    <section class="card">
+      <header class="card__head">
+        <lucide-icon [img]="scaleIcon" [size]="16" aria-hidden="true" />
+        <h3 class="card__title">Quem chega melhor</h3>
+      </header>
+
+      <div class="compare__teams">
+        <span class="compare__team">
+          <app-team-badge
+            [name]="home()?.team?.name"
+            [shortName]="home()?.team?.shortName"
+            [badgeUrl]="home()?.team?.badgeUrl"
+            [primaryColor]="teamColor(home()?.team)"
+            [teamType]="home()?.team?.teamType"
+            [countryCode]="home()?.team?.countryCode"
+            [size]="20"
+          />
+          {{ home()?.team?.shortName ?? home()?.team?.name }}
+        </span>
+        <span class="compare__team compare__team--end">
+          {{ away()?.team?.shortName ?? away()?.team?.name }}
+          <app-team-badge
+            [name]="away()?.team?.name"
+            [shortName]="away()?.team?.shortName"
+            [badgeUrl]="away()?.team?.badgeUrl"
+            [primaryColor]="teamColor(away()?.team)"
+            [teamType]="away()?.team?.teamType"
+            [countryCode]="away()?.team?.countryCode"
+            [size]="20"
+          />
+        </span>
+      </div>
+
+      @for (metric of compareMetrics(); track metric.key) {
+        <div class="compare__row">
+          <span class="compare__val" [class.compare__val--lead]="metric.homeLead">
+            {{ metric.homeLabel }}
+          </span>
+          <div class="compare__mid">
+            <span class="compare__metric">{{ metric.label }}</span>
+            <div class="compare__bar">
+              <span
+                class="compare__bar-seg"
+                [style.width.%]="metric.homePct"
+                [style.--accent]="teamColor(home()?.team)"
+              ></span>
+              <span
+                class="compare__bar-seg compare__bar-seg--away"
+                [style.width.%]="100 - metric.homePct"
+                [style.--accent]="teamColor(away()?.team)"
+              ></span>
+            </div>
+          </div>
+          <span class="compare__val" [class.compare__val--lead]="metric.awayLead">
+            {{ metric.awayLabel }}
+          </span>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- 2. Confronto direto ────────────────────────────────────────────── -->
+  <section class="card">
+    <header class="card__head">
+      <lucide-icon [img]="swordsIcon" [size]="16" aria-hidden="true" />
+      <h3 class="card__title">Confronto direto no torneio</h3>
+    </header>
+
+    @if (h2hEmpty()) {
+      <p class="card__empty">
+        Estes times ainda não se enfrentaram neste torneio.
+      </p>
+    } @else if (h2h(); as h) {
+      <div class="h2h-summary">
+        <div class="h2h-summary__cell">
+          <span class="h2h-summary__val">{{ h.homeTeamWins }}</span>
+          <span class="h2h-summary__lbl">{{ home()?.team?.shortName ?? 'Mandante' }}</span>
+        </div>
+        <div class="h2h-summary__cell h2h-summary__cell--mid">
+          <span class="h2h-summary__val">{{ h.draws }}</span>
+          <span class="h2h-summary__lbl">Empates</span>
+        </div>
+        <div class="h2h-summary__cell">
+          <span class="h2h-summary__val">{{ h.awayTeamWins }}</span>
+          <span class="h2h-summary__lbl">{{ away()?.team?.shortName ?? 'Visitante' }}</span>
+        </div>
+      </div>
+
+      <div
+        class="h2h-bar"
+        role="img"
+        [attr.aria-label]="
+          h.homeTeamWins + ' vitórias do mandante, ' +
+          h.draws + ' empates, ' +
+          h.awayTeamWins + ' vitórias do visitante'
+        "
+      >
+        <span
+          class="h2h-bar__seg h2h-bar__seg--home"
+          [style.width.%]="h2hPct(h.homeTeamWins)"
+          [style.--accent]="teamColor(home()?.team)"
+        ></span>
+        <span class="h2h-bar__seg h2h-bar__seg--draw" [style.width.%]="h2hPct(h.draws)"></span>
+        <span
+          class="h2h-bar__seg h2h-bar__seg--away"
+          [style.width.%]="h2hPct(h.awayTeamWins)"
+          [style.--accent]="teamColor(away()?.team)"
+        ></span>
+      </div>
+
+      <p class="h2h-goals">
+        Gols no confronto:
+        <strong>{{ h.homeTeamGoals }}</strong> a <strong>{{ h.awayTeamGoals }}</strong>
+        <span class="h2h-goals__hint">({{ h.totalMeetings }} {{ h.totalMeetings === 1 ? 'jogo' : 'jogos' }})</span>
+      </p>
+
+      @if (h2hAvgGoals(); as avg) {
+        <p class="h2h-avg">
+          <lucide-icon [img]="goalIcon" [size]="13" aria-hidden="true" />
+          Média de <strong>{{ avg }}</strong> gols por confronto
+        </p>
+      }
+
+      @if (h.recentMeetings.length > 0) {
+        <ul class="meetings">
+          @for (m of h.recentMeetings; track m.matchId) {
+            <li class="meeting">
+              <span class="meeting__side">
+                <app-team-badge
+                  [name]="m.homeTeam.name"
+                  [shortName]="m.homeTeam.shortName"
+                  [badgeUrl]="m.homeTeam.badgeUrl"
+                  [primaryColor]="teamColor(m.homeTeam)"
+                  [teamType]="m.homeTeam.teamType"
+                  [countryCode]="m.homeTeam.countryCode"
+                  [size]="20"
+                />
+                <span class="meeting__team">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
+              </span>
+              <span class="meeting__score">
+                {{ m.homeGoals | scoreDisplay }}<span class="meeting__sep">×</span>{{ m.awayGoals | scoreDisplay }}
+                @if (h2hPenaltyLabel(m); as pen) {
+                  <span class="meeting__pen">{{ pen }}</span>
+                }
+              </span>
+              <span class="meeting__side meeting__side--end">
+                <span class="meeting__team">{{ m.awayTeam.shortName ?? m.awayTeam.name }}</span>
+                <app-team-badge
+                  [name]="m.awayTeam.name"
+                  [shortName]="m.awayTeam.shortName"
+                  [badgeUrl]="m.awayTeam.badgeUrl"
+                  [primaryColor]="teamColor(m.awayTeam)"
+                  [teamType]="m.awayTeam.teamType"
+                  [countryCode]="m.awayTeam.countryCode"
+                  [size]="20"
+                />
+              </span>
+              <span class="meeting__meta">{{ m.phaseName }}@if (shortDate(m.scheduledAt); as d) { · {{ d }} }</span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+
+  <!-- 3. Forma recente de cada time ───────────────────────────────────── -->
+  @for (side of [home(), away()]; track $index) {
+    @if (side; as s) {
+      <section class="card">
+        <header class="card__head card__head--team">
+          <lucide-icon [img]="historyIcon" [size]="16" aria-hidden="true" />
+          <h3 class="card__title">
+            Últimos jogos · {{ s.team.shortName ?? s.team.name }}
+          </h3>
+          <app-team-badge
+            class="card__head-badge"
+            [name]="s.team.name"
+            [shortName]="s.team.shortName"
+            [badgeUrl]="s.team.badgeUrl"
+            [primaryColor]="teamColor(s.team)"
+            [teamType]="s.team.teamType"
+            [countryCode]="s.team.countryCode"
+            [size]="24"
+          />
+        </header>
+
+        @if (s.stats.played <= 0) {
+          <p class="card__empty">Sem jogos anteriores neste torneio.</p>
+        } @else {
+          @let rest = s.restDays;
+
+          <!-- Forma (dots V/E/D) -->
+          <div class="form-row">
+            <div class="dots" aria-hidden="true">
+              @for (m of s.recentMatches; track m.matchId) {
+                <span
+                  class="dot"
+                  [class]="outcomeClass(m.outcome)"
+                  [attr.title]="outcomeTitle(m)"
+                >
+                  {{ outcomeLetter(m.outcome) }}
+                </span>
+              }
+            </div>
+            <div class="form-row__chips">
+              @if (streakLabel(s.stats.streak); as label) {
+                <span class="streak" [class]="streakClass(s.stats.streak)">
+                  <lucide-icon [img]="flameIcon" [size]="12" aria-hidden="true" />
+                  {{ label }}
+                </span>
+              }
+              @if (rest !== null) {
+                <span
+                  class="streak streak--neutral"
+                  [attr.title]="'Dias desde o último jogo'"
+                >
+                  <lucide-icon [img]="timerIcon" [size]="12" aria-hidden="true" />
+                  {{ rest === 0 ? 'jogou hoje' : rest + 'd de descanso' }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Grade de estatísticas -->
+          <dl class="stats">
+            <div class="stats__item">
+              <dt>Aproveitamento</dt>
+              <dd>{{ performanceLabel(s) }}</dd>
+            </div>
+            <div class="stats__item">
+              <dt>Retrospecto</dt>
+              <dd class="stats__wdl">
+                <span class="stats__w">{{ s.stats.wins }}V</span>
+                <span class="stats__d">{{ s.stats.draws }}E</span>
+                <span class="stats__l">{{ s.stats.losses }}D</span>
+              </dd>
+            </div>
+            <div class="stats__item">
+              <dt>Gols pró</dt>
+              <dd>
+                {{ s.stats.goalsFor }}
+                <span class="stats__sub">{{ average(s.stats.goalsFor, s.stats.played) }}/jogo</span>
+              </dd>
+            </div>
+            <div class="stats__item">
+              <dt>Gols contra</dt>
+              <dd>
+                {{ s.stats.goalsAgainst }}
+                <span class="stats__sub">{{ average(s.stats.goalsAgainst, s.stats.played) }}/jogo</span>
+              </dd>
+            </div>
+            <div class="stats__item">
+              <dt>Saldo</dt>
+              <dd
+                [class.stats__pos]="s.stats.goalDifference > 0"
+                [class.stats__neg]="s.stats.goalDifference < 0"
+              >
+                {{ s.stats.goalDifference > 0 ? '+' : '' }}{{ s.stats.goalDifference }}
+              </dd>
+            </div>
+            <div class="stats__item">
+              <dt>Sem sofrer / marcar</dt>
+              <dd>{{ s.stats.cleanSheets }} · {{ s.stats.failedToScore }}</dd>
+            </div>
+          </dl>
+
+          <!-- Tendência de gols -->
+          <div class="trend">
+            <span class="trend__item">
+              <span class="trend__val">{{ s.stats.overTwoFive }}<span class="trend__of">/{{ s.stats.played }}</span></span>
+              <span class="trend__lbl">jogos +2.5 gols</span>
+            </span>
+            <span class="trend__item">
+              <span class="trend__val">{{ s.stats.bothTeamsScored }}<span class="trend__of">/{{ s.stats.played }}</span></span>
+              <span class="trend__lbl">ambas marcam</span>
+            </span>
+          </div>
+
+          <!-- Recorte por mando (opcional / fase 2) -->
+          @if (s.stats.homeRecord; as hr) {
+            @if (s.stats.awayRecord; as ar) {
+              <div class="venue">
+                <span class="venue__cell">
+                  <span class="venue__lbl">Em casa</span>
+                  <span class="venue__val">{{ hr.wins }}V {{ hr.draws }}E {{ hr.losses }}D</span>
+                </span>
+                <span class="venue__cell">
+                  <span class="venue__lbl">Fora</span>
+                  <span class="venue__val">{{ ar.wins }}V {{ ar.draws }}E {{ ar.losses }}D</span>
+                </span>
+              </div>
+            }
+          }
+
+          <!-- Lista dos últimos jogos -->
+          <ul class="games">
+            @for (m of s.recentMatches; track m.matchId) {
+              <li class="game">
+                <span class="game__result" [class]="outcomeClass(m.outcome)">
+                  {{ outcomeLetter(m.outcome) }}
+                </span>
+                <span class="game__venue" [attr.title]="m.playedHome ? 'Mandante' : 'Visitante'">
+                  {{ m.playedHome ? 'C' : 'F' }}
+                </span>
+                <app-team-badge
+                  [name]="m.opponent.name"
+                  [shortName]="m.opponent.shortName"
+                  [badgeUrl]="m.opponent.badgeUrl"
+                  [primaryColor]="teamColor(m.opponent)"
+                  [teamType]="m.opponent.teamType"
+                  [countryCode]="m.opponent.countryCode"
+                  [size]="20"
+                />
+                <span class="game__opp">{{ m.opponent.shortName ?? m.opponent.name }}</span>
+                <span class="game__score">
+                  {{ m.goalsFor | scoreDisplay }}<span class="game__sep">×</span>{{ m.goalsAgainst | scoreDisplay }}
+                  @if (m.advanced !== null) {
+                    <span class="game__pen" [class.game__pen--adv]="m.advanced">
+                      {{ m.advanced ? 'pen ✓' : 'pen ✗' }}
+                    </span>
+                  }
+                </span>
+                <span class="game__date">{{ shortDate(m.scheduledAt) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  }
+
+  <!-- 4. Como a galera se sai (desempenho dos palpiteiros) ─────────────── -->
+  @if (showPredictors()) {
+    <section class="card">
+      <header class="card__head">
+        <lucide-icon [img]="targetIcon" [size]="16" aria-hidden="true" />
+        <h3 class="card__title">Como a galera se sai</h3>
+      </header>
+
+      <div class="pred__teams">
+        <span class="pred__team">
+          <app-team-badge
+            [name]="home()?.team?.name"
+            [shortName]="home()?.team?.shortName"
+            [badgeUrl]="home()?.team?.badgeUrl"
+            [primaryColor]="teamColor(home()?.team)"
+            [teamType]="home()?.team?.teamType"
+            [countryCode]="home()?.team?.countryCode"
+            [size]="20"
+          />
+          {{ home()?.team?.shortName ?? home()?.team?.name }}
+        </span>
+        <span class="pred__team pred__team--end">
+          {{ away()?.team?.shortName ?? away()?.team?.name }}
+          <app-team-badge
+            [name]="away()?.team?.name"
+            [shortName]="away()?.team?.shortName"
+            [badgeUrl]="away()?.team?.badgeUrl"
+            [primaryColor]="teamColor(away()?.team)"
+            [teamType]="away()?.team?.teamType"
+            [countryCode]="away()?.team?.countryCode"
+            [size]="20"
+          />
+        </span>
+      </div>
+
+      @if (home()?.predictors; as hp) {
+        @if (away()?.predictors; as ap) {
+          <div class="pred__row">
+            <span class="pred__val">{{ ratePct(hp.exactScoreRate) }}</span>
+            <span class="pred__lbl">Placar exato</span>
+            <span class="pred__val">{{ ratePct(ap.exactScoreRate) }}</span>
+          </div>
+          <div class="pred__row">
+            <span class="pred__val">{{ ratePct(hp.correctOutcomeRate) }}</span>
+            <span class="pred__lbl">Acertou o desfecho</span>
+            <span class="pred__val">{{ ratePct(ap.correctOutcomeRate) }}</span>
+          </div>
+          <div class="pred__row">
+            <span class="pred__val">{{ avgPointsLabel(hp.averagePoints) }}</span>
+            <span class="pred__lbl">Média de pontos</span>
+            <span class="pred__val">{{ avgPointsLabel(ap.averagePoints) }}</span>
+          </div>
+          <div class="pred__row">
+            <span class="pred__val">{{ upsetLabel(hp) }}</span>
+            <span class="pred__lbl">Fator surpresa</span>
+            <span class="pred__val">{{ upsetLabel(ap) }}</span>
+          </div>
+        }
+      }
+
+      <p class="pred__note">
+        Sobre os pitacos dos jogos de cada time neste torneio. "Fator surpresa" =
+        jogos em que a maioria errou o resultado.
+      </p>
+    </section>
+  }
+} @else {
+  <app-empty-state
+    [icon]="historyIcon"
+    title="Retrospecto indisponível"
+    description="O histórico desta partida ainda não está disponível."
+  />
+}

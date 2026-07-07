@@ -10,6 +10,7 @@ export * from './phase-group.interface';
 export * from './phase-team.interface';
 export * from './zone.interface';
 export * from './match.interface';
+export * from './match-analysis.interface';
 export * from './user-match.interface';
 export * from './bracket.interface';
 export * from './standings.interface';

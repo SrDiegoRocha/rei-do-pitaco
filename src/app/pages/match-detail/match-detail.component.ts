@@ -15,6 +15,7 @@ import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
 import { MatchStatus } from '@core/interfaces/enums';
 import { IMatchResponse, ITeamRef } from '@core/interfaces/match.interface';
+import { IMatchAnalysisResponse } from '@core/interfaces/match-analysis.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
 import {
   IPredictionResponse,
@@ -22,6 +23,7 @@ import {
 } from '@core/interfaces/prediction.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { MatchesService } from '@core/services/matches.service';
+import { MatchAnalysisService } from '@core/services/match-analysis.service';
 import { PhasesService } from '@core/services/phases.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { TournamentMembersService } from '@core/services/tournament-members.service';
@@ -41,6 +43,7 @@ import {
 } from '@shared/components/prediction-dialog/prediction-dialog.component';
 import { MarqueeDirective } from '@shared/directives/marquee.directive';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { MatchAnalysisComponent } from './match-analysis/match-analysis.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ScoreDisplayPipe } from '@shared/pipes/score-display.pipe';
 import { SwipeNavRegistry } from '@shared/services/swipe-nav-registry.service';
@@ -61,6 +64,7 @@ import {
   CalendarDays,
   ChevronRight,
   Hash,
+  History,
   LucideAngularModule,
   Pencil,
   Share2,
@@ -76,7 +80,7 @@ const STATUS_TEXT: Record<MatchStatus, string> = {
   CANCELLED: 'Cancelada',
 };
 
-type MatchTab = 'predictions' | 'info';
+type MatchTab = 'predictions' | 'analysis' | 'info';
 
 @Component({
   selector: 'app-match-detail',
@@ -93,6 +97,7 @@ type MatchTab = 'predictions' | 'info';
     ConfirmDialogComponent,
     MarqueeDirective,
     PageHeaderComponent,
+    MatchAnalysisComponent,
     ScoreDisplayPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -104,6 +109,7 @@ export class MatchDetailComponent implements OnInit {
   private readonly _tournamentsService = inject(TournamentsService);
   private readonly _phasesService = inject(PhasesService);
   private readonly _matchesService = inject(MatchesService);
+  private readonly _analysisService = inject(MatchAnalysisService);
   private readonly _predictionsService = inject(PredictionsService);
   private readonly _membersService = inject(TournamentMembersService);
   private readonly _returnService = inject(TournamentReturnService);
@@ -126,6 +132,7 @@ export class MatchDetailComponent implements OnInit {
   protected readonly trashIcon = Trash2;
   protected readonly sparklesIcon = Sparkles;
   protected readonly chevronRightIcon = ChevronRight;
+  protected readonly historyIcon = History;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -298,6 +305,16 @@ export class MatchDetailComponent implements OnInit {
 
   /** Aba "Detalhes": visível para todos (traz compartilhar + ações do dono). */
   protected readonly showInfoTab = computed(() => this.match() !== null);
+
+  /** Aba "Retrospecto": histórico dos times + confronto direto. */
+  protected readonly showAnalysisTab = computed(() => this.match() !== null);
+
+  // Retrospecto — carregado sob demanda ao abrir a aba (economiza 1 request).
+  protected readonly analysis = signal<IMatchAnalysisResponse | null>(null);
+  protected readonly analysisLoading = signal(false);
+  protected readonly analysisError = signal<unknown>(null);
+  /** Já carregou (ou tentou) — evita refetch a cada troca de aba. */
+  private _analysisLoaded = false;
 
   /**
    * Faixa do palpite (exato/vencedor/erro) p/ colorir o badge de pontos. Com o
@@ -525,6 +542,43 @@ export class MatchDetailComponent implements OnInit {
 
   protected setTab(tab: MatchTab): void {
     this.activeTab.set(tab);
+    if (tab === 'analysis') this._ensureAnalysisLoaded();
+  }
+
+  /** Carrega o retrospecto na primeira vez que a aba é aberta. */
+  private _ensureAnalysisLoaded(): void {
+    if (this._analysisLoaded) return;
+    const t = this.tournament();
+    const m = this.match();
+    if (!t || !m) return;
+    this._analysisLoaded = true;
+    this._loadAnalysis(t.id, m.id);
+  }
+
+  /** Recarrega o retrospecto (botão "tentar novamente" no estado de erro). */
+  protected reloadAnalysis(): void {
+    const t = this.tournament();
+    const m = this.match();
+    if (!t || !m) return;
+    this._loadAnalysis(t.id, m.id);
+  }
+
+  private _loadAnalysis(tid: string, mid: string): void {
+    this.analysisLoading.set(true);
+    this.analysisError.set(null);
+    this._analysisService
+      .get(tid, mid)
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.analysis.set(data);
+          this.analysisLoading.set(false);
+        },
+        error: (err: unknown) => {
+          this.analysisLoading.set(false);
+          this.analysisError.set(err);
+        },
+      });
   }
 
   /**
@@ -601,10 +655,13 @@ export class MatchDetailComponent implements OnInit {
     }
   }
 
-  /** Abas visíveis na ordem exibida (Detalhes só aparece para o organizador). */
-  protected readonly visibleTabs = computed<MatchTab[]>(() =>
-    this.showInfoTab() ? ['predictions', 'info'] : ['predictions'],
-  );
+  /** Abas visíveis na ordem exibida. */
+  protected readonly visibleTabs = computed<MatchTab[]>(() => {
+    const tabs: MatchTab[] = ['predictions'];
+    if (this.showAnalysisTab()) tabs.push('analysis');
+    if (this.showInfoTab()) tabs.push('info');
+    return tabs;
+  });
 
   /** Índice da aba ativa (alimenta a animação direcional do swipe). */
   protected readonly activeTabIndex = computed(() =>
