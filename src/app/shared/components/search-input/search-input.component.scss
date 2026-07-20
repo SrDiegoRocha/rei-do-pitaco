@@ -1,0 +1,79 @@
+:host {
+  display: block;
+  flex-shrink: 0; /* em containers flex (sheet), o campo não é espremido */
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px; /* alvo de toque confortável no mobile */
+  padding-inline: var(--space-3);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  transition:
+    border-color var(--duration-fast) var(--easing-default),
+    box-shadow var(--duration-fast) var(--easing-default);
+}
+
+[data-theme='dark'] .search-input {
+  background-color: var(--bg-elevated);
+}
+
+.search-input:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+.search-input__icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.search-input__field {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px; /* < 16px dispara auto-zoom no iOS */
+  line-height: var(--lh-base);
+  outline: none;
+  padding-block: var(--space-2);
+}
+
+.search-input__field::placeholder {
+  color: var(--text-muted);
+}
+
+/* O "x" nativo do type=search duplicaria nosso botão de limpar */
+.search-input__field::-webkit-search-cancel-button,
+.search-input__field::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-input__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-muted);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-default),
+    color var(--duration-fast) var(--easing-default);
+}
+
+.search-input__clear:hover {
+  background-color: var(--border-default);
+  color: var(--text-primary);
+}

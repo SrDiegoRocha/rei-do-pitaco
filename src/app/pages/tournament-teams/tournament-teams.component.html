@@ -134,6 +134,14 @@
         </button>
       </div>
 
+      @if (loadingAvailable() || availableTeams().length > 0) {
+        <app-search-input
+          [(value)]="availableSearch"
+          placeholder="Buscar time..."
+          ariaLabel="Buscar time por nome"
+        />
+      }
+
       @if (loadingAvailable()) {
         <div class="sheet__loading">
           @for (i of [1, 2, 3]; track i) {
@@ -164,9 +172,15 @@
             </p>
           }
         </div>
+      } @else if (filteredAvailableTeams().length === 0) {
+        <div class="sheet__empty">
+          <p class="sheet__empty-text">
+            Nenhum time encontrado para "{{ availableSearch() }}".
+          </p>
+        </div>
       } @else {
         <ul class="sheet__list">
-          @for (team of availableTeams(); track team.id) {
+          @for (team of filteredAvailableTeams(); track team.id) {
             <li>
               <button
                 type="button"

@@ -22,6 +22,7 @@ export * from './components/pagination/pagination.component';
 export * from './components/prediction-card/prediction-card.component';
 export * from './components/phase-form/phase-form.component';
 export * from './components/prediction-dialog/prediction-dialog.component';
+export * from './components/search-input/search-input.component';
 export * from './components/sidebar/sidebar.component';
 export * from './components/standings-table/standings-table.component';
 export * from './components/team-badge/team-badge.component';

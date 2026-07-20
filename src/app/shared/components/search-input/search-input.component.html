@@ -1,0 +1,34 @@
+<div class="search-input">
+  <lucide-icon
+    class="search-input__icon"
+    [img]="searchIcon"
+    [size]="18"
+    aria-hidden="true"
+  />
+  <input
+    #field
+    class="search-input__field"
+    type="search"
+    inputmode="search"
+    enterkeyhint="search"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="off"
+    spellcheck="false"
+    [placeholder]="placeholder()"
+    [attr.aria-label]="ariaLabel()"
+    [value]="value()"
+    (input)="handleInput($event)"
+    (keydown.escape)="clear(field)"
+  />
+  @if (value().length > 0) {
+    <button
+      type="button"
+      class="search-input__clear"
+      (click)="clear(field)"
+      aria-label="Limpar busca"
+    >
+      <lucide-icon [img]="clearIcon" [size]="16" />
+    </button>
+  }
+</div>

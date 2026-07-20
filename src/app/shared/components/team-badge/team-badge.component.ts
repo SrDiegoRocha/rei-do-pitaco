@@ -12,6 +12,9 @@ import { TeamType } from '@core/interfaces/enums';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './team-badge.component.html',
   styleUrl: './team-badge.component.scss',
+  host: {
+    '[class.team-badge--square]': 'isSquare()',
+  },
 })
 export class TeamBadgeComponent {
   public readonly name = input<string | null | undefined>('');
@@ -57,4 +60,11 @@ export class TeamBadgeComponent {
     const url = this.badgeUrl();
     return url && url.trim().length > 0 ? url : null;
   });
+
+  /** Escudos (imagem) têm formas variadas — rendem num quadrado transparente
+      para nunca serem cortados. A classe no host permite consumidores
+      acompanharem a forma (ex.: anel de vencedor no bracket). */
+  protected readonly isSquare = computed(
+    () => !this.useFlag() && !!this.resolvedBadgeUrl(),
+  );
 }

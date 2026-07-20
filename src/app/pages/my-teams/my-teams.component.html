@@ -37,6 +37,16 @@
     </button>
   </div>
 
+  @if (loadError() === null && !isEmpty()) {
+    <app-search-input
+      class="page__search"
+      [value]="searchTerm()"
+      (valueChange)="onSearchChange($event)"
+      placeholder="Buscar time pelo nome..."
+      ariaLabel="Buscar time pelo nome"
+    />
+  }
+
   <div class="page__pager" [@tabSlide]="groupIndex()">
   @if (loading()) {
     <div class="page__grid">
@@ -76,9 +86,33 @@
         description="Clubes pré-cadastrados aparecerão aqui em breve."
       />
     }
+  } @else if (searching() && searchLoading()) {
+    <div class="page__grid">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="u-skeleton page__skeleton-card"></div>
+      }
+    </div>
+  } @else if (searching() && searchError() !== null) {
+    <app-error-state
+      title="Não foi possível buscar os times"
+      [error]="searchError()"
+      [canRetry]="true"
+      [retrying]="searchLoading()"
+      (retry)="retrySearch()"
+    />
+  } @else if (searching() && searchResults().length === 0) {
+    <app-empty-state
+      [icon]="searchOffIcon"
+      title="Nenhum time encontrado"
+      description="Confira a grafia ou tente outro nome."
+    />
   } @else {
-    <div class="page__grid" [@listStagger]="items().length">
-      @for (t of items(); track t.id) {
+    @if (searching()) {
+      <p class="page__search-count" role="status">{{ searchCountLabel() }}</p>
+    }
+
+    <div class="page__grid" [@listStagger]="visibleTeams().length">
+      @for (t of visibleTeams(); track t.id) {
         @if (t.system) {
           <div class="page__card-static">
             <app-team-card [team]="t" />
@@ -95,13 +129,15 @@
       }
     </div>
 
-    <app-pagination
-      [currentPage]="currentPage()"
-      [totalPages]="totalPages()"
-      [totalElements]="totalElements()"
-      [disabled]="loading()"
-      (pageChange)="goToPage($event)"
-    />
+    @if (!searching()) {
+      <app-pagination
+        [currentPage]="currentPage()"
+        [totalPages]="totalPages()"
+        [totalElements]="totalElements()"
+        [disabled]="loading()"
+        (pageChange)="goToPage($event)"
+      />
+    }
   }
   </div>
 </section>

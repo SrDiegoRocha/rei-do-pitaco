@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { TeamScope, TeamType } from '@core/interfaces/enums';
 import { ITeamResponse } from '@core/interfaces/team.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
+import { matchesSearchTerm } from '@core/utils/search-text';
 import { listStagger, tabSlide } from '@shared/animations/animations';
 import { ScrollContainerService } from '@shared/services/scroll-container.service';
 import { SectionPagerService } from '@shared/services/section-pager.service';
@@ -20,11 +21,16 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { ErrorStateComponent } from '@shared/components/error-state/error-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { TeamCardComponent } from '@shared/components/team-card/team-card.component';
-import { Plus, Shield } from 'lucide-angular';
+import { Plus, SearchX, Shield } from 'lucide-angular';
 
 const PAGE_SIZE = 24;
 const SORT = 'name,asc';
+
+/* A API não busca por nome; o filtro é local sobre o grupo inteiro.
+   Clubes do sistema passam de 200 — uma página de 300 cobre tudo. */
+const SEARCH_POOL_SIZE = 300;
 
 type TeamGroup = 'mine' | 'national' | 'clubs';
 
@@ -49,6 +55,7 @@ const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
     FabComponent,
     PaginationComponent,
     RouterLink,
+    SearchInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-teams.component.html',
@@ -64,6 +71,7 @@ export class MyTeamsComponent implements OnInit {
 
   protected readonly shieldIcon = Shield;
   protected readonly plusIcon = Plus;
+  protected readonly searchOffIcon = SearchX;
 
   protected readonly group = signal<TeamGroup>('mine');
   protected readonly loading = signal(true);
@@ -82,6 +90,41 @@ export class MyTeamsComponent implements OnInit {
       this.loadError() === null,
   );
 
+  /* ── Busca por nome ──────────────────────────────────────────────────
+     Sem busca na API e com paginação server-side, filtrar só a página
+     atual esconderia resultados. Com termo ativo, o grupo inteiro é
+     carregado uma vez (cache por grupo) e filtrado localmente. */
+
+  protected readonly searchTerm = signal('');
+  protected readonly searchLoading = signal(false);
+  protected readonly searchError = signal<unknown>(null);
+
+  protected readonly searching = computed(
+    () => this.searchTerm().trim().length > 0,
+  );
+
+  /** Grupo inteiro carregado para busca (null = ainda não carregado). */
+  private readonly _searchPool = signal<ITeamResponse[] | null>(null);
+  private readonly _searchCache = new Map<TeamGroup, ITeamResponse[]>();
+  private _poolFetchGroup: TeamGroup | null = null;
+
+  protected readonly searchResults = computed(() => {
+    const pool = this._searchPool();
+    if (!pool) return [];
+    const term = this.searchTerm();
+    return pool.filter((t) => matchesSearchTerm(term, t.name, t.shortName));
+  });
+
+  protected readonly searchCountLabel = computed(() => {
+    const n = this.searchResults().length;
+    return n === 1 ? '1 time encontrado' : `${n} times encontrados`;
+  });
+
+  /** O grid exibe a página normal ou o resultado da busca. */
+  protected readonly visibleTeams = computed(() =>
+    this.searching() ? this.searchResults() : this.items(),
+  );
+
   public ngOnInit(): void {
     const swipe = (delta: 1 | -1) => this.swipeGroup(delta);
     this._swipeReg.set(swipe);
@@ -94,7 +137,18 @@ export class MyTeamsComponent implements OnInit {
     this.group.set(next);
     this.items.set([]);
     this.currentPage.set(0);
+    this._searchPool.set(this._searchCache.get(next) ?? null);
     this._load();
+    if (this.searching()) this._ensureSearchPool();
+  }
+
+  protected onSearchChange(term: string): void {
+    this.searchTerm.set(term);
+    if (term.trim()) this._ensureSearchPool();
+  }
+
+  protected retrySearch(): void {
+    this._ensureSearchPool();
   }
 
   private readonly _groupOrder: TeamGroup[] = ['mine', 'national', 'clubs'];
@@ -126,6 +180,51 @@ export class MyTeamsComponent implements OnInit {
     this.currentPage.set(page);
     this._load();
     this._scrollContainer.scrollToTop();
+  }
+
+  /** Garante o pool de busca do grupo atual (uma chamada por grupo). */
+  private _ensureSearchPool(): void {
+    const group = this.group();
+    const cached = this._searchCache.get(group);
+    if (cached) {
+      this._searchPool.set(cached);
+      this.searchLoading.set(false);
+      this.searchError.set(null);
+      return;
+    }
+    if (this._poolFetchGroup === group) return; // fetch já em andamento
+
+    this._poolFetchGroup = group;
+    this.searchLoading.set(true);
+    this.searchError.set(null);
+    const query = GROUP_QUERY[group];
+    this._service
+      .list({
+        page: 0,
+        size: SEARCH_POOL_SIZE,
+        sort: SORT,
+        scope: query.scope,
+        type: query.type,
+      })
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (page) => {
+          if (this._poolFetchGroup === group) this._poolFetchGroup = null;
+          this._searchCache.set(group, page.content);
+          // Se o usuário trocou de grupo durante o fetch, não sobrescreve.
+          if (this.group() === group) {
+            this._searchPool.set(page.content);
+            this.searchLoading.set(false);
+          }
+        },
+        error: (err: unknown) => {
+          if (this._poolFetchGroup === group) this._poolFetchGroup = null;
+          if (this.group() === group) {
+            this.searchLoading.set(false);
+            this.searchError.set(err);
+          }
+        },
+      });
   }
 
   private _load(): void {

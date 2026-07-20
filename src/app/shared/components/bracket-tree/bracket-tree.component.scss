@@ -386,6 +386,11 @@ a.bt-slot__body:hover {
   flex-shrink: 0;
 }
 
+/* Escudo de clube é quadrado: o anel do vencedor acompanha a forma. */
+.bt-side app-team-badge.team-badge--square {
+  border-radius: var(--radius-sm);
+}
+
 .bt-side--winner app-team-badge {
   box-shadow: 0 0 0 2px var(--brand);
 }

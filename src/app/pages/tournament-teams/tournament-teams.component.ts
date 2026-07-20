@@ -19,6 +19,7 @@ import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
 import { TournamentTeamsService } from '@core/services/tournament-teams.service';
 import { TournamentsService } from '@core/services/tournaments.service';
+import { matchesSearchTerm } from '@core/utils/search-text';
 import {
   backdropFade,
   listStagger,
@@ -28,6 +29,7 @@ import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confir
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { FabComponent } from '@shared/components/fab/fab.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import { ToastService } from '@shared/services/toast.service';
 import { LucideAngularModule, Plus, Trash2, Trophy, X } from 'lucide-angular';
@@ -40,6 +42,9 @@ const GROUP_QUERY: Record<TeamGroup, { scope: TeamScope; type?: TeamType }> = {
   clubs: { scope: 'system', type: 'CLUB' },
 };
 
+/* Clubes do sistema passam de 200 — uma página só, pra busca cobrir todos. */
+const AVAILABLE_PAGE_SIZE = 300;
+
 @Component({
   selector: 'app-tournament-teams',
   standalone: true,
@@ -47,6 +52,7 @@ const GROUP_QUERY: Record<TeamGroup, { scope: TeamScope; type?: TeamType }> = {
     LucideAngularModule,
     RouterLink,
     PageHeaderComponent,
+    SearchInputComponent,
     TeamBadgeComponent,
     EmptyStateComponent,
     FabComponent,
@@ -81,6 +87,15 @@ export class TournamentTeamsComponent implements OnInit {
   protected readonly availableTeams = signal<ITeamResponse[]>([]);
   protected readonly attachingTeamId = signal<string | null>(null);
   protected readonly availableGroup = signal<TeamGroup>('mine');
+  protected readonly availableSearch = signal('');
+
+  /** Lista do sheet filtrada pela busca (nome ou sigla, sem acentos). */
+  protected readonly filteredAvailableTeams = computed(() => {
+    const term = this.availableSearch();
+    const teams = this.availableTeams();
+    if (!term.trim()) return teams;
+    return teams.filter((t) => matchesSearchTerm(term, t.name, t.shortName));
+  });
 
   protected readonly confirmDetach = signal<ITournamentTeamResponse | null>(
     null,
@@ -118,6 +133,7 @@ export class TournamentTeamsComponent implements OnInit {
   protected openAddSheet(): void {
     if (!this.canEdit()) return;
     this.addSheetOpen.set(true);
+    this.availableSearch.set('');
     this._loadAvailable();
   }
 
@@ -240,7 +256,7 @@ export class TournamentTeamsComponent implements OnInit {
     const query = GROUP_QUERY[this.availableGroup()];
     const params: ITeamListParams = {
       page: 0,
-      size: 100,
+      size: AVAILABLE_PAGE_SIZE,
       sort: 'name,asc',
       scope: query.scope,
       type: query.type,
