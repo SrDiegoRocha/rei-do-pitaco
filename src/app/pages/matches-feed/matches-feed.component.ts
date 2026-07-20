@@ -232,7 +232,8 @@ export class MatchesFeedComponent implements OnInit {
     () => this.predictionItem()?.match.aggregateBeforeAway ?? 0,
   );
   protected readonly predictionTwoLegged = computed(
-    () => this.predictionItem()?.phase.matchLegMode === 'TWO_LEGGED',
+    // Modo EFETIVO da partida (considera o finalLegMode da fase, §10/§14).
+    () => this.predictionItem()?.match.matchLegMode === 'TWO_LEGGED',
   );
 
   public ngOnInit(): void {

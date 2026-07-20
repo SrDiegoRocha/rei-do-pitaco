@@ -222,6 +222,61 @@
           </span>
         </span>
       </button>
+
+      <div class="pform__subfield">
+        <p class="pform__subfield-title">Formato da final</p>
+        <p class="pform__subfield-desc">
+          Vale para a final e a disputa de 3º lugar — pode ser diferente do
+          restante da fase.
+        </p>
+        <div class="pform__options" role="radiogroup" aria-label="Formato da final">
+          <button
+            type="button"
+            class="pform__option"
+            [class.pform__option--active]="finalLegMode() === 'INHERIT'"
+            [disabled]="isLocked()"
+            (click)="setFinalLegMode('INHERIT')"
+            role="radio"
+            [attr.aria-checked]="finalLegMode() === 'INHERIT'"
+          >
+            <span class="pform__option-icon" aria-hidden="true">
+              <lucide-icon [img]="repeatIcon" [size]="18" />
+            </span>
+            <span class="pform__option-name">Igual à fase</span>
+            <span class="pform__option-desc">Segue o modo de confronto</span>
+          </button>
+          <button
+            type="button"
+            class="pform__option"
+            [class.pform__option--active]="finalLegMode() === 'SINGLE'"
+            [disabled]="isLocked()"
+            (click)="setFinalLegMode('SINGLE')"
+            role="radio"
+            [attr.aria-checked]="finalLegMode() === 'SINGLE'"
+          >
+            <span class="pform__option-icon" aria-hidden="true">
+              <lucide-icon [img]="arrowRightIcon" [size]="18" />
+            </span>
+            <span class="pform__option-name">Jogo único</span>
+            <span class="pform__option-desc">Final em 1 partida</span>
+          </button>
+          <button
+            type="button"
+            class="pform__option"
+            [class.pform__option--active]="finalLegMode() === 'TWO_LEGGED'"
+            [disabled]="isLocked()"
+            (click)="setFinalLegMode('TWO_LEGGED')"
+            role="radio"
+            [attr.aria-checked]="finalLegMode() === 'TWO_LEGGED'"
+          >
+            <span class="pform__option-icon" aria-hidden="true">
+              <lucide-icon [img]="arrowLeftRightIcon" [size]="18" />
+            </span>
+            <span class="pform__option-name">Ida e volta</span>
+            <span class="pform__option-desc">Final em 2 partidas</span>
+          </button>
+        </div>
+      </div>
     </section>
   }
 

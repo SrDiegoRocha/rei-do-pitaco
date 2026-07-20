@@ -243,7 +243,8 @@ export class MatchDetailComponent implements OnInit {
     }
     const parts: string[] = [p.name, roundLabel];
     if (m.groupName) parts.push(`Grupo ${m.groupName}`);
-    if (p.matchLegMode === 'TWO_LEGGED') parts.push('Ida e volta');
+    // Modo efetivo da partida (a final pode ter modo próprio via finalLegMode).
+    if (m.matchLegMode === 'TWO_LEGGED') parts.push('Ida e volta');
     return parts.join(' · ');
   });
 
@@ -276,9 +277,13 @@ export class MatchDetailComponent implements OnInit {
       : null,
   );
 
-  /** Ida-e-volta de mata-mata (muda o texto do palpite de pênaltis). */
+  /**
+   * Ida-e-volta de mata-mata (muda o texto do palpite de pênaltis e o form de
+   * prorrogação). Usa o modo EFETIVO da partida — a rodada final pode ter modo
+   * próprio via `finalLegMode` da fase.
+   */
   protected readonly isTwoLegged = computed(
-    () => this.phase()?.matchLegMode === 'TWO_LEGGED',
+    () => this.match()?.matchLegMode === 'TWO_LEGGED',
   );
 
   /**

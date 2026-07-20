@@ -13,6 +13,8 @@ export interface IPhaseResponse {
   matchGenerationMode: MatchGenerationMode;
   playsInsideGroupOnly: boolean | null;
   hasThirdPlace: boolean;
+  /** Só KNOCKOUT: modo da RODADA FINAL (final + 3º lugar); null = herda matchLegMode. */
+  finalLegMode: MatchLegMode | null;
   groupCount: number;
   teamCount: number;
   finalizedAt: string | null;
@@ -27,6 +29,8 @@ export interface ICreatePhaseRequest {
   matchGenerationMode: MatchGenerationMode;
   playsInsideGroupOnly?: boolean | null;
   hasThirdPlace?: boolean | null;
+  /** Só usado em KNOCKOUT; null = a final herda o matchLegMode da fase. */
+  finalLegMode?: MatchLegMode | null;
 }
 
 export interface IUpdatePhaseRequest extends ICreatePhaseRequest {}

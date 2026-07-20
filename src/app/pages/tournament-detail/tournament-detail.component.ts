@@ -1182,14 +1182,11 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly predictionAggregateBeforeAway = computed(
     () => this.predictionMatch()?.aggregateBeforeAway ?? 0,
   );
-  protected readonly predictionTwoLegged = computed(() => {
-    const m = this.predictionMatch();
-    if (!m) return false;
-    return (
-      this.phases().find((p) => p.id === m.phaseId)?.matchLegMode ===
-      'TWO_LEGGED'
-    );
-  });
+  protected readonly predictionTwoLegged = computed(
+    // Modo EFETIVO da partida — a rodada final pode ter modo próprio
+    // (`finalLegMode` da fase), então não se usa o matchLegMode da fase.
+    () => this.predictionMatch()?.matchLegMode === 'TWO_LEGGED',
+  );
 
   /** Abre o modal de pitaco direto na listagem (sem navegar). */
   protected openPredictionFor(match: IMatchResponse): void {

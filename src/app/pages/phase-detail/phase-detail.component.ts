@@ -116,6 +116,13 @@ export class PhaseDetailComponent implements OnInit {
     return p ? GEN_LABEL[p.matchGenerationMode] : '';
   });
 
+  /** Formato próprio da rodada final (final + 3º); null = herda o da fase. */
+  protected readonly finalLegLabel = computed<string | null>(() => {
+    const p = this.phase();
+    if (!p || p.phaseType !== 'KNOCKOUT' || !p.finalLegMode) return null;
+    return LEG_LABEL[p.finalLegMode];
+  });
+
   protected readonly typeClass = computed(() => {
     const p = this.phase();
     if (!p) return '';

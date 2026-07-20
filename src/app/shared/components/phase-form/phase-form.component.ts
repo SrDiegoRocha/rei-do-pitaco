@@ -38,6 +38,9 @@ import {
 
 export type PhaseFormMode = 'create' | 'edit';
 
+/** Formato da rodada final no form: herda o modo da fase ou fixa um próprio. */
+type FinalLegChoice = 'INHERIT' | MatchLegMode;
+
 interface IPhaseFormParent {
   status: 'DRAFT' | 'OPEN' | 'IN_PROGRESS' | 'FINISHED';
 }
@@ -100,6 +103,7 @@ export class PhaseFormComponent implements OnInit {
     ),
     playsInsideGroupOnly: this._fb.nonNullable.control<boolean>(false),
     hasThirdPlace: this._fb.nonNullable.control<boolean>(false),
+    finalLegMode: this._fb.nonNullable.control<FinalLegChoice>('INHERIT'),
   });
 
   private readonly _phaseType = toSignal(
@@ -122,6 +126,10 @@ export class PhaseFormComponent implements OnInit {
     this.form.controls.hasThirdPlace.valueChanges,
     { initialValue: this.form.controls.hasThirdPlace.value },
   );
+  private readonly _finalLegMode = toSignal(
+    this.form.controls.finalLegMode.valueChanges,
+    { initialValue: this.form.controls.finalLegMode.value },
+  );
   private readonly _formStatus = toSignal(this.form.statusChanges, {
     initialValue: this.form.status,
   });
@@ -131,6 +139,7 @@ export class PhaseFormComponent implements OnInit {
   protected readonly genMode = this._genMode;
   protected readonly playsInsideGroupOnly = this._playsInsideGroupOnly;
   protected readonly hasThirdPlace = this._hasThirdPlace;
+  protected readonly finalLegMode = this._finalLegMode;
 
   protected readonly isGroups = computed(() => this.phaseType() === 'GROUPS');
   protected readonly isKnockout = computed(
@@ -180,6 +189,7 @@ export class PhaseFormComponent implements OnInit {
         matchGenerationMode: init.matchGenerationMode,
         playsInsideGroupOnly: init.playsInsideGroupOnly ?? false,
         hasThirdPlace: init.hasThirdPlace,
+        finalLegMode: init.finalLegMode ?? 'INHERIT',
       });
     }
     if (this.isLocked()) {
@@ -221,6 +231,12 @@ export class PhaseFormComponent implements OnInit {
     this.form.controls.playsInsideGroupOnly.markAsDirty();
   }
 
+  protected setFinalLegMode(value: FinalLegChoice): void {
+    if (this.form.controls.finalLegMode.disabled) return;
+    this.form.controls.finalLegMode.setValue(value);
+    this.form.controls.finalLegMode.markAsDirty();
+  }
+
   protected toggleHasThirdPlace(): void {
     if (this.form.controls.hasThirdPlace.disabled) return;
     this.form.controls.hasThirdPlace.setValue(
@@ -247,6 +263,10 @@ export class PhaseFormComponent implements OnInit {
         raw.phaseType === 'GROUPS' ? raw.playsInsideGroupOnly : null,
       hasThirdPlace:
         raw.phaseType === 'KNOCKOUT' ? raw.hasThirdPlace : false,
+      finalLegMode:
+        raw.phaseType === 'KNOCKOUT' && raw.finalLegMode !== 'INHERIT'
+          ? raw.finalLegMode
+          : null,
     };
 
     this.saveForm.emit(payload);

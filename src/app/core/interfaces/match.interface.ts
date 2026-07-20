@@ -1,4 +1,9 @@
-import { MatchStatus, MatchType, TeamType } from '@core/interfaces/enums';
+import {
+  MatchLegMode,
+  MatchStatus,
+  MatchType,
+  TeamType,
+} from '@core/interfaces/enums';
 
 export interface ITeamRef {
   id: string;
@@ -19,6 +24,10 @@ export interface IMatchResponse {
   round: number;
   tieId: string;
   matchType: MatchType;
+  /** Modo de pernas EFETIVO deste confronto (já considera o finalLegMode da
+   *  fase, §10) — é este campo, não o da fase, que decide o formulário de
+   *  prorrogação/pênaltis. */
+  matchLegMode: MatchLegMode;
   homeTeam: ITeamRef;
   awayTeam: ITeamRef;
   scheduledAt: string | null;

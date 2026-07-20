@@ -61,6 +61,12 @@
           <dt>Confronto</dt>
           <dd>{{ legLabel() }}</dd>
         </div>
+        @if (finalLegLabel(); as finalLeg) {
+          <div class="phase-detail__spec">
+            <dt>Formato da final</dt>
+            <dd>{{ finalLeg }} (inclui o 3º lugar)</dd>
+          </div>
+        }
         <div class="phase-detail__spec">
           <dt>Geração</dt>
           <dd>{{ genLabel() }}</dd>

@@ -84,6 +84,10 @@
 
                 <div class="phase__meta">
                   <span>{{ legLabel(phase.matchLegMode) }}</span>
+                  @if (phase.phaseType === 'KNOCKOUT' && phase.finalLegMode) {
+                    <span class="phase__meta-sep">·</span>
+                    <span>Final: {{ legLabel(phase.finalLegMode) }}</span>
+                  }
                   <span class="phase__meta-sep">·</span>
                   <span>{{ genLabel(phase.matchGenerationMode) }}</span>
                 </div>
