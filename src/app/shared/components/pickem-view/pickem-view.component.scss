@@ -1,0 +1,185 @@
+.pv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Tabela (RR/GROUPS) ─────────────────────────────────────────────────── */
+
+.pv-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pv-group__name {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pv-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  min-width: 0;
+
+  &[data-state='exact'] {
+    border-color: var(--success);
+    background: color-mix(in srgb, var(--success) 8%, var(--bg-elevated));
+  }
+
+  &[data-state='partial'] {
+    border-color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 8%, var(--bg-elevated));
+  }
+
+  &[data-state='miss'] {
+    border-color: color-mix(in srgb, var(--danger) 55%, var(--border-default));
+    background: color-mix(in srgb, var(--danger) 6%, var(--bg-elevated));
+  }
+}
+
+.pv-row__pos {
+  min-width: 24px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-row__team {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-row__badges {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pv-chip {
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+
+  &--hit {
+    background: color-mix(in srgb, var(--success) 15%, transparent);
+    color: var(--success);
+  }
+
+  &--partial {
+    background: color-mix(in srgb, var(--warning) 18%, transparent);
+    color: color-mix(in srgb, var(--warning) 75%, var(--text-primary));
+  }
+
+  &--miss {
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: var(--danger);
+  }
+}
+
+.pv-pts {
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--brand);
+  color: var(--text-on-brand);
+  white-space: nowrap;
+}
+
+/* ── Terminais do bracket ───────────────────────────────────────────────── */
+
+.pv-terminals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-2);
+}
+
+.pv-terminal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  min-width: 0;
+
+  &[data-hit='true'] {
+    border-color: var(--success);
+    background: color-mix(in srgb, var(--success) 8%, var(--bg-elevated));
+  }
+
+  &[data-hit='false'] {
+    border-color: color-mix(in srgb, var(--danger) 55%, var(--border-default));
+    background: color-mix(in srgb, var(--danger) 6%, var(--bg-elevated));
+  }
+}
+
+.pv-terminal__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pv-terminal__team {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-terminal__icon {
+  flex-shrink: 0;
+
+  &--hit {
+    color: var(--success);
+  }
+
+  &--miss {
+    color: var(--danger);
+  }
+}

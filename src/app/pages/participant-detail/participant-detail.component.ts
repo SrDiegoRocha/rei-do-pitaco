@@ -18,10 +18,15 @@ import { ApiException } from '@core/errors/api-error';
 import { IMatchResponse } from '@core/interfaces/match.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
 import { IPhaseResponse } from '@core/interfaces/phase.interface';
+import {
+  IParticipantSummaryResponse,
+  IPickemPhaseBreakdown,
+} from '@core/interfaces/pickem.interface';
 import { IRankingRowResponse } from '@core/interfaces/ranking.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { MatchesService } from '@core/services/matches.service';
 import { PhasesService } from '@core/services/phases.service';
+import { PickemService } from '@core/services/pickem.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { RankingService } from '@core/services/ranking.service';
 import { TournamentsService } from '@core/services/tournaments.service';
@@ -60,6 +65,25 @@ interface IGroupOption {
   name: string;
 }
 
+const PICKEM_COMPONENT_LABEL: Record<
+  keyof IPickemPhaseBreakdown['components'],
+  string
+> = {
+  qualifier: 'Classificados',
+  exactPosition: 'Posições exatas',
+  firstPlace: '1º lugar',
+  koMatchupExact: 'Confrontos cravados',
+  koMatchupPartial: 'Confrontos (1 time)',
+  champion: 'Campeão',
+  runnerUp: 'Vice',
+  thirdPlace: '3º lugar',
+};
+
+interface IPickemComponentRow {
+  label: string;
+  value: number;
+}
+
 interface ICompareMetric {
   label: string;
   a: number;
@@ -90,6 +114,7 @@ export class ParticipantDetailComponent implements OnInit {
   private readonly _matchesService = inject(MatchesService);
   private readonly _phasesService = inject(PhasesService);
   private readonly _predictionsService = inject(PredictionsService);
+  private readonly _pickemService = inject(PickemService);
   private readonly _authState = inject(AuthState);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
@@ -121,6 +146,30 @@ export class ParticipantDetailComponent implements OnInit {
   protected readonly phases = signal<IPhaseResponse[]>([]);
   protected readonly predictions = signal<IPredictionResponse[]>([]);
   protected readonly predictionsError = signal(false);
+
+  /** Perfil do palpiteiro (breakdown partidas × Palpitão); null se indisponível. */
+  protected readonly summary = signal<IParticipantSummaryResponse | null>(null);
+
+  /** Mostra o card do Palpitão quando há pontos ou palpitões registrados. */
+  protected readonly showPickemSummary = computed(() => {
+    const s = this.summary();
+    return !!s && (s.pickemPoints > 0 || s.pickemByPhase.length > 0);
+  });
+
+  protected pickemComponentRows(
+    phase: IPickemPhaseBreakdown,
+  ): IPickemComponentRow[] {
+    const rows: IPickemComponentRow[] = [];
+    for (const key of Object.keys(
+      PICKEM_COMPONENT_LABEL,
+    ) as (keyof IPickemPhaseBreakdown['components'])[]) {
+      const value = phase.components[key];
+      if (value > 0) {
+        rows.push({ label: PICKEM_COMPONENT_LABEL[key], value });
+      }
+    }
+    return rows;
+  }
 
   protected readonly userId = signal<string>('');
   protected readonly activeTab = signal<ParticipantTab>('info');
@@ -460,15 +509,21 @@ export class ParticipantDetailComponent implements OnInit {
             return of<IPredictionResponse[]>([]);
           }),
         ),
+      summary: this._pickemService
+        .participantSummary(tid, uid)
+        .pipe(
+          catchError(() => of<IParticipantSummaryResponse | null>(null)),
+        ),
     })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
-        next: ({ tournament, ranking, matches, phases, predictions }) => {
+        next: ({ tournament, ranking, matches, phases, predictions, summary }) => {
           this.tournament.set(tournament);
           this.ranking.set(ranking);
           this.matches.set(matches);
           this.phases.set([...phases].sort((a, b) => a.position - b.position));
           this.predictions.set(predictions);
+          this.summary.set(summary);
           this.loading.set(false);
           this._scheduleScroll();
           if (!ranking.some((r) => r.userId === uid)) {

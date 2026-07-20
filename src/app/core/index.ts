@@ -17,6 +17,7 @@ export * from './services/match-analysis.service';
 export * from './services/standings.service';
 export * from './services/predictions.service';
 export * from './services/ranking.service';
+export * from './services/pickem.service';
 
 export * from './auth/auth-state';
 export * from './auth/token-storage';

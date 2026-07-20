@@ -116,6 +116,66 @@
 
         </article>
 
+        @if (showPickemSummary()) {
+          @if (summary(); as s) {
+            <article class="pk-summary">
+              <header class="pk-summary__header">
+                <span class="pk-summary__icon" aria-hidden="true">
+                  <lucide-icon [img]="trophyIcon" [size]="18" />
+                </span>
+                <div class="pk-summary__heading">
+                  <h3 class="pk-summary__title">Palpitão</h3>
+                  <p class="pk-summary__subtitle">
+                    De onde vêm os pontos: pitacos de partida + Palpitão de fase.
+                  </p>
+                </div>
+              </header>
+
+              <div class="pk-summary__split">
+                <div class="pk-split">
+                  <span class="pk-split__value">{{ s.matchPoints }}</span>
+                  <span class="pk-split__label">pitacos</span>
+                </div>
+                <span class="pk-summary__op" aria-hidden="true">+</span>
+                <div class="pk-split pk-split--accent">
+                  <span class="pk-split__value">{{ s.pickemPoints }}</span>
+                  <span class="pk-split__label">palpitão</span>
+                </div>
+                <span class="pk-summary__op" aria-hidden="true">=</span>
+                <div class="pk-split">
+                  <span class="pk-split__value">{{ s.totalPoints }}</span>
+                  <span class="pk-split__label">total</span>
+                </div>
+              </div>
+
+              @if (s.pickemByPhase.length > 0) {
+                <ul class="pk-phases">
+                  @for (ph of s.pickemByPhase; track ph.phaseId) {
+                    <li class="pk-phase">
+                      <div class="pk-phase__head">
+                        <span class="pk-phase__name">{{ ph.phaseName }}</span>
+                        @if (ph.provisional) {
+                          <span class="pk-phase__prov">provisório</span>
+                        }
+                        <span class="pk-phase__pts">{{ ph.points }} pts</span>
+                      </div>
+                      @if (pickemComponentRows(ph).length > 0) {
+                        <ul class="pk-comps">
+                          @for (c of pickemComponentRows(ph); track c.label) {
+                            <li class="pk-comp">
+                              {{ c.label }} <b>+{{ c.value }}</b>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </article>
+          }
+        }
+
         <article class="compare">
           <header class="compare__header">
             <span class="compare__icon" aria-hidden="true">

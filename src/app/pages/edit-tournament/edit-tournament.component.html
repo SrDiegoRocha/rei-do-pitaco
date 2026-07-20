@@ -70,10 +70,21 @@
   <app-confirm-dialog
     [open]="confirmRecalcOpen()"
     title="Recalcular pontos?"
-    description="Todos os palpites já lançados serão reavaliados com a pontuação atual do torneio, inclusive das partidas que já acabaram. O ranking é atualizado em seguida."
+    description="Pitacos de partida e Palpitões já lançados serão reavaliados com a pontuação atual do torneio, inclusive das partidas que já acabaram. O ranking é atualizado em seguida."
     confirmLabel="Recalcular pontos"
     [loading]="recalculating()"
     (confirmed)="confirmRecalculate()"
     (cancelled)="cancelRecalculate()"
+  />
+
+  <app-confirm-dialog
+    [open]="postSaveRecalcOpen()"
+    title="Reaplicar a pontuação ao que já foi lançado?"
+    description="A nova pontuação vale automaticamente só para os próximos resultados. Se quiser, dá para recalcular agora os pitacos de partida e os Palpitões já pontuados com a regra nova."
+    confirmLabel="Recalcular agora"
+    cancelLabel="Agora não"
+    [loading]="recalculating()"
+    (confirmed)="confirmPostSaveRecalculate()"
+    (cancelled)="skipPostSaveRecalculate()"
   />
 </section>

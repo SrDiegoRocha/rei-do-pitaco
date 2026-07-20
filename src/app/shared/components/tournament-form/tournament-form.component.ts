@@ -123,6 +123,31 @@ export class TournamentFormComponent implements OnInit {
       penaltyWinnerPoints: this._fb.nonNullable.control(2, {
         validators: [Validators.required, Validators.min(0)],
       }),
+      // Palpitão (Pick'em de fase) — defaults 1, como no backend.
+      pickemQualifierPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemExactPositionPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemFirstPlacePoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemKoMatchupExactPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemKoMatchupPartialPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemChampionPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemRunnerUpPoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
+      pickemThirdPlacePoints: this._fb.nonNullable.control(1, {
+        validators: [Validators.required, Validators.min(0)],
+      }),
       tiebreakCriteria: this._fb.nonNullable.control<TiebreakCriteria[]>(
         DEFAULT_TIEBREAK,
         { validators: [nonEmptyArrayValidator] },
@@ -211,6 +236,15 @@ export class TournamentFormComponent implements OnInit {
           extraTimeExactScorePoints: init.settings.extraTimeExactScorePoints,
           extraTimeWinnerPoints: init.settings.extraTimeWinnerPoints,
           penaltyWinnerPoints: init.settings.penaltyWinnerPoints,
+          pickemQualifierPoints: init.settings.pickemQualifierPoints,
+          pickemExactPositionPoints: init.settings.pickemExactPositionPoints,
+          pickemFirstPlacePoints: init.settings.pickemFirstPlacePoints,
+          pickemKoMatchupExactPoints: init.settings.pickemKoMatchupExactPoints,
+          pickemKoMatchupPartialPoints:
+            init.settings.pickemKoMatchupPartialPoints,
+          pickemChampionPoints: init.settings.pickemChampionPoints,
+          pickemRunnerUpPoints: init.settings.pickemRunnerUpPoints,
+          pickemThirdPlacePoints: init.settings.pickemThirdPlacePoints,
           tiebreakCriteria: [...init.settings.tiebreakCriteria],
         },
       });
@@ -298,6 +332,15 @@ export class TournamentFormComponent implements OnInit {
         extraTimeExactScorePoints: raw.settings.extraTimeExactScorePoints,
         extraTimeWinnerPoints: raw.settings.extraTimeWinnerPoints,
         penaltyWinnerPoints: raw.settings.penaltyWinnerPoints,
+        pickemQualifierPoints: raw.settings.pickemQualifierPoints,
+        pickemExactPositionPoints: raw.settings.pickemExactPositionPoints,
+        pickemFirstPlacePoints: raw.settings.pickemFirstPlacePoints,
+        pickemKoMatchupExactPoints: raw.settings.pickemKoMatchupExactPoints,
+        pickemKoMatchupPartialPoints:
+          raw.settings.pickemKoMatchupPartialPoints,
+        pickemChampionPoints: raw.settings.pickemChampionPoints,
+        pickemRunnerUpPoints: raw.settings.pickemRunnerUpPoints,
+        pickemThirdPlacePoints: raw.settings.pickemThirdPlacePoints,
         tiebreakCriteria: raw.settings.tiebreakCriteria,
       },
     };

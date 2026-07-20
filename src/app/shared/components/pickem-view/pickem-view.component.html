@@ -1,0 +1,82 @@
+@if (isTable()) {
+  <div class="pv">
+    @for (block of positionBlocks(); track block.key) {
+      <section class="pv-group">
+        @if (block.groupName) {
+          <h4 class="pv-group__name">{{ block.groupName }}</h4>
+        }
+        <ol class="pv-rows">
+          @for (row of block.rows; track row.predictedPosition) {
+            <li class="pv-row" [attr.data-state]="rowState(row)">
+              <span class="pv-row__pos">{{ row.predictedPosition }}º</span>
+              <app-team-badge
+                [name]="row.team.name"
+                [shortName]="row.team.shortName"
+                [badgeUrl]="row.team.badgeUrl"
+                [teamType]="row.team.teamType"
+                [countryCode]="row.team.countryCode"
+                [primaryColor]="row.team.primaryColor || '#10B981'"
+                [secondaryColor]="row.team.secondaryColor || '#0F172A'"
+                [size]="24"
+              />
+              <span class="pv-row__team">{{ row.team.name }}</span>
+              @if (row.outcome; as o) {
+                <span class="pv-row__badges">
+                  @if (o.firstPlaceHit) {
+                    <span class="pv-chip pv-chip--hit">1º lugar</span>
+                  }
+                  @if (o.exactPositionHit) {
+                    <span class="pv-chip pv-chip--hit">Posição exata</span>
+                  } @else if (o.qualifiedHit) {
+                    <span class="pv-chip pv-chip--partial">Classificou</span>
+                  }
+                  @if (o.qualifiedHit === false && !o.exactPositionHit && !o.firstPlaceHit) {
+                    <span class="pv-chip pv-chip--miss">Errou</span>
+                  }
+                  @if ((o.pointsAwarded ?? 0) > 0) {
+                    <span class="pv-pts">+{{ o.pointsAwarded }}</span>
+                  }
+                </span>
+              }
+            </li>
+          }
+        </ol>
+      </section>
+    }
+  </div>
+} @else if (tree(); as t) {
+  <div class="pv">
+    <app-bracket-tree [data]="t" />
+
+    @if (terminalRows().length > 0) {
+      <div class="pv-terminals">
+        @for (row of terminalRows(); track row.key) {
+          <div class="pv-terminal" [attr.data-hit]="row.hit">
+            <span class="pv-terminal__label">
+              <lucide-icon [img]="terminalIcon(row.key)" [size]="13" aria-hidden="true" />
+              {{ row.label }}
+            </span>
+            <span class="pv-terminal__team" [title]="row.team.name">
+              <app-team-badge
+                [name]="row.team.name"
+                [shortName]="row.team.shortName"
+                [badgeUrl]="row.team.badgeUrl"
+                [teamType]="row.team.teamType"
+                [countryCode]="row.team.countryCode"
+                [primaryColor]="row.team.primaryColor || '#10B981'"
+                [secondaryColor]="row.team.secondaryColor || '#0F172A'"
+                [size]="22"
+              />
+              {{ row.team.shortName || row.team.name }}
+            </span>
+            @if (row.hit === true) {
+              <lucide-icon class="pv-terminal__icon pv-terminal__icon--hit" [img]="checkIcon" [size]="14" aria-label="Acertou" />
+            } @else if (row.hit === false) {
+              <lucide-icon class="pv-terminal__icon pv-terminal__icon--miss" [img]="xIcon" [size]="14" aria-label="Errou" />
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}

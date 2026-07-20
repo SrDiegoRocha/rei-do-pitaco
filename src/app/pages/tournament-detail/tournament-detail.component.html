@@ -61,6 +61,19 @@
       }
     </article>
 
+    @if (pickemBanner(); as banner) {
+      <a class="pickem-banner" [routerLink]="pickemHref(banner.phaseId)">
+        <span class="pickem-banner__icon" aria-hidden="true">
+          <lucide-icon [img]="sparklesIcon" [size]="18" />
+        </span>
+        <span class="pickem-banner__text">
+          <strong>Palpitão aberto — {{ banner.phaseName }}!</strong>
+          <span>Deixe seu palpite sobre a fase inteira antes de ela começar.</span>
+        </span>
+        <lucide-icon [img]="chevronRightIcon" [size]="18" aria-hidden="true" />
+      </a>
+    }
+
     <nav class="tabs" role="tablist" aria-label="Seções do torneio">
       <div class="tabs__scroll" [appCenterActiveTab]="activeTabIndex()">
         @for (tab of tabs(); track tab.id) {
@@ -437,6 +450,84 @@
             }
           </div>
           }
+        }
+      }
+
+      @if (activeTab() === 'pickem') {
+        @if (pickemLoading() && !pickemLoaded()) {
+          <div class="page__skeleton">
+            <div class="u-skeleton page__skeleton-content"></div>
+          </div>
+        } @else if (phases().length === 0) {
+          <app-empty-state
+            [icon]="workflowIcon"
+            title="Sem fases ainda"
+            description="O Palpitão aparece aqui quando o torneio tiver fases configuradas."
+          />
+        } @else {
+          <p class="pk-intro">
+            Antes de cada fase começar, deixe seu palpitão: classificados e
+            posições na fase de grupos, o caminho até o título no mata-mata.
+            Acertos somam pontos extras no ranking geral.
+          </p>
+          <div class="pk-cards">
+            @for (phase of phases(); track phase.id) {
+              @let ov = pickemOverviewFor(phase.id);
+              <a
+                class="pk-card"
+                [routerLink]="pickemHref(phase.id)"
+                [attr.data-state]="ov?.template?.state ?? null"
+              >
+                <div class="pk-card__main">
+                  <div class="pk-card__head">
+                    <span class="pk-card__phase">{{ phase.name }}</span>
+                    <span class="pk-card__type">{{ phaseTypeShortLabel(phase) }}</span>
+                  </div>
+                  <div class="pk-card__state">
+                    @if (!ov || !ov.template) {
+                      <span class="pk-chip">Indisponível</span>
+                    } @else if (ov.template.state === 'OPEN') {
+                      <span class="pk-chip pk-chip--open">Aberto</span>
+                      @if (pickemLockAtLabel(ov.template); as when) {
+                        <span class="pk-card__lock">trava {{ when }}</span>
+                      } @else {
+                        <span class="pk-card__lock">trava no 1º resultado</span>
+                      }
+                    } @else if (ov.template.state === 'LOCKED') {
+                      <span class="pk-chip pk-chip--locked">Travado</span>
+                    } @else {
+                      <span class="pk-chip">Em preparação</span>
+                    }
+                  </div>
+                  <div class="pk-card__me">
+                    @if (ov?.mine; as mine) {
+                      <span class="pk-card__pts">{{ mine.points }} pts</span>
+                      @if (mine.provisional && mine.scoredAt) {
+                        <span class="pk-card__prov">provisório</span>
+                      }
+                      <span class="pk-card__cta">
+                        {{ ov?.template?.state === 'OPEN' ? 'Editar palpitão' : 'Ver palpitão' }}
+                      </span>
+                    } @else if (ov?.template?.state === 'OPEN' && isActiveMember()) {
+                      <span class="pk-card__nudge">Você ainda não palpitou</span>
+                      <span class="pk-card__cta pk-card__cta--strong">Fazer palpitão</span>
+                    } @else if (ov?.template?.state === 'LOCKED') {
+                      <span class="pk-card__nudge">Você não palpitou nesta fase</span>
+                      <span class="pk-card__cta">Ver a galera</span>
+                    } @else {
+                      <span class="pk-card__cta">Abrir</span>
+                    }
+                  </div>
+                </div>
+                <lucide-icon
+                  class="pk-card__chev"
+                  [img]="chevronRightIcon"
+                  [size]="18"
+                  aria-hidden="true"
+                />
+              </a>
+            }
+          </div>
         }
       }
 

@@ -16,3 +16,4 @@ export * from './bracket.interface';
 export * from './standings.interface';
 export * from './prediction.interface';
 export * from './ranking.interface';
+export * from './pickem.interface';

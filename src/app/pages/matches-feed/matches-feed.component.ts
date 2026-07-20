@@ -14,8 +14,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ApiException } from '@core/errors/api-error';
+import { IPendingPickemResponse } from '@core/interfaces/pickem.interface';
 import { IPredictionResponse } from '@core/interfaces/prediction.interface';
 import { IUserMatchResponse } from '@core/interfaces/user-match.interface';
+import { PickemService } from '@core/services/pickem.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { UserMatchesService } from '@core/services/user-matches.service';
 import { listStagger } from '@shared/animations/animations';
@@ -102,6 +104,7 @@ const PAST_STEP_DAYS = 30;
 export class MatchesFeedComponent implements OnInit {
   private readonly _userMatches = inject(UserMatchesService);
   private readonly _predictions = inject(PredictionsService);
+  private readonly _pickem = inject(PickemService);
   private readonly _toast = inject(ToastService);
   private readonly _sectionPager = inject(SectionPagerService);
   private readonly _swipeReg = inject(SwipeNavRegistry);
@@ -127,6 +130,13 @@ export class MatchesFeedComponent implements OnInit {
 
   /** Jogos esperando pitaco (badge do topo). */
   protected readonly pendingCount = signal(0);
+
+  /**
+   * Palpitões (Pick'em de fase) abertos e ainda não preenchidos. Depende de
+   * endpoint agregado novo (ver PICKEM_FRONT_API.md); enquanto o backend não
+   * o expõe, a chamada falha e o card simplesmente não aparece.
+   */
+  protected readonly pendingPickems = signal<IPendingPickemResponse[]>([]);
 
   /** Botão flutuante "voltar para hoje" — visível quando o hoje sai da tela. */
   protected readonly showJumpToToday = signal(false);
@@ -240,6 +250,31 @@ export class MatchesFeedComponent implements OnInit {
 
   protected retry(): void {
     this._load();
+  }
+
+  protected pickemHref(item: IPendingPickemResponse): unknown[] {
+    return [
+      '/tournaments',
+      item.tournamentId,
+      'phases',
+      item.phaseId,
+      'pickem',
+    ];
+  }
+
+  protected pickemLockLabel(item: IPendingPickemResponse): string {
+    if (!item.lockAt) return 'trava no 1º resultado';
+    try {
+      const when = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(item.lockAt));
+      return `trava ${when}`;
+    } catch {
+      return '';
+    }
   }
 
   /** Link para o detalhe da partida dentro da fase do seu torneio. */
@@ -396,6 +431,15 @@ export class MatchesFeedComponent implements OnInit {
       .subscribe({
         next: (res) => this.pendingCount.set(res.count),
         error: () => this.pendingCount.set(0),
+      });
+
+    this._pickem
+      .pendingForMe()
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (list) => this.pendingPickems.set(list ?? []),
+        // Endpoint ainda não implementado no backend → esconde o card.
+        error: () => this.pendingPickems.set([]),
       });
 
     this._userMatches

@@ -218,6 +218,88 @@
         />
       </div>
     </div>
+
+    <div class="tform__points-section">
+      <h3 class="tform__subsection">Palpitão (Pick'em de fase)</h3>
+      <p class="tform__hint">
+        Palpite sobre a fase inteira, feito antes de ela começar. Acertos somam
+        ao ranking geral junto com os pitacos de partida.
+      </p>
+
+      <p class="tform__hint tform__hint--group">Fase de grupos / pontos corridos</p>
+      <div class="tform__grid-3">
+        <app-input
+          formControlName="pickemQualifierPoints"
+          type="number"
+          label="Time classificado"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemQualifierPoints')"
+          [required]="true"
+        />
+        <app-input
+          formControlName="pickemExactPositionPoints"
+          type="number"
+          label="Posição exata"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemExactPositionPoints')"
+          [required]="true"
+        />
+        <app-input
+          formControlName="pickemFirstPlacePoints"
+          type="number"
+          label="1º da tabela/grupo"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemFirstPlacePoints')"
+          [required]="true"
+        />
+      </div>
+
+      <p class="tform__hint tform__hint--group">Mata-mata</p>
+      <div class="tform__grid-2">
+        <app-input
+          formControlName="pickemKoMatchupExactPoints"
+          type="number"
+          label="Confronto cravado (2 times)"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemKoMatchupExactPoints')"
+          [required]="true"
+        />
+        <app-input
+          formControlName="pickemKoMatchupPartialPoints"
+          type="number"
+          label="1 time do confronto"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemKoMatchupPartialPoints')"
+          [required]="true"
+        />
+      </div>
+      <div class="tform__grid-3">
+        <app-input
+          formControlName="pickemChampionPoints"
+          type="number"
+          label="Campeão"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemChampionPoints')"
+          [required]="true"
+        />
+        <app-input
+          formControlName="pickemRunnerUpPoints"
+          type="number"
+          label="Vice"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemRunnerUpPoints')"
+          [required]="true"
+        />
+        <app-input
+          formControlName="pickemThirdPlacePoints"
+          type="number"
+          label="3º lugar"
+          inputmode="numeric"
+          [errorText]="pointsError('pickemThirdPlacePoints')"
+          [required]="true"
+        />
+      </div>
+    </div>
   </section>
 
   <section class="tform__section">

@@ -1,5 +1,15 @@
 @let roundList = rounds();
-<div class="bv" [attr.data-mode]="mode()">
+@if (mode() === 'tree' && treeData(); as tree) {
+  <!-- Árvore espelhada (estilo bracket challenge). Brackets sem formato de
+       árvore (manuais/antigos) caem no fallback de cards abaixo. -->
+  <app-bracket-tree
+    [data]="tree"
+    [tournamentId]="tournamentId()"
+    [phaseId]="phaseId()"
+    (slotOpen)="onTreeOpen($event)"
+  />
+} @else {
+<div class="bv" [attr.data-mode]="'cards'">
   @for (round of roundList; track round.round; let rIndex = $index, rLast = $last) {
     <section
       class="bv-round"
@@ -202,3 +212,4 @@
     </section>
   }
 </div>
+}

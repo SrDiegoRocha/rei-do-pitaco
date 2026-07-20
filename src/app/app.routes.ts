@@ -206,6 +206,14 @@ export const routes: Routes = [
         title: 'Chaveamento · Rei do Pitaco',
       },
       {
+        path: 'tournaments/:id/phases/:pid/pickem',
+        loadComponent: () =>
+          import('@pages/phase-pickem/phase-pickem.component').then(
+            (m) => m.PhasePickemComponent,
+          ),
+        title: 'Palpitão · Rei do Pitaco',
+      },
+      {
         path: 'tournaments/:id/phases/:pid/matches/new',
         loadComponent: () =>
           import('@pages/create-match/create-match.component').then(

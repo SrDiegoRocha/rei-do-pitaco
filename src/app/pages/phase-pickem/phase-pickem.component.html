@@ -1,0 +1,532 @@
+<section class="page">
+  <app-page-header
+    title="Palpitão"
+    [subtitle]="phase()?.name ?? ''"
+    [backTo]="backHref()"
+    [backQueryParams]="{ tab: 'pickem' }"
+  />
+
+  @if (loading()) {
+    <div class="page__skeleton">
+      <div class="u-skeleton page__skeleton-block"></div>
+      <div class="u-skeleton page__skeleton-block page__skeleton-block--tall"></div>
+    </div>
+  } @else if (loadError(); as err) {
+    <div class="page__error" role="alert">
+      <p class="page__error-text">{{ err }}</p>
+    </div>
+  } @else if (template(); as tmpl) {
+    <!-- Estado da janela -->
+    <article class="ph-status" [attr.data-state]="tmpl.state">
+      <span class="ph-status__icon" aria-hidden="true">
+        @if (isOpen()) {
+          <lucide-icon [img]="clockIcon" [size]="18" />
+        } @else if (isLocked()) {
+          <lucide-icon [img]="lockIcon" [size]="18" />
+        } @else {
+          <lucide-icon [img]="circleDashedIcon" [size]="18" />
+        }
+      </span>
+      <div class="ph-status__body">
+        @if (isOpen()) {
+          <strong>Palpitão aberto</strong>
+          <span>
+            {{ lockLabel() }}
+            @if (lockAtLabel(); as when) {
+              ({{ when }})
+            }
+          </span>
+        } @else if (isLocked()) {
+          <strong>Palpitão travado</strong>
+          <span>A fase começou — os palpitões estão congelados e visíveis a todos.</span>
+        } @else {
+          <strong>Ainda não disponível</strong>
+          <span>{{ notReadyMessage() }}</span>
+        }
+      </div>
+      @if (isOwner() && !isNotReady()) {
+        <button
+          type="button"
+          class="ph-status__recalc"
+          (click)="requestRecalculate()"
+          title="Recalcular a pontuação dos palpitões desta fase"
+        >
+          <lucide-icon [img]="refreshIcon" [size]="14" />
+          Recalcular
+        </button>
+      }
+    </article>
+
+    <!-- Pontuação vigente -->
+    @if (scoringChips().length > 0 && !isNotReady()) {
+      <div class="ph-scoring" aria-label="Pontuação do Palpitão">
+        @for (chip of scoringChips(); track chip.label) {
+          <span class="ph-scoring__chip">
+            {{ chip.label }} <b>+{{ chip.value }}</b>
+          </span>
+        }
+      </div>
+    }
+
+    <!-- Seções -->
+    <div class="ph-tabs" role="tablist" aria-label="Seções do Palpitão">
+      <button
+        type="button"
+        role="tab"
+        class="ph-tabs__btn"
+        [class.ph-tabs__btn--active]="section() === 'mine'"
+        [attr.aria-selected]="section() === 'mine'"
+        (click)="selectSection('mine')"
+      >
+        <lucide-icon [img]="sparklesIcon" [size]="14" />
+        Meu palpitão
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="ph-tabs__btn"
+        [class.ph-tabs__btn--active]="section() === 'all'"
+        [attr.aria-selected]="section() === 'all'"
+        (click)="selectSection('all')"
+      >
+        <lucide-icon [img]="usersIcon" [size]="14" />
+        Galera
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="ph-tabs__btn"
+        [class.ph-tabs__btn--active]="section() === 'stats'"
+        [attr.aria-selected]="section() === 'stats'"
+        (click)="selectSection('stats')"
+      >
+        <lucide-icon [img]="chartIcon" [size]="14" />
+        Previsão da galera
+      </button>
+    </div>
+
+    @switch (section()) {
+      <!-- ── Meu palpitão ─────────────────────────────────────────────── -->
+      @case ('mine') {
+        @if (isNotReady()) {
+          <app-empty-state
+            [icon]="circleDashedIcon"
+            title="Palpitão ainda não disponível"
+            [description]="notReadyMessage()"
+          />
+        } @else if (isLocked()) {
+          @if (mine(); as m) {
+            <div class="ph-mypts">
+              <span class="ph-mypts__value">{{ m.points }} pts</span>
+              @if (m.provisional) {
+                <span class="ph-badge-prov" title="A pontuação é recalculada a cada resultado e vira definitiva quando a fase terminar">
+                  provisório
+                </span>
+              }
+              @if (scoredAtLabel(m.scoredAt); as when) {
+                <span class="ph-mypts__when">atualizado {{ when }}</span>
+              }
+            </div>
+            <app-pickem-view
+              [pickem]="m"
+              [totalRounds]="tmpl.bracket?.totalRounds ?? null"
+            />
+          } @else {
+            <app-empty-state
+              [icon]="lockIcon"
+              title="Você não preencheu o Palpitão desta fase"
+              description="A janela fechou quando a fase começou. Dá para conferir como a galera palpitou!"
+            >
+              <app-button variant="secondary" (buttonClick)="selectSection('all')">
+                Ver palpitões da galera
+              </app-button>
+            </app-empty-state>
+          }
+        } @else {
+          <!-- OPEN: editor -->
+          @if (notMember()) {
+            <app-empty-state
+              [icon]="usersIcon"
+              title="Só participantes podem palpitar"
+              description="Entre no torneio com o código de convite para fazer o seu Palpitão."
+            />
+          } @else {
+            @if (mine()) {
+              <p class="ph-saved-note">
+                <lucide-icon [img]="checkIcon" [size]="13" />
+                Palpitão salvo — você pode editar até a fase travar.
+              </p>
+            }
+
+            @if (isTable()) {
+              <div class="ph-table">
+                @for (block of editorBlocks(); track blockKey(block)) {
+                  <section class="ph-block">
+                    @if (block.groupName) {
+                      <h3 class="ph-block__name">{{ block.groupName }}</h3>
+                    }
+                    <ol class="ph-slots">
+                      @for (teamId of slotsOf(block); track $index; let idx = $index, last = $last) {
+                        <li class="ph-slot" [class.ph-slot--filled]="!!teamId">
+                          <span class="ph-slot__pos">{{ idx + 1 }}º</span>
+                          @if (teamOf(block, teamId); as team) {
+                            <app-team-badge
+                              [name]="team.name"
+                              [shortName]="team.shortName"
+                              [badgeUrl]="team.badgeUrl"
+                              [teamType]="team.teamType"
+                              [countryCode]="team.countryCode"
+                              [primaryColor]="team.primaryColor || '#10B981'"
+                              [secondaryColor]="team.secondaryColor || '#0F172A'"
+                              [size]="24"
+                            />
+                            <span class="ph-slot__team">{{ team.name }}</span>
+                            <span class="ph-slot__tools">
+                              <button
+                                type="button"
+                                class="ph-tool"
+                                [disabled]="idx === 0"
+                                (click)="moveSlot(block, idx, -1)"
+                                aria-label="Subir uma posição"
+                              >
+                                <lucide-icon [img]="chevronUpIcon" [size]="14" />
+                              </button>
+                              <button
+                                type="button"
+                                class="ph-tool"
+                                [disabled]="last"
+                                (click)="moveSlot(block, idx, 1)"
+                                aria-label="Descer uma posição"
+                              >
+                                <lucide-icon [img]="chevronDownIcon" [size]="14" />
+                              </button>
+                              <button
+                                type="button"
+                                class="ph-tool ph-tool--danger"
+                                (click)="removeSlot(block, idx)"
+                                aria-label="Remover deste slot"
+                              >
+                                <lucide-icon [img]="xIcon" [size]="14" />
+                              </button>
+                            </span>
+                          } @else {
+                            <span class="ph-slot__empty">Toque num time abaixo para preencher</span>
+                          }
+                        </li>
+                      }
+                    </ol>
+
+                    @if (poolOf(block).length > 0) {
+                      <div class="ph-pool" [class.ph-pool--done]="!hasEmptySlot(block)">
+                        <span class="ph-pool__label">
+                          {{ hasEmptySlot(block) ? 'Disponíveis' : 'Fora da zona' }}
+                        </span>
+                        <ul class="ph-pool__list">
+                          @for (team of poolOf(block); track team.id) {
+                            <li>
+                              <button
+                                type="button"
+                                class="ph-pool__team"
+                                [disabled]="!hasEmptySlot(block)"
+                                (click)="pickPoolTeam(block, team.id)"
+                                [attr.aria-label]="'Colocar ' + team.name + ' na próxima vaga'"
+                              >
+                                <app-team-badge
+                                  [name]="team.name"
+                                  [shortName]="team.shortName"
+                                  [badgeUrl]="team.badgeUrl"
+                                  [teamType]="team.teamType"
+                                  [countryCode]="team.countryCode"
+                                  [primaryColor]="team.primaryColor || '#10B981'"
+                                  [secondaryColor]="team.secondaryColor || '#0F172A'"
+                                  [size]="22"
+                                />
+                                <span>{{ team.name }}</span>
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  </section>
+                }
+              </div>
+            } @else if (koDerived(); as ko) {
+              <p class="ph-hint">
+                Toque num time para marcá-lo como vencedor do confronto — ele avança
+                sozinho para a próxima rodada. Toque de novo para desfazer.
+              </p>
+              <app-bracket-tree
+                [data]="ko.tree"
+                [interactive]="true"
+                (teamPick)="onTreePick($event)"
+              />
+            }
+
+            <div class="ph-actions">
+              @if (missingCount() > 0) {
+                <p class="ph-actions__warn">
+                  <lucide-icon [img]="alertIcon" [size]="14" />
+                  {{ missingCount() }}
+                  {{ missingCount() === 1 ? 'palpite em aberto — ele não pontua' : 'palpites em aberto — eles não pontuam' }}.
+                </p>
+              } @else if (filledCount() > 0) {
+                <p class="ph-actions__ok">
+                  <lucide-icon [img]="checkIcon" [size]="14" />
+                  Tudo preenchido!
+                </p>
+              }
+              <div class="ph-actions__buttons">
+                <app-button
+                  [loading]="saving()"
+                  [disabled]="filledCount() === 0"
+                  (buttonClick)="save()"
+                >
+                  Salvar Palpitão
+                </app-button>
+                @if (mine()) {
+                  <app-button variant="ghost" (buttonClick)="requestDelete()">
+                    <lucide-icon [img]="trashIcon" [size]="14" />
+                    Remover
+                  </app-button>
+                }
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <!-- ── Galera ───────────────────────────────────────────────────── -->
+      @case ('all') {
+        @if (listLoading() && !listPage()) {
+          <div class="page__skeleton">
+            <div class="u-skeleton page__skeleton-block"></div>
+          </div>
+        } @else if (listPage(); as page) {
+          @if (page.content.length === 0) {
+            <app-empty-state
+              [icon]="usersIcon"
+              title="Ninguém preencheu ainda"
+              description="Seja a primeira pessoa a registrar um Palpitão nesta fase!"
+            />
+          } @else {
+            <ol class="ph-list">
+              @for (p of page.content; track p.id; let i = $index) {
+                <li>
+                  <button
+                    type="button"
+                    class="ph-list__row"
+                    [class.ph-list__row--me]="p.userId === myUserId()"
+                    (click)="openView(p)"
+                  >
+                    <span class="ph-list__rank">{{ listRank(i) }}</span>
+                    <app-avatar [name]="p.userName" [imageUrl]="p.avatarUrl" [size]="32" />
+                    <span class="ph-list__name">
+                      {{ p.userName }}
+                      @if (p.userId === myUserId()) {
+                        <em>(você)</em>
+                      }
+                    </span>
+                    <span class="ph-list__pts">
+                      {{ p.points }} pts
+                      @if (p.provisional && p.scoredAt) {
+                        <em title="pontuação provisória">*</em>
+                      }
+                    </span>
+                    <lucide-icon [img]="chevronRightIcon" [size]="16" aria-hidden="true" />
+                  </button>
+                </li>
+              }
+            </ol>
+            <app-pagination
+              [currentPage]="page.number"
+              [totalPages]="page.totalPages"
+              [totalElements]="page.totalElements"
+              [disabled]="listLoading()"
+              (pageChange)="loadList($event)"
+            />
+          }
+        }
+      }
+
+      <!-- ── Previsão da galera ──────────────────────────────────────── -->
+      @case ('stats') {
+        @if (statsLoading() && !stats()) {
+          <div class="page__skeleton">
+            <div class="u-skeleton page__skeleton-block"></div>
+          </div>
+        } @else if (stats(); as st) {
+          @if (st.totalPickems === 0) {
+            <app-empty-state
+              [icon]="chartIcon"
+              title="Sem dados ainda"
+              description="A previsão da galera aparece quando os primeiros palpitões forem registrados."
+            />
+          } @else {
+            <p class="ph-stats-total">
+              {{ st.totalPickems }}
+              {{ st.totalPickems === 1 ? 'palpitão registrado' : 'palpitões registrados' }}
+            </p>
+
+            @if (st.bracket; as b) {
+              <div class="ph-stats-grid">
+                <section class="ph-stats-card">
+                  <h4 class="ph-stats-card__title">Campeão</h4>
+                  <ng-container
+                    *ngTemplateOutlet="sharesTpl; context: { $implicit: b.champion }"
+                  />
+                </section>
+                <section class="ph-stats-card">
+                  <h4 class="ph-stats-card__title">Vice</h4>
+                  <ng-container
+                    *ngTemplateOutlet="sharesTpl; context: { $implicit: b.runnerUp }"
+                  />
+                </section>
+                @if (b.thirdPlace.length > 0) {
+                  <section class="ph-stats-card">
+                    <h4 class="ph-stats-card__title">3º lugar</h4>
+                    <ng-container
+                      *ngTemplateOutlet="sharesTpl; context: { $implicit: b.thirdPlace }"
+                    />
+                  </section>
+                }
+              </div>
+            }
+
+            @if (st.table; as tb) {
+              <div class="ph-stats-grid">
+                @for (g of tb.groups; track g.groupId ?? 'rr') {
+                  <section class="ph-stats-card">
+                    @if (g.groupName) {
+                      <h4 class="ph-stats-card__title">{{ g.groupName }}</h4>
+                    }
+                    <h5 class="ph-stats-card__sub">Quem fica em 1º</h5>
+                    <ng-container
+                      *ngTemplateOutlet="sharesTpl; context: { $implicit: g.firstPlace }"
+                    />
+                    <h5 class="ph-stats-card__sub">Quem classifica</h5>
+                    <ng-container
+                      *ngTemplateOutlet="sharesTpl; context: { $implicit: g.qualifiers }"
+                    />
+                  </section>
+                }
+              </div>
+            }
+          }
+        }
+      }
+    }
+  }
+</section>
+
+<!-- Distribuição de escolhas (barra por time) -->
+<ng-template #sharesTpl let-shares>
+  <ul class="ph-shares">
+    @for (share of shares; track share.team.id) {
+      <li class="ph-share">
+        <app-team-badge
+          [name]="share.team.name"
+          [shortName]="share.team.shortName"
+          [badgeUrl]="share.team.badgeUrl"
+          [teamType]="share.team.teamType"
+          [countryCode]="share.team.countryCode"
+          [primaryColor]="share.team.primaryColor || '#10B981'"
+          [secondaryColor]="share.team.secondaryColor || '#0F172A'"
+          [size]="20"
+        />
+        <span class="ph-share__name" [title]="share.team.name">
+          {{ share.team.shortName || share.team.name }}
+        </span>
+        <span class="ph-share__bar" aria-hidden="true">
+          <span class="ph-share__fill" [style.width.%]="share.pct"></span>
+        </span>
+        <span class="ph-share__pct">{{ share.pct }}%</span>
+      </li>
+    }
+  </ul>
+</ng-template>
+
+<!-- Palpitão de um participante -->
+@if (viewing(); as v) {
+  <div
+    class="ph-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Palpitão de ' + v.userName"
+  >
+    <div
+      class="ph-modal__backdrop"
+      (click)="closeView()"
+      aria-hidden="true"
+      [@backdropFade]
+    ></div>
+    <div class="ph-sheet" [@dialogFade]>
+      <header class="ph-sheet__header">
+        <app-avatar [name]="v.userName" [imageUrl]="v.avatarUrl" [size]="36" />
+        <div class="ph-sheet__id">
+          <strong>{{ v.userName }}</strong>
+          <span>
+            {{ v.points }} pts
+            @if (v.provisional && v.scoredAt) {
+              <em>· provisório</em>
+            }
+          </span>
+        </div>
+        <button
+          type="button"
+          class="ph-sheet__close"
+          (click)="closeView()"
+          aria-label="Fechar"
+        >
+          <lucide-icon [img]="xIcon" [size]="18" />
+        </button>
+      </header>
+      <div class="ph-sheet__body">
+        <app-pickem-view
+          [pickem]="v"
+          [totalRounds]="template()?.bracket?.totalRounds ?? null"
+        />
+      </div>
+    </div>
+  </div>
+}
+
+<app-confirm-dialog
+  [open]="confirmPartialOpen()"
+  title="Salvar palpite incompleto?"
+  [description]="
+    missingCount() +
+    (missingCount() === 1
+      ? ' item ficou sem palpite — ele não pontua.'
+      : ' itens ficaram sem palpite — eles não pontuam.') +
+    ' Você pode completar depois, enquanto o Palpitão estiver aberto.'
+  "
+  confirmLabel="Salvar assim mesmo"
+  cancelLabel="Continuar preenchendo"
+  [loading]="saving()"
+  (confirmed)="confirmPartialSave()"
+  (cancelled)="cancelPartialSave()"
+/>
+
+<app-confirm-dialog
+  [open]="confirmDeleteOpen()"
+  title="Remover seu Palpitão?"
+  description="Seu palpite desta fase será apagado. Dá para preencher de novo enquanto a fase não travar."
+  confirmLabel="Remover"
+  cancelLabel="Cancelar"
+  variant="destructive"
+  [loading]="deleting()"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+/>
+
+<app-confirm-dialog
+  [open]="confirmRecalcOpen()"
+  title="Recalcular os palpitões da fase?"
+  description="Repontua todos os Palpitões desta fase com a pontuação vigente e o estado atual dos resultados. Útil após alterar a pontuação do torneio. A ação é idempotente."
+  confirmLabel="Recalcular"
+  cancelLabel="Cancelar"
+  [loading]="recalculating()"
+  (confirmed)="confirmRecalculate()"
+  (cancelled)="cancelRecalculate()"
+/>

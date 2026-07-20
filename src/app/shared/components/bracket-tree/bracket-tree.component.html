@@ -1,0 +1,175 @@
+<div class="bt" [class.bt--interactive]="interactive()" role="group" aria-label="Chaveamento">
+  <div class="bt__grid" [style.gridTemplateColumns]="gridTemplate()">
+    @for (col of columns(); track col.key) {
+      <div
+        class="bt-col"
+        [class.bt-col--left]="col.side === 'left'"
+        [class.bt-col--right]="col.side === 'right'"
+        [class.bt-col--center]="col.side === 'center'"
+        [class.bt-col--has-prev]="col.hasPrev"
+      >
+        <div class="bt-col__label" [class.bt-col__label--final]="col.side === 'center'">
+          {{ col.label }}
+        </div>
+
+        @if (col.side === 'center') {
+          <div class="bt-center">
+            <div class="bt-champion" [attr.data-hit]="data().championHit ?? null">
+              <span class="bt-champion__label">
+                <lucide-icon [img]="trophyIcon" [size]="13" />
+                Campeão
+              </span>
+              @if (data().champion; as champ) {
+                <span class="bt-champion__team" [title]="champ.name">
+                  <app-team-badge
+                    [name]="champ.name"
+                    [shortName]="champ.shortName"
+                    [badgeUrl]="champ.badgeUrl"
+                    [teamType]="champ.teamType"
+                    [countryCode]="champ.countryCode"
+                    [primaryColor]="champ.primaryColor || '#10B981'"
+                    [secondaryColor]="champ.secondaryColor || '#0F172A'"
+                    [size]="30"
+                  />
+                  <span class="bt-champion__name">{{ champ.shortName || champ.name }}</span>
+                </span>
+              } @else {
+                <span class="bt-champion__team bt-champion__team--empty">
+                  <span class="bt-empty-badge" aria-hidden="true">?</span>
+                  <span class="bt-champion__name bt-champion__name--muted">A definir</span>
+                </span>
+              }
+            </div>
+
+            @if (finalSlot(); as final) {
+              <div class="bt-cell bt-cell--final" [class.bt-cell--connected]="columnCount() > 1">
+                <ng-container
+                  *ngTemplateOutlet="slotTpl; context: { $implicit: final, big: true }"
+                />
+              </div>
+            }
+
+            @if (data().thirdPlace; as third) {
+              <div class="bt-third">
+                <span class="bt-third__label">
+                  <lucide-icon [img]="medalIcon" [size]="12" />
+                  3º lugar
+                </span>
+                <ng-container
+                  *ngTemplateOutlet="slotTpl; context: { $implicit: third, big: true }"
+                />
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="bt-col__cells">
+            @for (slot of col.slots; track slotKey(slot)) {
+              <div class="bt-cell" [class.bt-cell--lone]="col.lone">
+                <ng-container
+                  *ngTemplateOutlet="slotTpl; context: { $implicit: slot, big: false }"
+                />
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Slot (confronto): par de times empilhados -->
+<ng-template #slotTpl let-slot let-big="big">
+  <div
+    class="bt-slot"
+    [class.bt-slot--big]="big"
+    [attr.data-outcome]="slot.outcome ?? null"
+  >
+    @if (slotLink(slot); as link) {
+      <a class="bt-slot__body" [routerLink]="link" (click)="onOpen(slot)">
+        <ng-container
+          *ngTemplateOutlet="sideTpl; context: { $implicit: slot, side: 'home' }"
+        />
+        <span class="bt-slot__divider" aria-hidden="true"></span>
+        <ng-container
+          *ngTemplateOutlet="sideTpl; context: { $implicit: slot, side: 'away' }"
+        />
+      </a>
+    } @else {
+      <div class="bt-slot__body">
+        <ng-container
+          *ngTemplateOutlet="sideTpl; context: { $implicit: slot, side: 'home' }"
+        />
+        <span class="bt-slot__divider" aria-hidden="true"></span>
+        <ng-container
+          *ngTemplateOutlet="sideTpl; context: { $implicit: slot, side: 'away' }"
+        />
+      </div>
+    }
+    @if ((slot.pointsAwarded ?? 0) > 0) {
+      <span class="bt-slot__pts">+{{ slot.pointsAwarded }}</span>
+    }
+  </div>
+</ng-template>
+
+<!-- Lado (um time do confronto) -->
+<ng-template #sideTpl let-slot let-side="side">
+  @let team = side === 'home' ? slot.homeTeam : slot.awayTeam;
+  @let winner = isWinner(slot, team);
+  @let loser = isLoser(slot, team);
+  @if (interactive()) {
+    <button
+      type="button"
+      class="bt-side"
+      [class.bt-side--winner]="winner"
+      [class.bt-side--loser]="loser"
+      [disabled]="!canPick(slot, team)"
+      (click)="pickTeam(slot, team)"
+      [title]="team?.name ?? 'A definir'"
+      [attr.aria-label]="team ? 'Escolher ' + team.name + ' como vencedor' : 'A definir'"
+      [attr.aria-pressed]="winner"
+    >
+      <ng-container
+        *ngTemplateOutlet="sideContentTpl; context: { $implicit: slot, side, team, winner }"
+      />
+    </button>
+  } @else {
+    <span
+      class="bt-side"
+      [class.bt-side--winner]="winner"
+      [class.bt-side--loser]="loser"
+      [title]="team?.name ?? ''"
+    >
+      <ng-container
+        *ngTemplateOutlet="sideContentTpl; context: { $implicit: slot, side, team, winner }"
+      />
+    </span>
+  }
+</ng-template>
+
+<ng-template #sideContentTpl let-slot let-side="side" let-team="team" let-winner="winner">
+  @if (team) {
+    <app-team-badge
+      class="bt-side__badge"
+      [name]="team.name"
+      [shortName]="team.shortName"
+      [badgeUrl]="team.badgeUrl"
+      [teamType]="team.teamType"
+      [countryCode]="team.countryCode"
+      [primaryColor]="team.primaryColor || '#10B981'"
+      [secondaryColor]="team.secondaryColor || '#0F172A'"
+      [size]="24"
+    />
+    <span class="bt-side__name">{{ team.shortName || team.name }}</span>
+    @if (winner && slot.winnerAdvanced === true) {
+      <lucide-icon class="bt-side__hit" [img]="checkIcon" [size]="11" aria-hidden="true" />
+    }
+    @if (scoreOf(slot, side); as score) {
+      <span class="bt-side__score">
+        {{ score }}@if (pensOf(slot, side) !== null) {<span class="bt-side__pen"> ({{ pensOf(slot, side) }})</span>}
+      </span>
+    }
+  } @else {
+    <span class="bt-empty-badge" aria-hidden="true">?</span>
+    <span class="bt-side__name bt-side__name--empty">—</span>
+  }
+</ng-template>

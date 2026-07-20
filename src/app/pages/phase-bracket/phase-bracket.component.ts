@@ -68,7 +68,7 @@ export class PhaseBracketComponent implements OnInit {
   protected readonly checkIcon = CheckCircle2;
   protected readonly flagIcon = Flag;
 
-  protected readonly viewMode = signal<BracketViewMode>('cards');
+  protected readonly viewMode = signal<BracketViewMode>('tree');
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);

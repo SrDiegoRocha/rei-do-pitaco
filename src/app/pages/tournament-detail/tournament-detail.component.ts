@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
-import {catchError, forkJoin, of} from 'rxjs';
+import {catchError, forkJoin, map, of} from 'rxjs';
 import {AuthState} from '@core/auth/auth-state';
 import {ApiException} from '@core/errors/api-error';
 import {TiebreakCriteria, TournamentStatus,} from '@core/interfaces/enums';
@@ -26,8 +26,13 @@ import {
 } from '@core/interfaces/ranking.interface';
 import {IStandingsResponse} from '@core/interfaces/standings.interface';
 import {IBracketResponse} from '@core/interfaces/bracket.interface';
+import {
+  IPhasePredictionResponse,
+  IPhasePredictionTemplateResponse,
+} from '@core/interfaces/pickem.interface';
 import {ITournamentResponse} from '@core/interfaces/tournament.interface';
 import {BracketService} from '@core/services/bracket.service';
+import {PickemService} from '@core/services/pickem.service';
 import {MatchesService} from '@core/services/matches.service';
 import {PhasesService} from '@core/services/phases.service';
 import {PredictionsService} from '@core/services/predictions.service';
@@ -179,7 +184,20 @@ interface IMyPredictionRow {
 
 const TAB_RANKING = 'ranking';
 const TAB_MATCHES = 'matches';
+const TAB_PICKEM = 'pickem';
 const TAB_MY_PREDICTIONS = 'predictions';
+
+const PHASE_TYPE_SHORT_LABEL: Record<string, string> = {
+  ROUND_ROBIN: 'Pontos corridos',
+  GROUPS: 'Fase de grupos',
+  KNOCKOUT: 'Mata-mata',
+};
+
+/** Estado do Palpitão de uma fase, para os cards da aba e o banner. */
+interface IPickemPhaseOverview {
+  template: IPhasePredictionTemplateResponse | null;
+  mine: IPhasePredictionResponse | null;
+}
 
 const MATCHES_PHASE_KEY = 'reidopitaco.tMatches.phase';
 const MATCHES_BUCKET_KEY = 'reidopitaco.tMatches.bucket';
@@ -241,6 +259,7 @@ export class TournamentDetailComponent implements OnInit {
   private readonly _predictionsService = inject(PredictionsService);
   private readonly _standingsService = inject(StandingsService);
   private readonly _bracketService = inject(BracketService);
+  private readonly _pickemService = inject(PickemService);
   private readonly _membersService = inject(TournamentMembersService);
   private readonly _returnService = inject(TournamentReturnService);
   private readonly _authState = inject(AuthState);
@@ -309,8 +328,15 @@ export class TournamentDetailComponent implements OnInit {
   protected readonly bracketError = signal<Record<string, unknown>>({});
 
   protected readonly bracketViewMode = signal<BracketViewMode>(
-    readStored(BRACKET_MODE_KEY) === 'tree' ? 'tree' : 'cards',
+    readStored(BRACKET_MODE_KEY) === 'cards' ? 'cards' : 'tree',
   );
+
+  // ── Palpitão (Pick'em de fase) ─────────────────────────────────────────
+  protected readonly pickemOverview = signal<
+    Record<string, IPickemPhaseOverview>
+  >({});
+  protected readonly pickemLoading = signal(false);
+  protected readonly pickemLoaded = signal(false);
 
   // Filtros da aba de partidas persistidos; validados após a carga em
   // _validateMatchesFilters (IDs de fase/grupo são específicos do torneio).
@@ -438,14 +464,22 @@ export class TournamentDetailComponent implements OnInit {
 
   protected readonly tabs = computed<ITab[]>(() => {
     const phases = this.phases();
+    const t = this.tournament();
     const list: ITab[] = [
       {id: TAB_RANKING, label: 'Ranking'},
       {id: TAB_MATCHES, label: 'Partidas'},
+    ];
+    // O Palpitão só faz sentido com o torneio rolando (ou para revisitar
+    // depois de terminado) — antes disso a aba seria só um aviso vazio.
+    if (t && (t.status === 'IN_PROGRESS' || t.status === 'FINISHED')) {
+      list.push({id: TAB_PICKEM, label: 'Palpitão'});
+    }
+    list.push(
       ...phases.map((p) => ({
         id: `${PHASE_TAB_PREFIX}${p.id}`,
         label: p.name,
       })),
-    ];
+    );
     if (this.isActiveMember()) {
       list.push({id: TAB_MY_PREDICTIONS, label: 'Meus pitacos'});
     }
@@ -963,6 +997,14 @@ export class TournamentDetailComponent implements OnInit {
       if (cache[phaseId] || loading[phaseId]) return;
       this._loadStandings(phaseId);
     });
+
+    // Aba Palpitão: carrega o estado por fase na primeira visita.
+    effect(() => {
+      if (this.activeTab() !== TAB_PICKEM) return;
+      if (this.pickemLoaded() || this.pickemLoading()) return;
+      if (!this.tournament()) return;
+      this._loadPickemOverview();
+    });
   }
 
   protected setBracketViewMode(mode: BracketViewMode): void {
@@ -991,6 +1033,7 @@ export class TournamentDetailComponent implements OnInit {
     const staticTabs = [
       TAB_RANKING,
       TAB_MATCHES,
+      TAB_PICKEM,
       TAB_MY_PREDICTIONS,
       TAB_INFO,
     ];
@@ -1393,6 +1436,13 @@ export class TournamentDetailComponent implements OnInit {
           if (this.rankingHasActiveFilter()) {
             this._loadRanking();
           }
+          // Palpitão: em torneio rolando o estado é carregado já na entrada
+          // (alimenta o banner de CTA além da aba).
+          this.pickemLoaded.set(false);
+          this.pickemOverview.set({});
+          if (tournament.status === 'IN_PROGRESS') {
+            this._loadPickemOverview();
+          }
         },
         error: (err: unknown) => {
           this.loading.set(false);
@@ -1444,6 +1494,96 @@ export class TournamentDetailComponent implements OnInit {
         error: (err: unknown) => {
           this.standingsLoading.update((s) => ({...s, [phaseId]: false}));
           this.standingsError.update((s) => ({...s, [phaseId]: err}));
+        },
+      });
+  }
+
+  // ── Palpitão (Pick'em de fase) ─────────────────────────────────────────
+
+  /** CTA para a primeira fase com Palpitão aberto que o usuário não preencheu. */
+  protected readonly pickemBanner = computed<{
+    phaseId: string;
+    phaseName: string;
+  } | null>(() => {
+    if (!this.isActiveMember()) return null;
+    if (this.tournament()?.status !== 'IN_PROGRESS') return null;
+    if (this.activeTab() === TAB_PICKEM) return null;
+    const overview = this.pickemOverview();
+    for (const phase of this.phases()) {
+      const ov = overview[phase.id];
+      if (ov?.template?.state === 'OPEN' && !ov.mine) {
+        return {phaseId: phase.id, phaseName: phase.name};
+      }
+    }
+    return null;
+  });
+
+  protected pickemHref(phaseId: string): unknown[] {
+    const t = this.tournament();
+    return t
+      ? ['/tournaments', t.id, 'phases', phaseId, 'pickem']
+      : ['/tournaments'];
+  }
+
+  protected pickemOverviewFor(phaseId: string): IPickemPhaseOverview | null {
+    return this.pickemOverview()[phaseId] ?? null;
+  }
+
+  protected phaseTypeShortLabel(phase: IPhaseResponse): string {
+    return PHASE_TYPE_SHORT_LABEL[phase.phaseType] ?? phase.phaseType;
+  }
+
+  protected pickemLockAtLabel(
+    template: IPhasePredictionTemplateResponse | null,
+  ): string | null {
+    const iso = template?.lockAt;
+    if (!iso) return null;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(iso));
+    } catch {
+      return null;
+    }
+  }
+
+  private _loadPickemOverview(): void {
+    const t = this.tournament();
+    if (!t || this.pickemLoading()) return;
+    const phases = this.phases();
+    if (phases.length === 0) {
+      this.pickemOverview.set({});
+      this.pickemLoaded.set(true);
+      return;
+    }
+    this.pickemLoading.set(true);
+    forkJoin(
+      phases.map((p) =>
+        forkJoin({
+          template: this._pickemService.template(t.id, p.id).pipe(
+            catchError(() =>
+              of<IPhasePredictionTemplateResponse | null>(null),
+            ),
+          ),
+          mine: this._pickemService.getMine(t.id, p.id).pipe(
+            catchError(() => of<IPhasePredictionResponse | null>(null)),
+          ),
+        }).pipe(map((ov) => [p.id, ov] as const)),
+      ),
+    )
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (entries) => {
+          this.pickemOverview.set(Object.fromEntries(entries));
+          this.pickemLoading.set(false);
+          this.pickemLoaded.set(true);
+        },
+        error: () => {
+          this.pickemLoading.set(false);
+          this.pickemLoaded.set(true);
         },
       });
   }

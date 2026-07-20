@@ -13,6 +13,11 @@ import {
 } from '@core/interfaces/bracket.interface';
 import { ITeamRef } from '@core/interfaces/match.interface';
 import { knockoutRoundLabel } from '@core/utils/round-label';
+import { BracketTreeComponent } from '@shared/components/bracket-tree/bracket-tree.component';
+import {
+  bracketResponseToTree,
+  IBracketTreeData,
+} from '@shared/components/bracket-tree/bracket-tree.model';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
 import {
   formatScoreDisplay,
@@ -31,7 +36,13 @@ export type BracketViewMode = 'tree' | 'cards';
 @Component({
   selector: 'app-bracket-view',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, TeamBadgeComponent, ScoreDisplayPipe],
+  imports: [
+    RouterLink,
+    LucideAngularModule,
+    TeamBadgeComponent,
+    ScoreDisplayPipe,
+    BracketTreeComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bracket-view.component.html',
   styleUrl: './bracket-view.component.scss',
@@ -52,6 +63,19 @@ export class BracketViewComponent {
   protected readonly calendarIcon = Calendar;
 
   protected readonly rounds = computed(() => this.bracket()?.rounds ?? []);
+
+  /**
+   * Árvore espelhada (modo "tree"). `null` quando o bracket não tem formato
+   * de árvore (manual/antigo) — aí o fallback é a listagem em cards.
+   */
+  protected readonly treeData = computed<IBracketTreeData | null>(() => {
+    const b = this.bracket();
+    return b ? bracketResponseToTree(b) : null;
+  });
+
+  protected onTreeOpen(matchId: string): void {
+    this.matchOpen.emit(matchId);
+  }
 
   /** Total de times da fase = confrontos da maior rodada × 2 (potência de 2). */
   protected readonly teamCount = computed(() => {

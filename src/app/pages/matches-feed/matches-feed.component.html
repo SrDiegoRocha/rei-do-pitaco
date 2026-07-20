@@ -15,6 +15,29 @@
     </div>
   }
 
+  @if (pendingPickems().length > 0) {
+    <section class="feed-pickems" aria-label="Palpitões abertos">
+      <header class="feed-pickems__header">
+        <lucide-icon [img]="trophyIcon" [size]="14" aria-hidden="true" />
+        {{ pendingPickems().length === 1 ? 'Palpitão aberto' : 'Palpitões abertos' }}
+      </header>
+      <ul class="feed-pickems__list">
+        @for (item of pendingPickems(); track item.phaseId) {
+          <li>
+            <a class="feed-pickems__row" [routerLink]="pickemHref(item)">
+              <span class="feed-pickems__names">
+                <strong>{{ item.phaseName }}</strong>
+                <span>{{ item.tournamentName }}</span>
+              </span>
+              <span class="feed-pickems__lock">{{ pickemLockLabel(item) }}</span>
+              <span class="feed-pickems__cta">Palpitar</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
   @if (loading()) {
     <div class="feed__skeleton">
       @for (i of [1, 2, 3, 4, 5]; track i) {

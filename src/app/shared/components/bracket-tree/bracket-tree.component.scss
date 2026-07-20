@@ -1,0 +1,527 @@
+/* Árvore espelhada de mata-mata: metades esquerda/direita convergindo para a
+   final no centro, campeão no topo e 3º lugar embaixo (estilo bracket
+   challenge). O alinhamento vertical entre rodadas vem da distribuição
+   uniforme: cada célula ocupa fração igual da altura da coluna, então o centro
+   de um confronto coincide com o ponto médio do par que o alimenta. */
+
+.bt {
+  --bt-gap: 10px;
+  --bt-colmin: 44px;
+  --bt-colcenter: 116px;
+  --bt-cellmin: 60px;
+  --bt-line: var(--border-strong);
+
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-2) var(--space-1) var(--space-3);
+}
+
+.bt__grid {
+  display: grid;
+  column-gap: var(--bt-gap);
+  align-items: stretch;
+}
+
+.bt-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bt-col__label {
+  height: 18px;
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--final {
+    /* Espaçador: mantém as alturas das colunas alinhadas; o rótulo "Final"
+       aparece colado no confronto, dentro do bloco central. */
+    visibility: hidden;
+  }
+}
+
+.bt-col__cells {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.bt-cell {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--bt-cellmin);
+  padding: 4px 2px;
+}
+
+/* ── Conectores ──────────────────────────────────────────────────────────
+   Saída (::after): metade esquerda desenha cotovelos à direita; nas células
+   ímpares (topo do par) a linha vai do centro para baixo, nas pares (base do
+   par) do topo para o centro — juntas formam a linha contínua entre os dois
+   confrontos do par. Entrada (::before): toco horizontal no centro da célula
+   filha, fechando a junção no meio do vão entre colunas. */
+
+.bt-col--left .bt-col__cells .bt-cell:not(.bt-cell--lone)::after,
+.bt-col--right .bt-col__cells .bt-cell:not(.bt-cell--lone)::after {
+  content: '';
+  position: absolute;
+  width: calc(var(--bt-gap) / 2 + 1px);
+  pointer-events: none;
+}
+
+.bt-col--left .bt-col__cells .bt-cell:not(.bt-cell--lone)::after {
+  right: calc(var(--bt-gap) / -2 - 1px);
+}
+
+.bt-col--right .bt-col__cells .bt-cell:not(.bt-cell--lone)::after {
+  left: calc(var(--bt-gap) / -2 - 1px);
+}
+
+.bt-col--left .bt-col__cells .bt-cell:nth-child(odd):not(.bt-cell--lone)::after {
+  top: 50%;
+  height: 50%;
+  border-top: 2px solid var(--bt-line);
+  border-right: 2px solid var(--bt-line);
+  border-top-right-radius: 8px;
+}
+
+.bt-col--left .bt-col__cells .bt-cell:nth-child(even):not(.bt-cell--lone)::after {
+  top: 0;
+  height: 50%;
+  border-bottom: 2px solid var(--bt-line);
+  border-right: 2px solid var(--bt-line);
+  border-bottom-right-radius: 8px;
+}
+
+.bt-col--right .bt-col__cells .bt-cell:nth-child(odd):not(.bt-cell--lone)::after {
+  top: 50%;
+  height: 50%;
+  border-top: 2px solid var(--bt-line);
+  border-left: 2px solid var(--bt-line);
+  border-top-left-radius: 8px;
+}
+
+.bt-col--right .bt-col__cells .bt-cell:nth-child(even):not(.bt-cell--lone)::after {
+  top: 0;
+  height: 50%;
+  border-bottom: 2px solid var(--bt-line);
+  border-left: 2px solid var(--bt-line);
+  border-bottom-left-radius: 8px;
+}
+
+/* Coluna com um único confronto (semi alimentando a final): toco reto. */
+.bt-col--left .bt-col__cells .bt-cell--lone::after,
+.bt-col--right .bt-col__cells .bt-cell--lone::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1px);
+  height: 2px;
+  width: calc(var(--bt-gap) / 2 + 1px);
+  background: var(--bt-line);
+  pointer-events: none;
+}
+
+.bt-col--left .bt-col__cells .bt-cell--lone::after {
+  right: calc(var(--bt-gap) / -2 - 1px);
+}
+
+.bt-col--right .bt-col__cells .bt-cell--lone::after {
+  left: calc(var(--bt-gap) / -2 - 1px);
+}
+
+/* Toco de entrada nas colunas que recebem da rodada anterior. */
+.bt-col--left.bt-col--has-prev .bt-col__cells .bt-cell::before,
+.bt-col--right.bt-col--has-prev .bt-col__cells .bt-cell::before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1px);
+  height: 2px;
+  width: calc(var(--bt-gap) / 2 + 1px);
+  background: var(--bt-line);
+  pointer-events: none;
+}
+
+.bt-col--left.bt-col--has-prev .bt-col__cells .bt-cell::before {
+  left: calc(var(--bt-gap) / -2 - 1px);
+}
+
+.bt-col--right.bt-col--has-prev .bt-col__cells .bt-cell::before {
+  right: calc(var(--bt-gap) / -2 - 1px);
+}
+
+/* ── Coluna central (campeão / final / 3º lugar) ───────────────────────── */
+
+.bt-center {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+}
+
+.bt-champion {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border-default));
+  min-width: 96px;
+  max-width: 100%;
+  z-index: 1;
+
+  &[data-hit='true'] {
+    border-color: var(--success);
+    box-shadow: 0 0 0 1px var(--success);
+  }
+
+  &[data-hit='false'] {
+    border-color: var(--danger);
+  }
+}
+
+.bt-champion__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 75%, var(--text-primary));
+}
+
+.bt-champion__team {
+  --team-badge-size: 30px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.bt-champion__name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--muted {
+    color: var(--text-muted);
+    font-weight: var(--font-medium);
+  }
+}
+
+.bt-center__final {
+  position: relative;
+  width: 100%;
+}
+
+.bt-center__final-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.bt-cell--final {
+  position: relative;
+  flex: none;
+  min-height: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.bt-cell--final.bt-cell--connected::before,
+.bt-cell--final.bt-cell--connected::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1px);
+  height: 2px;
+  width: calc(var(--bt-gap) / 2 + 1px);
+  background: var(--bt-line);
+  pointer-events: none;
+}
+
+.bt-cell--final.bt-cell--connected::before {
+  left: calc(var(--bt-gap) / -2 - 1px);
+}
+
+.bt-cell--final.bt-cell--connected::after {
+  right: calc(var(--bt-gap) / -2 - 1px);
+}
+
+.bt-third {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bt-third__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Slot (confronto) ────────────────────────────────────────────────────── */
+
+.bt-slot {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-xs);
+  z-index: 1;
+
+  &[data-outcome='EXACT'] {
+    border-color: var(--success);
+    background: color-mix(in srgb, var(--success) 8%, var(--bg-elevated));
+  }
+
+  &[data-outcome='PARTIAL'] {
+    border-color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 8%, var(--bg-elevated));
+  }
+
+  &[data-outcome='MISS'] {
+    border-color: color-mix(in srgb, var(--danger) 55%, var(--border-default));
+    background: color-mix(in srgb, var(--danger) 6%, var(--bg-elevated));
+  }
+}
+
+.bt-slot__body {
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: inherit;
+}
+
+a.bt-slot__body:hover {
+  background: color-mix(in srgb, var(--bg-muted) 60%, transparent);
+}
+
+.bt-slot__divider {
+  height: 1px;
+  margin: 1px 2px;
+  background: var(--border-default);
+}
+
+.bt-slot__pts {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--brand);
+  color: var(--text-on-brand);
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  line-height: 14px;
+  z-index: 2;
+  box-shadow: var(--shadow-xs);
+}
+
+/* ── Lado (um time) ─────────────────────────────────────────────────────── */
+
+.bt-side {
+  --team-badge-size: 22px;
+
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: inherit;
+  color: var(--text-primary);
+  min-width: 0;
+  transition: background var(--duration-fast) var(--easing-default);
+}
+
+.bt-side app-team-badge {
+  display: block;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.bt-side--winner app-team-badge {
+  box-shadow: 0 0 0 2px var(--brand);
+}
+
+.bt-side--winner .bt-side__name {
+  font-weight: var(--font-bold);
+}
+
+.bt-side--loser {
+  opacity: 0.42;
+}
+
+.bt-side__name {
+  display: none;
+  font-size: 11px;
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+
+  &--empty {
+    color: var(--text-muted);
+  }
+}
+
+.bt-side__score {
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.bt-side__pen {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.bt-side__hit {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.bt-empty-badge {
+  width: var(--team-badge-size, 22px);
+  height: var(--team-badge-size, 22px);
+  border-radius: var(--radius-full);
+  border: 1.5px dashed var(--border-strong);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  flex-shrink: 0;
+}
+
+/* Final e 3º lugar: chip maior, sempre com nome. */
+.bt-slot--big .bt-side {
+  --team-badge-size: 26px;
+
+  justify-content: flex-start;
+  padding: 5px 6px;
+}
+
+.bt-slot--big .bt-side__name {
+  display: inline;
+  flex: 1;
+  font-size: var(--text-xs);
+}
+
+.bt-slot--big .bt-side__score {
+  margin-left: auto;
+  font-size: var(--text-xs);
+}
+
+/* ── Modo interativo (Pick'em) ──────────────────────────────────────────── */
+
+.bt--interactive button.bt-side {
+  cursor: pointer;
+}
+
+.bt--interactive button.bt-side:not(:disabled):hover {
+  background: var(--bg-muted);
+}
+
+.bt--interactive button.bt-side:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.bt--interactive button.bt-side:disabled {
+  cursor: default;
+}
+
+.bt--interactive .bt-side--winner {
+  background: var(--brand-subtle);
+}
+
+/* ── Responsivo ─────────────────────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .bt {
+    --bt-gap: 18px;
+    --bt-colmin: 64px;
+    --bt-colcenter: 160px;
+    --bt-cellmin: 68px;
+  }
+
+  .bt-center {
+    min-height: 290px;
+  }
+
+  .bt-side {
+    --team-badge-size: 26px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bt {
+    --bt-colmin: 118px;
+    --bt-colcenter: 190px;
+    --bt-cellmin: 74px;
+  }
+
+  .bt-side {
+    justify-content: flex-start;
+  }
+
+  .bt-side__name {
+    display: inline;
+    flex: 1;
+  }
+
+  .bt-side__score {
+    margin-left: auto;
+  }
+}

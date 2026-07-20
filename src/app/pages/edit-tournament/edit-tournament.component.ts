@@ -9,12 +9,20 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, forkJoin, of, switchMap } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
+import { IPhaseResponse } from '@core/interfaces/phase.interface';
+import {
+  IPickemRecalculationResponse,
+  IRecalculationResponse,
+} from '@core/interfaces';
 import {
   ICreateTournamentRequest,
   ITournamentResponse,
 } from '@core/interfaces/tournament.interface';
+import { PhasesService } from '@core/services/phases.service';
+import { PickemService } from '@core/services/pickem.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import { ButtonComponent } from '@shared/components/button/button.component';
@@ -39,6 +47,8 @@ import { ToastService } from '@shared/services/toast.service';
 export class EditTournamentComponent implements OnInit {
   private readonly _service = inject(TournamentsService);
   private readonly _predictions = inject(PredictionsService);
+  private readonly _phases = inject(PhasesService);
+  private readonly _pickem = inject(PickemService);
   private readonly _authState = inject(AuthState);
   private readonly _toast = inject(ToastService);
   private readonly _route = inject(ActivatedRoute);
@@ -57,6 +67,9 @@ export class EditTournamentComponent implements OnInit {
 
   protected readonly recalculating = signal(false);
   protected readonly confirmRecalcOpen = signal(false);
+
+  /** Pós-save em IN_PROGRESS: oferece reaplicar a pontuação ao que já foi lançado. */
+  protected readonly postSaveRecalcOpen = signal(false);
 
   /**
    * O recálculo só faz sentido quando o owner pode ter mudado a pontuação com
@@ -99,6 +112,13 @@ export class EditTournamentComponent implements OnInit {
           this.submitting.set(false);
           this.tournament.set(tournament);
           this._toast.success(`Torneio "${tournament.name}" atualizado.`);
+          // Em andamento, a nova pontuação só vale para os próximos
+          // resultados — oferece reaplicar ao que já foi lançado
+          // (pitacos de partida + Palpitões, fase a fase).
+          if (this.canRecalculate()) {
+            this.postSaveRecalcOpen.set(true);
+            return;
+          }
           void this._router.navigate(['/tournaments', tournament.id]);
         },
         error: (err: unknown) => {
@@ -154,36 +174,87 @@ export class EditTournamentComponent implements OnInit {
   }
 
   protected confirmRecalculate(): void {
-    const current = this.tournament();
-    if (!current) return;
-
-    this.recalculating.set(true);
-
-    this._predictions
-      .recalculatePoints(current.id)
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe({
-        next: (result) => {
-          this.recalculating.set(false);
-          this.confirmRecalcOpen.set(false);
-          this._toast.success(
-            `${result.predictionsUpdated} palpite(s) recalculado(s) em ${result.matchesProcessed} partida(s).`,
-          );
-        },
-        error: (err: unknown) => {
-          this.recalculating.set(false);
-          this.confirmRecalcOpen.set(false);
-          const message =
-            err instanceof ApiException
-              ? err.message
-              : 'Não foi possível recalcular os pontos.';
-          this._toast.error(message);
-        },
-      });
+    this._runFullRecalculation(() => this.confirmRecalcOpen.set(false));
   }
 
   protected cancelRecalculate(): void {
     this.confirmRecalcOpen.set(false);
+  }
+
+  protected confirmPostSaveRecalculate(): void {
+    this._runFullRecalculation(() => {
+      this.postSaveRecalcOpen.set(false);
+      const t = this.tournament();
+      void this._router.navigate(t ? ['/tournaments', t.id] : ['/tournaments']);
+    });
+  }
+
+  protected skipPostSaveRecalculate(): void {
+    if (this.recalculating()) return;
+    this.postSaveRecalcOpen.set(false);
+    const t = this.tournament();
+    void this._router.navigate(t ? ['/tournaments', t.id] : ['/tournaments']);
+  }
+
+  /**
+   * Reaplica a pontuação vigente a tudo que já foi lançado: pitacos de partida
+   * (recálculo do torneio) e Palpitões (recálculo por fase). Falhas parciais
+   * não abortam o restante.
+   */
+  private _runFullRecalculation(onDone: () => void): void {
+    const current = this.tournament();
+    if (!current || this.recalculating()) return;
+
+    this.recalculating.set(true);
+
+    this._phases
+      .list(current.id)
+      .pipe(
+        catchError(() => of<IPhaseResponse[]>([])),
+        switchMap((phases) =>
+          forkJoin({
+            predictions: this._predictions.recalculatePoints(current.id).pipe(
+              catchError(() => of<IRecalculationResponse | null>(null)),
+            ),
+            pickems:
+              phases.length > 0
+                ? forkJoin(
+                    phases.map((p) =>
+                      this._pickem.recalculate(current.id, p.id).pipe(
+                        catchError(() =>
+                          of<IPickemRecalculationResponse | null>(null),
+                        ),
+                      ),
+                    ),
+                  )
+                : of<(IPickemRecalculationResponse | null)[]>([]),
+          }),
+        ),
+        takeUntilDestroyed(this._destroyRef),
+      )
+      .subscribe({
+        next: ({ predictions, pickems }) => {
+          this.recalculating.set(false);
+          const preds = predictions?.predictionsUpdated ?? 0;
+          const picks = pickems.reduce(
+            (sum, r) => sum + (r?.pickemsRecalculated ?? 0),
+            0,
+          );
+          this._toast.success(
+            `Pontos recalculados: ${preds} ${
+              preds === 1 ? 'pitaco atualizado' : 'pitacos atualizados'
+            } e ${picks} ${
+              picks === 1 ? 'palpitão repontuado' : 'palpitões repontuados'
+            }.`,
+          );
+          onDone();
+        },
+        error: () => {
+          this.recalculating.set(false);
+          this._toast.error('Não foi possível recalcular os pontos.');
+          onDone();
+        },
+      });
   }
 
   protected cancel(): void {
