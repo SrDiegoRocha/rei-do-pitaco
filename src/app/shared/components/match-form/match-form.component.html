@@ -55,14 +55,14 @@
       @if (isKnockoutPhase()) {
         <div class="mform__field">
           <label class="mform__label" for="match-round">Etapa</label>
-          @if (koRoundOptions().length > 0) {
+          @if (koStageOptions().length > 0) {
             <select
               id="match-round"
               class="mform__select"
               [value]="koEtapaSelectValue()"
               (change)="onEtapaChange($event)"
             >
-              @for (opt of koRoundOptions(); track etapaOptionValue(opt)) {
+              @for (opt of koStageOptions(); track etapaOptionValue(opt)) {
                 <option [value]="etapaOptionValue(opt)">{{ opt.label }}</option>
               }
             </select>
@@ -101,7 +101,11 @@
     <header class="mform__section-header">
       <h2 class="mform__section-title">Times</h2>
       <p class="mform__section-subtitle">
-        Quem joga em casa e quem visita
+        @if (showIdaPicker()) {
+          A volta é o mesmo confronto da ida, com o mando invertido
+        } @else {
+          Quem joga em casa e quem visita
+        }
       </p>
     </header>
 
@@ -113,36 +117,62 @@
       <div class="mform__hint" role="status">{{ msg }}</div>
     }
 
-    <div class="mform__field">
-      <label class="mform__label" for="match-home">Mandante</label>
-      <select
-        id="match-home"
-        class="mform__select"
-        formControlName="homeTeamId"
-      >
-        <option value="" disabled>{{ teamPlaceholder() }}</option>
-        @for (team of homeOptions(); track team.teamId) {
-          <option [value]="team.teamId">{{ teamOptionLabel(team) }}</option>
-        }
-      </select>
-    </div>
+    @if (showIdaPicker()) {
+      <!-- Criação da VOLTA: escolhe o jogo de ida; mando/times vêm dele. -->
+      <div class="mform__field">
+        <label class="mform__label" for="match-ida">Jogo de ida</label>
+        <select
+          id="match-ida"
+          class="mform__select"
+          [value]="form.controls.tieId.value ?? ''"
+          (change)="onIdaTieChange($event)"
+        >
+          <option value="" disabled>Selecione o jogo de ida</option>
+          @for (opt of idaTieOptions(); track opt.tieId) {
+            <option [value]="opt.tieId">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+      @if (idaTieOptions().length === 0) {
+        <div class="mform__hint" role="status">
+          Nenhum jogo de ida desta etapa está aguardando a volta. Crie a ida
+          primeiro.
+        </div>
+      }
+    } @else {
+      <div class="mform__field">
+        <label class="mform__label" for="match-home">Mandante</label>
+        <select
+          id="match-home"
+          class="mform__select"
+          formControlName="homeTeamId"
+          (change)="onHomeTeamChange()"
+        >
+          <option value="" disabled>{{ teamPlaceholder() }}</option>
+          @for (team of homeOptions(); track team.teamId) {
+            <option [value]="team.teamId">{{ teamOptionLabel(team) }}</option>
+          }
+        </select>
+      </div>
 
-    <div class="mform__field">
-      <label class="mform__label" for="match-away">Visitante</label>
-      <select
-        id="match-away"
-        class="mform__select"
-        formControlName="awayTeamId"
-      >
-        <option value="" disabled>{{ teamPlaceholder() }}</option>
-        @for (team of awayOptions(); track team.teamId) {
-          <option [value]="team.teamId">{{ teamOptionLabel(team) }}</option>
-        }
-      </select>
-    </div>
+      <div class="mform__field">
+        <label class="mform__label" for="match-away">Visitante</label>
+        <select
+          id="match-away"
+          class="mform__select"
+          formControlName="awayTeamId"
+          (change)="onAwayTeamChange()"
+        >
+          <option value="" disabled>{{ teamPlaceholder() }}</option>
+          @for (team of awayOptions(); track team.teamId) {
+            <option [value]="team.teamId">{{ teamOptionLabel(team) }}</option>
+          }
+        </select>
+      </div>
 
-    @if (teamsError(); as err) {
-      <p class="mform__field-error" role="alert">{{ err }}</p>
+      @if (teamsError(); as err) {
+        <p class="mform__field-error" role="alert">{{ err }}</p>
+      }
     }
   </section>
 

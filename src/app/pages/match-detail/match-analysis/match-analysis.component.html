@@ -245,7 +245,11 @@
                 <span class="meeting__team">{{ m.homeTeam.shortName ?? m.homeTeam.name }}</span>
               </span>
               <span class="meeting__score">
-                {{ m.homeGoals | scoreDisplay }}<span class="meeting__sep">×</span>{{ m.awayGoals | scoreDisplay }}
+                <span class="meeting__score-line">
+                  <span class="meeting__goal">{{ m.homeGoals | scoreDisplay }}</span>
+                  <span class="meeting__sep">×</span>
+                  <span class="meeting__goal">{{ m.awayGoals | scoreDisplay }}</span>
+                </span>
                 @if (h2hPenaltyLabel(m); as pen) {
                   <span class="meeting__pen">{{ pen }}</span>
                 }

@@ -78,6 +78,12 @@
           </div>
         }
         @if (p.phaseType === 'KNOCKOUT') {
+          @if (bracketModeLabel(); as bm) {
+            <div class="phase-detail__spec">
+              <dt>Chaveamento</dt>
+              <dd>{{ bm }}</dd>
+            </div>
+          }
           <div class="phase-detail__spec">
             <dt>Disputa de 3º lugar</dt>
             <dd>{{ p.hasThirdPlace ? 'Sim' : 'Não' }}</dd>

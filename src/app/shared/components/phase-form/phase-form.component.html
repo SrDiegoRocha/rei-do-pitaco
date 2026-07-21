@@ -224,6 +224,50 @@
       </button>
 
       <div class="pform__subfield">
+        <p class="pform__subfield-title">Chaveamento</p>
+        <p class="pform__subfield-desc">
+          Define se a árvore fica fixa desde o sorteio inicial ou se os
+          confrontos são sorteados de novo a cada rodada.
+        </p>
+        <div class="pform__options pform__options--two" role="radiogroup" aria-label="Chaveamento">
+          <button
+            type="button"
+            class="pform__option"
+            [class.pform__option--active]="bracketMode() === 'FIXED_BRACKET'"
+            [disabled]="isLocked()"
+            (click)="setBracketMode('FIXED_BRACKET')"
+            role="radio"
+            [attr.aria-checked]="bracketMode() === 'FIXED_BRACKET'"
+          >
+            <span class="pform__option-icon" aria-hidden="true">
+              <lucide-icon [img]="gitForkIcon" [size]="18" />
+            </span>
+            <span class="pform__option-name">Chaveamento fixo</span>
+            <span class="pform__option-desc">
+              O sorteio inicial define a árvore até a final
+            </span>
+          </button>
+          <button
+            type="button"
+            class="pform__option"
+            [class.pform__option--active]="bracketMode() === 'REDRAW_EACH_ROUND'"
+            [disabled]="isLocked()"
+            (click)="setBracketMode('REDRAW_EACH_ROUND')"
+            role="radio"
+            [attr.aria-checked]="bracketMode() === 'REDRAW_EACH_ROUND'"
+          >
+            <span class="pform__option-icon" aria-hidden="true">
+              <lucide-icon [img]="shuffleIcon" [size]="18" />
+            </span>
+            <span class="pform__option-name">Sorteio a cada rodada</span>
+            <span class="pform__option-desc">
+              Estilo Copa do Brasil — os vencedores são sorteados de novo
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pform__subfield">
         <p class="pform__subfield-title">Formato da final</p>
         <p class="pform__subfield-desc">
           Vale para a final e a disputa de 3º lugar — pode ser diferente do

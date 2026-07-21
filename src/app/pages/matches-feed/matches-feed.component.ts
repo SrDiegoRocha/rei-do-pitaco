@@ -295,7 +295,20 @@ export class MatchesFeedComponent implements OnInit {
     const parts: string[] = [item.phase.name];
     if (item.group) parts.push(item.group.name);
     if (item.phase.phaseType === 'KNOCKOUT') {
-      if (item.match.matchType === 'THIRD_PLACE') parts.push('Disputa de 3º');
+      // A etapa (oitavas/quartas...) não vem no feed (PhaseRef não traz
+      // teamCount). Mas em ida-e-volta dá pra distinguir a perna: a volta é a
+      // que pode ir aos pênaltis (penaltyShootoutEligible), a ida não (§14).
+      const leg =
+        item.match.matchLegMode === 'TWO_LEGGED'
+          ? item.match.penaltyShootoutEligible
+            ? 'Volta'
+            : 'Ida'
+          : null;
+      if (item.match.matchType === 'THIRD_PLACE') {
+        parts.push(leg ? `Disputa de 3º · ${leg}` : 'Disputa de 3º');
+      } else if (leg) {
+        parts.push(leg);
+      }
     } else {
       parts.push(`Rodada ${item.match.round}`);
     }

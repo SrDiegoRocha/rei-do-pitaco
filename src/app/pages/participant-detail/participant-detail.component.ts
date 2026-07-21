@@ -30,7 +30,7 @@ import { PickemService } from '@core/services/pickem.service';
 import { PredictionsService } from '@core/services/predictions.service';
 import { RankingService } from '@core/services/ranking.service';
 import { TournamentsService } from '@core/services/tournaments.service';
-import { knockoutRoundLabel } from '@core/utils/round-label';
+import { knockoutMatchBucketLabel } from '@core/utils/round-label';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -284,10 +284,16 @@ export class ParticipantDetailComponent implements OnInit {
     round: number,
     kind: MatchBucketKind,
   ): string {
-    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     if (phase?.phaseType === 'KNOCKOUT') {
-      return knockoutRoundLabel(round, phase.teamCount);
+      return knockoutMatchBucketLabel(
+        round,
+        kind === 'THIRD_PLACE',
+        phase.teamCount,
+        phase.matchLegMode,
+        phase.finalLegMode,
+      );
     }
+    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     return `Rodada ${round}`;
   }
 

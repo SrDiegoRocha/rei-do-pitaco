@@ -1,4 +1,8 @@
-import { MatchType, TournamentPhaseType } from '@core/interfaces/enums';
+import {
+  BracketMode,
+  MatchType,
+  TournamentPhaseType,
+} from '@core/interfaces/enums';
 import { ITeamRef } from '@core/interfaces/match.interface';
 
 /**
@@ -61,6 +65,8 @@ export interface ITemplateRound {
 
 export interface IBracketTemplate {
   hasThirdPlace: boolean;
+  /** REDRAW_EACH_ROUND: os cruzamentos das próximas rodadas serão sorteados. */
+  bracketMode: BracketMode;
   totalRounds: number;
   /** Rodada 1 com os confrontos reais; seguintes com slots vazios. */
   rounds: ITemplateRound[];

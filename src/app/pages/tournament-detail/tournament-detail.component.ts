@@ -41,7 +41,7 @@ import {StandingsService} from '@core/services/standings.service';
 import {TournamentMembersService} from '@core/services/tournament-members.service';
 import {TournamentReturnService} from '@core/services/tournament-return.service';
 import {TournamentsService} from '@core/services/tournaments.service';
-import {knockoutRoundLabel} from '@core/utils/round-label';
+import {knockoutMatchBucketLabel} from '@core/utils/round-label';
 import {AvatarComponent} from '@shared/components/avatar/avatar.component';
 import {ButtonComponent} from '@shared/components/button/button.component';
 import {ConfirmDialogComponent} from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -899,10 +899,16 @@ export class TournamentDetailComponent implements OnInit {
     round: number,
     kind: MatchBucketKind,
   ): string {
-    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     if (phase?.phaseType === 'KNOCKOUT') {
-      return knockoutRoundLabel(round, phase.teamCount);
+      return knockoutMatchBucketLabel(
+        round,
+        kind === 'THIRD_PLACE',
+        phase.teamCount,
+        phase.matchLegMode,
+        phase.finalLegMode,
+      );
     }
+    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     return `Rodada ${round}`;
   }
 

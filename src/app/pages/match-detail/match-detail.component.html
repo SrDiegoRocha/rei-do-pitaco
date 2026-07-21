@@ -113,6 +113,52 @@
       }
     </article>
 
+    @if (otherLeg(); as leg) {
+      <a
+        class="leg-link"
+        [routerLink]="leg.link"
+        [attr.aria-label]="'Abrir ' + leg.label"
+      >
+        <span class="leg-link__tag">
+          <lucide-icon [img]="arrowLeftRightIcon" [size]="12" aria-hidden="true" />
+          {{ leg.label }}
+        </span>
+
+        <span class="leg-link__teams">
+          <app-team-badge
+            [name]="leg.homeTeam.name"
+            [shortName]="leg.homeTeam.shortName"
+            [badgeUrl]="leg.homeTeam.badgeUrl"
+            [teamType]="leg.homeTeam.teamType"
+            [countryCode]="leg.homeTeam.countryCode"
+            [size]="22"
+          />
+          @if (leg.score; as s) {
+            <span class="leg-link__score">
+              {{ s.home | scoreDisplay }}<span class="leg-link__dash">–</span>{{ s.away | scoreDisplay }}
+            </span>
+          } @else {
+            <span class="leg-link__vs" aria-hidden="true">×</span>
+          }
+          <app-team-badge
+            [name]="leg.awayTeam.name"
+            [shortName]="leg.awayTeam.shortName"
+            [badgeUrl]="leg.awayTeam.badgeUrl"
+            [teamType]="leg.awayTeam.teamType"
+            [countryCode]="leg.awayTeam.countryCode"
+            [size]="22"
+          />
+        </span>
+
+        <lucide-icon
+          class="leg-link__chevron"
+          [img]="chevronRightIcon"
+          [size]="16"
+          aria-hidden="true"
+        />
+      </a>
+    }
+
     <nav class="tabs" role="tablist" aria-label="Seções da partida">
       <button
         type="button"

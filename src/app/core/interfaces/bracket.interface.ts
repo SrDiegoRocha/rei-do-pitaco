@@ -1,8 +1,11 @@
+import { BracketMode } from '@core/interfaces/enums';
 import { IMatchResponse, ITeamRef } from '@core/interfaces/match.interface';
 
 export interface IBracketResponse {
   phaseId: string;
   phaseName: string;
+  /** Decide a renderização: árvore (FIXED_BRACKET) x lista de rodadas (REDRAW_EACH_ROUND). */
+  bracketMode: BracketMode;
   rounds: IBracketRound[];
 }
 

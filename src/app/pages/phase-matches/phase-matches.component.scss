@@ -155,6 +155,17 @@
   font-weight: var(--font-semibold);
 }
 
+.next-round__hint {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+}
+
+.next-round__hint a {
+  color: var(--brand);
+  font-weight: var(--font-medium);
+  text-decoration: underline;
+}
+
 .ko-complete__body {
   display: flex;
   align-items: flex-start;

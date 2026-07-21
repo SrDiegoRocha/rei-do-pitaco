@@ -48,10 +48,18 @@
     } @else if (isOwner() && tournament()?.status !== 'FINISHED' && bracketComplete()) {
       <article class="finalize">
         <header class="finalize__header">
-          <h3 class="finalize__title">Mata-mata concluído</h3>
-          <p class="finalize__subtitle">
-            Todos os confrontos foram decididos. Finalize para encerrar a fase.
-          </p>
+          @if (isRedraw()) {
+            <h3 class="finalize__title">Rodada concluída</h3>
+            <p class="finalize__subtitle">
+              Finalize para levar os sobreviventes à próxima fase, ou gere mais
+              uma rodada de sorteio na tela de partidas.
+            </p>
+          } @else {
+            <h3 class="finalize__title">Mata-mata concluído</h3>
+            <p class="finalize__subtitle">
+              Todos os confrontos foram decididos. Finalize para encerrar a fase.
+            </p>
+          }
         </header>
         <button
           type="button"
@@ -68,28 +76,30 @@
       </article>
     }
 
-    <div class="bracket-toggle" role="tablist" aria-label="Modo de visualização">
-      <button
-        type="button"
-        role="tab"
-        class="bracket-toggle__btn"
-        [class.bracket-toggle__btn--active]="viewMode() === 'cards'"
-        [attr.aria-selected]="viewMode() === 'cards'"
-        (click)="setViewMode('cards')"
-      >
-        Cards
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="bracket-toggle__btn"
-        [class.bracket-toggle__btn--active]="viewMode() === 'tree'"
-        [attr.aria-selected]="viewMode() === 'tree'"
-        (click)="setViewMode('tree')"
-      >
-        Chaveamento
-      </button>
-    </div>
+    @if (!isRedraw()) {
+      <div class="bracket-toggle" role="tablist" aria-label="Modo de visualização">
+        <button
+          type="button"
+          role="tab"
+          class="bracket-toggle__btn"
+          [class.bracket-toggle__btn--active]="viewMode() === 'cards'"
+          [attr.aria-selected]="viewMode() === 'cards'"
+          (click)="setViewMode('cards')"
+        >
+          Cards
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="bracket-toggle__btn"
+          [class.bracket-toggle__btn--active]="viewMode() === 'tree'"
+          [attr.aria-selected]="viewMode() === 'tree'"
+          (click)="setViewMode('tree')"
+        >
+          Chaveamento
+        </button>
+      </div>
+    }
 
     <app-bracket-view
       [bracket]="b"

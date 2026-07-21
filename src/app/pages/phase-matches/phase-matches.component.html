@@ -53,8 +53,13 @@
             aria-hidden="true"
           />
           <div class="ko-complete__text">
-            <strong>Mata-mata concluído.</strong>
-            <span>Todos os confrontos foram decididos, incluindo a final. Finalize a fase para materializar os classificados.</span>
+            @if (isRedraw()) {
+              <strong>Rodada final concluída.</strong>
+              <span>Não há mais times para sortear. Finalize a fase para materializar os classificados.</span>
+            } @else {
+              <strong>Mata-mata concluído.</strong>
+              <span>Todos os confrontos foram decididos, incluindo a final. Finalize a fase para materializar os classificados.</span>
+            }
           </div>
         </div>
         @if (isOwner() && bracketHref(); as href) {
@@ -81,10 +86,17 @@
           <div class="next-round__text">
             <strong>{{ currentRoundFriendlyLabel() }} concluída.</strong>
             <span>
-              Pronto para gerar
+              Pronto para
+              {{ isRedraw() ? 'sortear' : 'gerar' }}
               <strong>{{ nextRoundFriendlyLabel() }}</strong>
               com os times que avançaram.
             </span>
+            @if (isRedraw() && bracketHref(); as href) {
+              <span class="next-round__hint">
+                Ou <a [routerLink]="href">finalize a fase</a> para levar os que já
+                passaram à próxima fase.
+              </span>
+            }
           </div>
         </div>
         @if (canGenerate()) {
@@ -93,7 +105,7 @@
             size="md"
             (buttonClick)="openGenerateDialog()"
           >
-            Gerar {{ nextRoundFriendlyLabel() }}
+            {{ isRedraw() ? 'Sortear' : 'Gerar' }} {{ nextRoundFriendlyLabel() }}
           </app-button>
         }
       </article>
@@ -104,14 +116,18 @@
     ) {
       <div class="generate-banner">
         <p class="generate-banner__text">
-          Pronto para gerar o chaveamento inicial.
+          @if (isRedraw()) {
+            Pronto para sortear a 1ª rodada.
+          } @else {
+            Pronto para gerar o chaveamento inicial.
+          }
         </p>
         <app-button
           variant="primary"
           size="md"
           (buttonClick)="openGenerateDialog()"
         >
-          Gerar chaveamento
+          {{ isRedraw() ? 'Sortear 1ª rodada' : 'Gerar chaveamento' }}
         </app-button>
       </div>
     }

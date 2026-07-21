@@ -14,6 +14,7 @@ import { forkJoin } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
 import {
+  BracketMode,
   MatchGenerationMode,
   MatchLegMode,
   TournamentPhaseType,
@@ -50,6 +51,11 @@ const LEG_LABEL: Record<MatchLegMode, string> = {
 const GEN_LABEL: Record<MatchGenerationMode, string> = {
   AUTOMATIC: 'Automática',
   MANUAL: 'Manual',
+};
+
+const BRACKET_MODE_LABEL: Record<BracketMode, string> = {
+  FIXED_BRACKET: 'Fixo',
+  REDRAW_EACH_ROUND: 'Sorteio a cada rodada',
 };
 
 @Component({
@@ -121,6 +127,13 @@ export class PhaseDetailComponent implements OnInit {
     const p = this.phase();
     if (!p || p.phaseType !== 'KNOCKOUT' || !p.finalLegMode) return null;
     return LEG_LABEL[p.finalLegMode];
+  });
+
+  /** Chaveamento fixo x sorteio a cada rodada (só KNOCKOUT). */
+  protected readonly bracketModeLabel = computed<string | null>(() => {
+    const p = this.phase();
+    if (!p || p.phaseType !== 'KNOCKOUT' || !p.bracketMode) return null;
+    return BRACKET_MODE_LABEL[p.bracketMode];
   });
 
   protected readonly typeClass = computed(() => {

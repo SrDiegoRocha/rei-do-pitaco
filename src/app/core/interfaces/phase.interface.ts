@@ -1,4 +1,5 @@
 import {
+  BracketMode,
   MatchGenerationMode,
   MatchLegMode,
   TournamentPhaseType,
@@ -15,6 +16,8 @@ export interface IPhaseResponse {
   hasThirdPlace: boolean;
   /** Só KNOCKOUT: modo da RODADA FINAL (final + 3º lugar); null = herda matchLegMode. */
   finalLegMode: MatchLegMode | null;
+  /** Só KNOCKOUT: chaveamento fixo x sorteio a cada rodada (resolvido, nunca null em KO). */
+  bracketMode: BracketMode | null;
   groupCount: number;
   teamCount: number;
   finalizedAt: string | null;
@@ -31,6 +34,8 @@ export interface ICreatePhaseRequest {
   hasThirdPlace?: boolean | null;
   /** Só usado em KNOCKOUT; null = a final herda o matchLegMode da fase. */
   finalLegMode?: MatchLegMode | null;
+  /** Só usado em KNOCKOUT; null = default por matchGenerationMode. Front: envie sempre explícito. */
+  bracketMode?: BracketMode | null;
 }
 
 export interface IUpdatePhaseRequest extends ICreatePhaseRequest {}

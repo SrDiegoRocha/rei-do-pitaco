@@ -1,5 +1,5 @@
 @let roundList = rounds();
-@if (mode() === 'tree' && treeData(); as tree) {
+@if (effectiveMode() === 'tree' && treeData(); as tree) {
   <!-- Árvore espelhada (estilo bracket challenge). Brackets sem formato de
        árvore (manuais/antigos) caem no fallback de cards abaixo. -->
   <app-bracket-tree
@@ -10,6 +10,12 @@
   />
 } @else {
 <div class="bv" [attr.data-mode]="'cards'">
+  @if (isRedraw()) {
+    <p class="bv-redraw-note" role="note">
+      <lucide-icon [img]="shuffleIcon" [size]="13" aria-hidden="true" />
+      Sem chaveamento fixo — os confrontos de cada rodada saem de um novo sorteio.
+    </p>
+  }
   @for (round of roundList; track round.round; let rIndex = $index, rLast = $last) {
     <section
       class="bv-round"

@@ -18,6 +18,8 @@ import {
   Validators,
 } from '@angular/forms';
 import {
+  BracketMode,
+  MatchLegMode,
   MatchType,
   TournamentPhaseType,
   TournamentStatus,
@@ -31,9 +33,12 @@ import {
 import { IPhaseGroupResponse } from '@core/interfaces/phase-group.interface';
 import { IPhaseTeamResponse } from '@core/interfaces/phase-team.interface';
 import {
-  IRoundOption,
+  IKnockoutStageInfo,
+  IKnockoutStageOption,
+  knockoutMatchBucketLabel,
   knockoutRoundLabel,
-  knockoutRoundOptions,
+  knockoutStageForRound,
+  knockoutStageOptions,
 } from '@core/utils/round-label';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { InputComponent } from '@shared/components/input/input.component';
@@ -88,6 +93,14 @@ export class MatchFormComponent implements OnInit {
   public readonly initial = input<IMatchResponse | null>(null);
   public readonly mode = input<MatchFormMode>('create');
   public readonly phaseType = input.required<TournamentPhaseType>();
+  /** Total de times da fase (potência de 2 em KO). Base dos nomes de etapa. */
+  public readonly teamCount = input<number>(0);
+  /** Modo de pernas da fase (KO). Decide se há Ida/Volta por etapa. */
+  public readonly matchLegMode = input<MatchLegMode>('SINGLE');
+  /** Modo da rodada final (KO); null = herda matchLegMode. */
+  public readonly finalLegMode = input<MatchLegMode | null>(null);
+  /** Chaveamento (KO). FIXED_BRACKET guia o par pela árvore; REDRAW é livre. */
+  public readonly bracketMode = input<BracketMode | null>(null);
   public readonly phaseTeams = input<IPhaseTeamResponse[]>([]);
   public readonly groups = input<IPhaseGroupResponse[]>([]);
   /** Se true, o confronto só pode ser entre times do mesmo grupo. */
@@ -123,10 +136,19 @@ export class MatchFormComponent implements OnInit {
         validators: [Validators.required, Validators.min(1)],
       }),
       matchType: this._fb.nonNullable.control<MatchType>('REGULAR'),
+      // Só usado na criação da perna de VOLTA em ida-e-volta: vincula a volta
+      // ao confronto (tie) do jogo de ida. Ida/jogo único deixam null (o
+      // backend gera o tieId).
+      tieId: this._fb.control<string | null>(null),
       groupId: this._fb.control<string | null>(null),
       scheduledAt: this._fb.nonNullable.control(''),
     },
     { validators: [differentTeamsValidator] },
+  );
+
+  /** Total de times: usa o input; cai para o nº de times cadastrados. */
+  private readonly _teamCount = computed(
+    () => this.teamCount() || this.phaseTeams().length,
   );
 
   private readonly _formStatus = toSignal(this.form.statusChanges, {
@@ -162,6 +184,11 @@ export class MatchFormComponent implements OnInit {
     () => this.phaseType() === 'KNOCKOUT',
   );
 
+  /** Chaveamento fixo: o par é ditado pela árvore (CHAVEAMENTO.md §4). */
+  private readonly _isFixedBracket = computed(
+    () => this.isKnockoutPhase() && this.bracketMode() === 'FIXED_BRACKET',
+  );
+
   /** Os selects de time devem ficar restritos ao grupo selecionado? */
   protected readonly restrictToGroup = computed(
     () => this.isGroupsPhase() && this.playsInsideGroupOnly(),
@@ -185,82 +212,223 @@ export class MatchFormComponent implements OnInit {
     return taken;
   });
 
+  /** Etapa/perna do round CRU atualmente selecionado (KO). */
+  private readonly _selectedStage = computed<IKnockoutStageInfo | null>(() => {
+    if (!this.isKnockoutPhase()) return null;
+    const round = this._roundValue();
+    if (typeof round !== 'number') return null;
+    return knockoutStageForRound(
+      round,
+      this._teamCount(),
+      this.matchLegMode(),
+      this.finalLegMode(),
+    );
+  });
+
+  /** Vencedores de uma etapa (ordinal do bracket), para alimentar a próxima. */
+  private _winnersOfStage(stageOrdinal: number): Set<string> {
+    const bracket = this.bracket();
+    if (!bracket || stageOrdinal < 1) return new Set();
+    const round = bracket.rounds.find((r) => r.round === stageOrdinal);
+    if (!round) return new Set();
+    const winners = new Set<string>();
+    for (const tie of round.ties) {
+      if (tie.thirdPlace) continue;
+      if (tie.winner) winners.add(tie.winner.id);
+    }
+    return winners;
+  }
+
+  /** Perdedores de uma etapa (para a disputa de 3º lugar). */
+  private _losersOfStage(stageOrdinal: number): Set<string> {
+    const bracket = this.bracket();
+    if (!bracket || stageOrdinal < 1) return new Set();
+    const round = bracket.rounds.find((r) => r.round === stageOrdinal);
+    if (!round) return new Set();
+    const losers = new Set<string>();
+    for (const tie of round.ties) {
+      if (tie.thirdPlace || !tie.winner || !tie.homeTeam || !tie.awayTeam) {
+        continue;
+      }
+      losers.add(
+        tie.winner.id === tie.homeTeam.id ? tie.awayTeam.id : tie.homeTeam.id,
+      );
+    }
+    return losers;
+  }
+
   /**
-   * Times elegíveis para a etapa selecionada.
-   * - REGULAR + round > 1: vencedores da rodada anterior
-   * - THIRD_PLACE: perdedores da semifinal (rodada anterior à final)
-   * - REGULAR + round 1: sem filtro (todos)
-   * Retorna `null` = sem filtro (ex.: não-KO, primeira rodada).
+   * Chaveamento fixo: dado o vencedor de um confronto da etapa anterior, qual é
+   * o vencedor do confronto ADJACENTE (o par canônico `2j` × `2j+1`). Os ties da
+   * rodada vêm na ordem canônica no `/bracket`; o índice do par é `i ^ 1`.
+   * Retorna `null` se o time não venceu a etapa anterior ou o adjacente ainda
+   * não tem vencedor definido.
+   */
+  private _adjacentWinnerId(
+    teamId: string,
+    stageOrdinal: number,
+  ): string | null {
+    const bracket = this.bracket();
+    if (!bracket || stageOrdinal <= 1) return null;
+    const prev = bracket.rounds.find((r) => r.round === stageOrdinal - 1);
+    if (!prev) return null;
+    const ties = prev.ties.filter((t) => !t.thirdPlace);
+    const i = ties.findIndex((t) => t.winner?.id === teamId);
+    if (i < 0) return null;
+    return ties[i ^ 1]?.winner?.id ?? null;
+  }
+
+  /**
+   * Fase em chaveamento fixo cujo confronto atual tem par DETERMINADO pela
+   * árvore: rodadas > 1 (par adjacente) ou disputa de 3º lugar (os 2 perdedores
+   * das semis). A ida de ida-e-volta e a 1ª rodada seguem livres.
+   */
+  private readonly _isGuidedFixedPairing = computed(() => {
+    if (!this._isFixedBracket()) return false;
+    const stage = this._selectedStage();
+    if (!stage) return false;
+    if (stage.legTotal > 1 && stage.legIndex > 0) return false; // volta
+    if (this._matchTypeValue() === 'THIRD_PLACE') return true;
+    return stage.stageOrdinal > 1;
+  });
+
+  /**
+   * Time que o backend exige como adversário de `teamId` no chaveamento fixo:
+   * vencedor do confronto adjacente (rodadas > 1) ou o outro perdedor de semi
+   * (3º lugar). `null` quando indeterminado (adjacente pendente etc.).
+   */
+  private _requiredOpponentFor(teamId: string): string | null {
+    if (!this._isGuidedFixedPairing() || !teamId) return null;
+    const stage = this._selectedStage();
+    if (!stage) return null;
+    if (this._matchTypeValue() === 'THIRD_PLACE') {
+      const others = [...this._losersOfStage(stage.stageOrdinal - 1)].filter(
+        (id) => id !== teamId,
+      );
+      return others.length === 1 ? others[0]! : null;
+    }
+    return this._adjacentWinnerId(teamId, stage.stageOrdinal);
+  }
+
+  /**
+   * Times elegíveis para a etapa/perna selecionada.
+   * - THIRD_PLACE: perdedores das semifinais.
+   * - Perna de VOLTA: os dois times do jogo de ida deste confronto.
+   * - IDA/jogo único, 1ª etapa: sem filtro (todos).
+   * - IDA/jogo único, demais etapas: vencedores da etapa anterior.
+   * Retorna `null` = sem filtro (não-KO, ou 1ª etapa).
    */
   private readonly _eligibleKnockoutTeamIds = computed<Set<string> | null>(
     () => {
       if (!this.isKnockoutPhase()) return null;
-      const round = this._roundValue();
-      const matchType = this._matchTypeValue();
-      if (typeof round !== 'number') return null;
+      const stage = this._selectedStage();
+      if (!stage) return null;
 
-      // 3º lugar: perdedores da semifinal (round - 1 já que 3º lugar é
-      // disputado na mesma rodada da final).
-      if (matchType === 'THIRD_PLACE') {
-        const semiRound = round - 1;
-        if (semiRound < 1) return new Set();
-        const bracket = this.bracket();
-        if (!bracket) return new Set();
-        const semi = bracket.rounds.find((r) => r.round === semiRound);
-        if (!semi) return new Set();
-        const losers = new Set<string>();
-        for (const tie of semi.ties) {
-          if (tie.thirdPlace) continue;
-          if (!tie.winner || !tie.homeTeam || !tie.awayTeam) continue;
-          const loserId =
-            tie.winner.id === tie.homeTeam.id
-              ? tie.awayTeam.id
-              : tie.homeTeam.id;
-          losers.add(loserId);
+      if (this._matchTypeValue() === 'THIRD_PLACE') {
+        return this._losersOfStage(stage.stageOrdinal - 1);
+      }
+
+      // Perna de volta: mesmos times do jogo de ida (mando invertido).
+      if (stage.legTotal > 1 && stage.legIndex > 0) {
+        const round = this._roundValue() as number;
+        const idaRound = round - stage.legIndex;
+        const init = this.initial();
+        if (init) {
+          const ida = this.existingMatches().find(
+            (m) => m.tieId === init.tieId && m.round === idaRound,
+          );
+          if (ida) return new Set([ida.homeTeam.id, ida.awayTeam.id]);
         }
-        return losers;
+        const ids = new Set<string>();
+        for (const m of this.existingMatches()) {
+          if (m.matchType === 'REGULAR' && m.round === idaRound) {
+            ids.add(m.homeTeam.id);
+            ids.add(m.awayTeam.id);
+          }
+        }
+        return ids;
       }
 
-      // REGULAR + round 1 → todos elegíveis
-      if (round <= 1) return null;
-
-      // REGULAR + round > 1: vencedores da rodada anterior
-      const bracket = this.bracket();
-      if (!bracket) return new Set();
-      const prev = bracket.rounds.find((r) => r.round === round - 1);
-      if (!prev) return new Set();
-      const winners = new Set<string>();
-      for (const tie of prev.ties) {
-        if (tie.thirdPlace) continue;
-        if (tie.winner) winners.add(tie.winner.id);
-      }
-      return winners;
+      if (stage.stageOrdinal <= 1) return null;
+      return this._winnersOfStage(stage.stageOrdinal - 1);
     },
   );
+
+  /** Mostra o seletor de "jogo de ida" (criação da volta em ida-e-volta). */
+  protected readonly showIdaPicker = computed(() => {
+    if (this.mode() !== 'create') return false;
+    const stage = this._selectedStage();
+    return !!stage && stage.legTotal > 1 && stage.legIndex > 0;
+  });
+
+  /** Jogos de ida desta etapa ainda sem a volta criada. */
+  protected readonly idaTieOptions = computed<
+    { tieId: string; label: string; homeId: string; awayId: string }[]
+  >(() => {
+    const stage = this._selectedStage();
+    const round = this._roundValue();
+    if (
+      !stage ||
+      typeof round !== 'number' ||
+      stage.legTotal <= 1 ||
+      stage.legIndex === 0
+    ) {
+      return [];
+    }
+    const idaRound = round - stage.legIndex;
+    const voltaTieIds = new Set(
+      this.existingMatches()
+        .filter((m) => m.matchType === 'REGULAR' && m.round === round)
+        .map((m) => m.tieId),
+    );
+    return this.existingMatches()
+      .filter((m) => m.matchType === 'REGULAR' && m.round === idaRound)
+      .filter((m) => !voltaTieIds.has(m.tieId))
+      .map((m) => ({
+        tieId: m.tieId,
+        // Volta: mando invertido em relação à ida.
+        label: `${m.homeTeam.name} × ${m.awayTeam.name}`,
+        homeId: m.awayTeam.id,
+        awayId: m.homeTeam.id,
+      }));
+  });
 
   /** Mensagem amigável sobre quem pode ser selecionado em KO. */
   protected readonly knockoutEligibilityMessage = computed<string | null>(() => {
     if (!this.isKnockoutPhase()) return null;
-    const round = this._roundValue();
-    const matchType = this._matchTypeValue();
-    if (typeof round !== 'number') return null;
+    const stage = this._selectedStage();
+    if (!stage) return null;
     const eligible = this._eligibleKnockoutTeamIds();
     if (eligible === null) return null;
 
-    if (matchType === 'THIRD_PLACE') {
-      const semiLabel = knockoutRoundLabel(round - 1, this.phaseTeams().length);
+    const tc = this._teamCount();
+
+    if (this._matchTypeValue() === 'THIRD_PLACE') {
+      const semiLabel = knockoutRoundLabel(stage.stageOrdinal - 1, tc);
       if (eligible.size === 0) {
         return `Lance os resultados das ${semiLabel} antes de criar a disputa de 3º lugar.`;
       }
       return `Apenas os ${eligible.size} times que perderam as ${semiLabel} aparecem nos selects.`;
     }
 
-    if (round <= 1) return null;
-    const prevLabel = knockoutRoundLabel(round - 1, this.phaseTeams().length);
+    // Perna de volta.
+    if (stage.legTotal > 1 && stage.legIndex > 0) {
+      if (eligible.size === 0) {
+        return 'Crie o jogo de ida deste confronto antes da volta.';
+      }
+      return 'A volta usa os mesmos times do jogo de ida, com o mando invertido.';
+    }
+
+    if (stage.stageOrdinal <= 1) return null;
+    const prevLabel = knockoutRoundLabel(stage.stageOrdinal - 1, tc);
     if (eligible.size === 0) {
       return `Lance os resultados de ${prevLabel} antes de criar partidas desta etapa.`;
     }
-    return `Apenas os ${eligible.size} times que venceram ${prevLabel} aparecem nos selects.`;
+    const base = `Apenas os ${eligible.size} times que venceram ${prevLabel} aparecem nos selects.`;
+    if (this._isFixedBracket()) {
+      return `${base} Chaveamento fixo: ao escolher um time, o adversário (vencedor do confronto adjacente) é preenchido automaticamente.`;
+    }
+    return base;
   });
 
   protected readonly homeOptions = computed<IPhaseTeamResponse[]>(() => {
@@ -346,18 +514,24 @@ export class MatchFormComponent implements OnInit {
     return null;
   });
 
-  protected readonly koRoundOptions = computed<IRoundOption[]>(() => {
+  protected readonly koStageOptions = computed<IKnockoutStageOption[]>(() => {
     if (!this.isKnockoutPhase()) return [];
-    const teamCount = this.phaseTeams().length;
-    const all = knockoutRoundOptions(teamCount, this.hasThirdPlace());
+    const teamCount = this._teamCount();
+    const all = knockoutStageOptions(
+      teamCount,
+      this.matchLegMode(),
+      this.finalLegMode(),
+      this.hasThirdPlace(),
+    );
     const currentMatchId = this.initial()?.id ?? null;
-    // Filtra etapas já lotadas (sem vagas para mais partidas), exceto a
-    // etapa da partida sendo editada.
+    // Filtra etapas/pernas já lotadas (sem vagas para mais partidas), exceto a
+    // da partida sendo editada. A capacidade é o nº de confrontos da etapa
+    // (teamCount / 2^etapa) — cada confronto tem uma partida por perna.
     return all.filter((opt) => {
       const expected =
         opt.matchType === 'THIRD_PLACE'
           ? 1
-          : teamCount / Math.pow(2, opt.round);
+          : teamCount / Math.pow(2, opt.stageOrdinal);
       let countInBucket = 0;
       for (const m of this.existingMatches()) {
         if (m.id === currentMatchId) continue;
@@ -392,7 +566,13 @@ export class MatchFormComponent implements OnInit {
     if (!this.isKnockoutPhase()) return null;
     const round = this._roundValue();
     if (typeof round !== 'number') return null;
-    return knockoutRoundLabel(round, this.phaseTeams().length);
+    return knockoutMatchBucketLabel(
+      round,
+      this._matchTypeValue() === 'THIRD_PLACE',
+      this._teamCount(),
+      this.matchLegMode(),
+      this.finalLegMode(),
+    );
   });
 
   protected readonly statusBanner = computed<string | null>(() => {
@@ -455,12 +635,13 @@ export class MatchFormComponent implements OnInit {
         awayTeamId: init.awayTeam.id,
         round: init.round,
         matchType: init.matchType ?? 'REGULAR',
+        tieId: init.tieId,
         groupId: init.groupId,
         scheduledAt: isoToLocalInput(init.scheduledAt),
       });
     } else if (this.isKnockoutPhase()) {
       // Em create + KO, alinha o round padrão com a primeira opção disponível
-      const first = this.koRoundOptions()[0];
+      const first = this.koStageOptions()[0];
       if (first) {
         this.form.controls.round.setValue(first.round);
         this.form.controls.matchType.setValue(first.matchType);
@@ -478,21 +659,35 @@ export class MatchFormComponent implements OnInit {
       const round = parseInt(value.slice(6), 10);
       this.form.controls.round.setValue(round);
       this.form.controls.matchType.setValue('THIRD_PLACE');
-      // Em 3º lugar os times mudam (vencedores → perdedores); zera seleção
-      // pra evitar combinação inválida.
-      this.form.controls.homeTeamId.setValue('');
-      this.form.controls.awayTeamId.setValue('');
     } else if (value.startsWith('regular:')) {
       const round = parseInt(value.slice(8), 10);
       this.form.controls.round.setValue(round);
       this.form.controls.matchType.setValue('REGULAR');
-      // Mudou de 3º p/ regular ou de rodada → idem
-      this.form.controls.homeTeamId.setValue('');
-      this.form.controls.awayTeamId.setValue('');
+    } else {
+      return;
     }
+    // Trocar de etapa/perna invalida a seleção de times e o vínculo de ida.
+    this.form.controls.homeTeamId.setValue('');
+    this.form.controls.awayTeamId.setValue('');
+    this.form.controls.tieId.setValue(null);
   }
 
-  protected etapaOptionValue(opt: IRoundOption): string {
+  /** Seleciona o jogo de ida ao qual a volta pertence (mando invertido). */
+  protected onIdaTieChange(event: Event): void {
+    const tieId = (event.target as HTMLSelectElement).value;
+    const opt = this.idaTieOptions().find((o) => o.tieId === tieId);
+    if (!opt) {
+      this.form.controls.tieId.setValue(null);
+      this.form.controls.homeTeamId.setValue('');
+      this.form.controls.awayTeamId.setValue('');
+      return;
+    }
+    this.form.controls.tieId.setValue(opt.tieId);
+    this.form.controls.homeTeamId.setValue(opt.homeId);
+    this.form.controls.awayTeamId.setValue(opt.awayId);
+  }
+
+  protected etapaOptionValue(opt: IKnockoutStageOption): string {
     return opt.matchType === 'THIRD_PLACE'
       ? `third:${opt.round}`
       : `regular:${opt.round}`;
@@ -506,6 +701,28 @@ export class MatchFormComponent implements OnInit {
     if (!this.restrictToGroup()) return;
     this.form.controls.homeTeamId.setValue('');
     this.form.controls.awayTeamId.setValue('');
+  }
+
+  /**
+   * Chaveamento fixo: ao escolher o mandante, o visitante é travado no vencedor
+   * do confronto adjacente (ou no outro perdedor de semi, no 3º lugar). Some
+   * quando o adversário fica indeterminado. Fora do par guiado, no-op.
+   */
+  protected onHomeTeamChange(): void {
+    if (!this._isGuidedFixedPairing()) return;
+    const opponent = this._requiredOpponentFor(
+      this.form.controls.homeTeamId.value,
+    );
+    this.form.controls.awayTeamId.setValue(opponent ?? '');
+  }
+
+  /** Espelho de {@link onHomeTeamChange} quando o usuário ancora pelo visitante. */
+  protected onAwayTeamChange(): void {
+    if (!this._isGuidedFixedPairing()) return;
+    const opponent = this._requiredOpponentFor(
+      this.form.controls.awayTeamId.value,
+    );
+    this.form.controls.homeTeamId.setValue(opponent ?? '');
   }
 
   /** Label da option de time; com confronto entre grupos, mostra o grupo. */
@@ -543,14 +760,18 @@ export class MatchFormComponent implements OnInit {
     }
 
     const raw = this.form.getRawValue();
-    return {
+    const payload: ICreateMatchRequest = {
       homeTeamId: raw.homeTeamId,
       awayTeamId: raw.awayTeamId,
       round: raw.round,
       groupId: this.isGroupsPhase() ? raw.groupId : null,
       scheduledAt: localInputToIso(raw.scheduledAt),
       matchType: this.isKnockoutPhase() ? raw.matchType : null,
+      // Só a volta (create) vincula um tie existente; o resto deixa o backend
+      // gerar. A edição ignora tieId (IUpdateMatchRequest não o possui).
+      tieId: this.mode() === 'create' ? (raw.tieId ?? null) : null,
     };
+    return payload;
   }
 
   protected onSubmit(): void {
@@ -574,6 +795,8 @@ export class MatchFormComponent implements OnInit {
   public resetForNext(): void {
     this.form.controls.homeTeamId.setValue('');
     this.form.controls.awayTeamId.setValue('');
+    // Desvincula o jogo de ida (a volta anterior já foi criada).
+    this.form.controls.tieId.setValue(null);
     this.form.controls.homeTeamId.markAsUntouched();
     this.form.controls.awayTeamId.markAsUntouched();
     this.form.controls.homeTeamId.markAsPristine();

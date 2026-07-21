@@ -9,6 +9,15 @@ export type TournamentPhaseType = 'ROUND_ROBIN' | 'KNOCKOUT' | 'GROUPS';
 export type MatchLegMode = 'SINGLE' | 'TWO_LEGGED';
 export type MatchGenerationMode = 'AUTOMATIC' | 'MANUAL';
 
+/**
+ * Modo de chaveamento de uma fase KNOCKOUT (ver CHAVEAMENTO.md):
+ * - FIXED_BRACKET: o sorteio da 1ª rodada define a árvore inteira (vencedor do
+ *   confronto 2j enfrenta o do 2j+1); montagem manual é validada contra ela.
+ * - REDRAW_EACH_ROUND: sem chaveamento — a cada rodada os vencedores são
+ *   sorteados de novo (estilo fases iniciais da Copa do Brasil).
+ */
+export type BracketMode = 'FIXED_BRACKET' | 'REDRAW_EACH_ROUND';
+
 export type TiebreakCriteria =
   | 'POINTS'
   | 'WINS'

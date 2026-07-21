@@ -12,7 +12,11 @@ import {
   IBracketTie,
 } from '@core/interfaces/bracket.interface';
 import { ITeamRef } from '@core/interfaces/match.interface';
-import { knockoutRoundLabel } from '@core/utils/round-label';
+import {
+  knockoutLegLabel,
+  knockoutRoundLabel,
+  knockoutRoundLabelByTieCount,
+} from '@core/utils/round-label';
 import { BracketTreeComponent } from '@shared/components/bracket-tree/bracket-tree.component';
 import {
   bracketResponseToTree,
@@ -28,6 +32,7 @@ import {
   Crown,
   LucideAngularModule,
   Medal,
+  Shuffle,
   Trophy,
 } from 'lucide-angular';
 
@@ -61,16 +66,31 @@ export class BracketViewComponent {
   protected readonly crownIcon = Crown;
   protected readonly medalIcon = Medal;
   protected readonly calendarIcon = Calendar;
+  protected readonly shuffleIcon = Shuffle;
 
   protected readonly rounds = computed(() => this.bracket()?.rounds ?? []);
 
   /**
+   * Sem chaveamento (Copa do Brasil): cada rodada é um novo sorteio, então não
+   * há árvore com linhas de ligação — sempre listamos em cards.
+   */
+  protected readonly isRedraw = computed(
+    () => this.bracket()?.bracketMode === 'REDRAW_EACH_ROUND',
+  );
+
+  /** Modo efetivo de renderização: REDRAW nunca usa a árvore. */
+  protected readonly effectiveMode = computed<BracketViewMode>(() =>
+    this.isRedraw() ? 'cards' : this.mode(),
+  );
+
+  /**
    * Árvore espelhada (modo "tree"). `null` quando o bracket não tem formato
-   * de árvore (manual/antigo) — aí o fallback é a listagem em cards.
+   * de árvore (manual/antigo/REDRAW) — aí o fallback é a listagem em cards.
    */
   protected readonly treeData = computed<IBracketTreeData | null>(() => {
     const b = this.bracket();
-    return b ? bracketResponseToTree(b) : null;
+    if (!b || this.isRedraw()) return null;
+    return bracketResponseToTree(b);
   });
 
   protected onTreeOpen(matchId: string): void {
@@ -87,6 +107,14 @@ export class BracketViewComponent {
 
   /** Nome amigável da etapa (Oitavas, Quartas, Semifinais, Final...). */
   protected roundName(round: IBracketRound): string {
+    // Sem chaveamento a contagem de times não é fixa entre rodadas (nem
+    // precisa ser potência de 2): derive do nº de confrontos DA rodada.
+    if (this.isRedraw()) {
+      return (
+        knockoutRoundLabelByTieCount(this.mainTies(round).length) ??
+        `Rodada ${round.round}`
+      );
+    }
     const tc = this.teamCount();
     return tc > 0 ? knockoutRoundLabel(round.round, tc) : round.name;
   }
@@ -146,10 +174,7 @@ export class BracketViewComponent {
   }
 
   protected legLabel(index: number, total: number): string {
-    if (total <= 1) return 'Jogo único';
-    if (index === 0) return 'Ida';
-    if (index === total - 1) return 'Volta';
-    return `Jogo ${index + 1}`;
+    return knockoutLegLabel(index, total);
   }
 
   protected formatDate(iso: string | null): string | null {

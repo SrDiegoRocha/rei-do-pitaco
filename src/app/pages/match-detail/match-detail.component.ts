@@ -56,8 +56,12 @@ import {
   classifyScorePair,
   PredictionOutcome,
 } from '@core/utils/prediction-outcome';
-import { knockoutRoundLabel } from '@core/utils/round-label';
-import { matchDisplayScore, matchWinnerSide } from '@core/utils/match-score';
+import { knockoutMatchBucketLabel } from '@core/utils/round-label';
+import {
+  IMatchDisplayScore,
+  matchDisplayScore,
+  matchWinnerSide,
+} from '@core/utils/match-score';
 import {
   ArrowLeftRight,
   Ban,
@@ -139,6 +143,8 @@ export class MatchDetailComponent implements OnInit {
   protected readonly tournament = signal<ITournamentResponse | null>(null);
   protected readonly phase = signal<IPhaseResponse | null>(null);
   protected readonly match = signal<IMatchResponse | null>(null);
+  /** A outra perna do confronto (ida-e-volta); null fora disso ou até carregar. */
+  protected readonly siblingLeg = signal<IMatchResponse | null>(null);
 
   protected readonly pageTitle = computed(() => {
     const m = this.match();
@@ -234,17 +240,20 @@ export class MatchDetailComponent implements OnInit {
     if (!m || !p) return '';
     let roundLabel: string;
     if (p.phaseType === 'KNOCKOUT') {
-      roundLabel =
-        m.matchType === 'THIRD_PLACE'
-          ? 'Disputa de 3º lugar'
-          : knockoutRoundLabel(m.round, p.teamCount);
+      // Já traz a perna (· Ida / · Volta) em ida-e-volta e trata a etapa certa
+      // (não confunde a volta das oitavas com as quartas).
+      roundLabel = knockoutMatchBucketLabel(
+        m.round,
+        m.matchType === 'THIRD_PLACE',
+        p.teamCount,
+        p.matchLegMode,
+        p.finalLegMode,
+      );
     } else {
       roundLabel = `Rodada ${m.round}`;
     }
     const parts: string[] = [p.name, roundLabel];
     if (m.groupName) parts.push(`Grupo ${m.groupName}`);
-    // Modo efetivo da partida (a final pode ter modo próprio via finalLegMode).
-    if (m.matchLegMode === 'TWO_LEGGED') parts.push('Ida e volta');
     return parts.join(' · ');
   });
 
@@ -301,6 +310,34 @@ export class MatchDetailComponent implements OnInit {
   protected readonly aggregateBeforeAway = computed(
     () => this.match()?.aggregateBeforeAway ?? 0,
   );
+
+  /**
+   * Atalho para a outra perna do confronto (ida-e-volta, em qualquer tipo de
+   * fase). A perna de menor `round` é a ida; a de maior, a volta — por isso o
+   * rótulo aponta para o oposto da partida atual. `null` fora de ida-e-volta.
+   */
+  protected readonly otherLeg = computed<{
+    label: string;
+    homeTeam: ITeamRef;
+    awayTeam: ITeamRef;
+    score: IMatchDisplayScore | null;
+    link: unknown[];
+  } | null>(() => {
+    const m = this.match();
+    const sibling = this.siblingLeg();
+    const t = this.tournament();
+    const p = this.phase();
+    if (!m || !sibling || !t || !p) return null;
+    const currentIsIda = m.round < sibling.round;
+    return {
+      label: currentIsIda ? 'Jogo de volta' : 'Jogo de ida',
+      homeTeam: sibling.homeTeam,
+      awayTeam: sibling.awayTeam,
+      score:
+        sibling.status === 'COMPLETED' ? matchDisplayScore(sibling) : null,
+      link: ['/tournaments', t.id, 'phases', p.id, 'matches', sibling.id],
+    };
+  });
 
   protected readonly isOwner = computed(() => {
     const t = this.tournament();
@@ -951,16 +988,41 @@ export class MatchDetailComponent implements OnInit {
     this._swipeReg.set(swipe);
     this._destroyRef.onDestroy(() => this._swipeReg.clear(swipe));
 
-    const tid = this._route.snapshot.paramMap.get('id');
-    const pid = this._route.snapshot.paramMap.get('pid');
-    const mid = this._route.snapshot.paramMap.get('mid');
-    if (!tid || !pid || !mid) {
-      this.loading.set(false);
-      this.loadError.set('Partida não encontrada.');
-      return;
-    }
+    // Reage a mudanças de rota (não só ao snapshot inicial): ao clicar no
+    // atalho da outra perna navegamos para o MESMO componente com outro `mid`,
+    // então o Angular reusa a instância e o ngOnInit não roda de novo.
+    this._route.paramMap
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe((params) => {
+        const tid = params.get('id');
+        const pid = params.get('pid');
+        const mid = params.get('mid');
+        if (!tid || !pid || !mid) {
+          this.loading.set(false);
+          this.loadError.set('Partida não encontrada.');
+          return;
+        }
+        this._resetForNewMatch();
+        this._load(tid, pid, mid);
+      });
+  }
 
-    this._load(tid, pid, mid);
+  /** Zera o estado por-partida ao navegar de um confronto para outro. */
+  private _resetForNewMatch(): void {
+    this.activeTab.set('predictions');
+    this._analysisLoaded = false;
+    this.analysis.set(null);
+    this.analysisError.set(null);
+    this.analysisLoading.set(false);
+    this.siblingLeg.set(null);
+    this.myPrediction.set(null);
+    this.allPredictions.set([]);
+    this.predictionStats.set(null);
+    this.resultDialogOpen.set(false);
+    this.predictionDialogOpen.set(false);
+    this.cancelDialogOpen.set(false);
+    this.deleteDialogOpen.set(false);
+    this.removePredictionDialogOpen.set(false);
   }
 
   private _loadAllPredictions(tid: string, mid: string): void {
@@ -982,6 +1044,26 @@ export class MatchDetailComponent implements OnInit {
             return;
           }
           this.allPredictions.set([]);
+        },
+      });
+  }
+
+  /**
+   * Busca a outra perna do confronto pelo `tieId` (endpoint dedicado, §14).
+   * Falha silenciosa — o atalho simplesmente não aparece.
+   */
+  private _loadSiblingLeg(tid: string, match: IMatchResponse): void {
+    this._matchesService
+      .listByTie(tid, match.tieId)
+      .pipe(
+        catchError(() => of<IMatchResponse[]>([])),
+        takeUntilDestroyed(this._destroyRef),
+      )
+      .subscribe({
+        next: (legs) => {
+          // Ignora resposta obsoleta se já navegamos para outra partida.
+          if (this.match()?.id !== match.id) return;
+          this.siblingLeg.set(legs.find((x) => x.id !== match.id) ?? null);
         },
       });
   }
@@ -1024,6 +1106,11 @@ export class MatchDetailComponent implements OnInit {
           this.tournament.set(tournament);
           this.phase.set(phase);
           this.match.set(match);
+          // Atalho para a outra perna: só em ida-e-volta, carregado à parte.
+          this.siblingLeg.set(null);
+          if (match.matchLegMode === 'TWO_LEGGED') {
+            this._loadSiblingLeg(tid, match);
+          }
           this._members.set(membersPage?.content ?? []);
           this.isActiveMember.set(myPredictions !== null);
           // Quem não participa (e não é o dono) chegou via link compartilhado:

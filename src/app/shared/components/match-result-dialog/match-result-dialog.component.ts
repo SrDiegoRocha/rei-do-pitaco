@@ -102,8 +102,19 @@ export class MatchResultDialogComponent {
     }
   });
 
+  /**
+   * Agregado ao vivo = gols das pernas anteriores (`aggregateBefore*`, 0/0 em
+   * jogo único ou enquanto a ida não foi concluída) + o placar sendo digitado.
+   */
+  protected readonly aggregateHome = computed(
+    () => (this.match()?.aggregateBeforeHome ?? 0) + this.homeScore(),
+  );
+  protected readonly aggregateAway = computed(
+    () => (this.match()?.aggregateBeforeAway ?? 0) + this.awayScore(),
+  );
+
   protected readonly aggregateTied = computed(
-    () => this.homeScore() === this.awayScore(),
+    () => this.aggregateHome() === this.aggregateAway(),
   );
 
   /** Prorrogação: KO de jogo único cujo tempo normal terminou empatado. */
@@ -120,9 +131,26 @@ export class MatchResultDialogComponent {
     () => this.showExtraTime() && this.extraTimeTied(),
   );
 
-  /** Ida-e-volta: o organizador liga os pênaltis manualmente (agregado empatado). */
+  /**
+   * A partida pode ir aos pênaltis? Só o jogo único de KO ou a perna de VOLTA
+   * de um ida-e-volta (o backend sinaliza em `penaltyShootoutEligible`). O jogo
+   * de IDA nunca decide o confronto — não deve oferecer pênaltis.
+   */
+  protected readonly penaltyEligible = computed(
+    () => this.match()?.penaltyShootoutEligible === true,
+  );
+
+  /**
+   * Ida-e-volta: o organizador liga os pênaltis manualmente. Só aparece na
+   * perna de VOLTA (`penaltyEligible`) E quando o AGREGADO está empatado —
+   * nunca na ida, nem quando o confronto já tem vencedor no agregado.
+   */
   protected readonly showTwoLeggedToggle = computed(
-    () => this.isKnockout() && this.twoLegged(),
+    () =>
+      this.isKnockout() &&
+      this.twoLegged() &&
+      this.penaltyEligible() &&
+      this.aggregateTied(),
   );
 
   /** Há disputa de pênaltis a informar (jogo único auto, ou ida-e-volta ligada). */

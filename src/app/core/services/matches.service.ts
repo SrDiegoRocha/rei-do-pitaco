@@ -36,6 +36,20 @@ export class MatchesService {
     );
   }
 
+  /**
+   * Pernas de um confronto pelo `tieId`, ordenadas por `round` ASC (ida antes
+   * da volta). 1 partida em jogo único; 2 em ida-e-volta. Nível torneio (sem
+   * phase). `tieId` de outro torneio devolve `[]`.
+   */
+  public listByTie(
+    tournamentId: string,
+    tieId: string,
+  ): Observable<IMatchResponse[]> {
+    return this._http.get<IMatchResponse[]>(
+      `${this._baseUrl}/api/tournaments/${tournamentId}/matches/tie/${tieId}`,
+    );
+  }
+
   public getById(
     tournamentId: string,
     phaseId: string,

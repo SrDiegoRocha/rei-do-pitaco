@@ -15,6 +15,7 @@ import {
   Validators,
 } from '@angular/forms';
 import {
+  BracketMode,
   MatchGenerationMode,
   MatchLegMode,
   TournamentPhaseType,
@@ -29,10 +30,12 @@ import {
   ArrowLeftRight,
   ArrowRight,
   Crown,
+  GitFork,
   Grid3x3,
   LucideAngularModule,
   PenLine,
   Repeat,
+  Shuffle,
   Sparkles,
 } from 'lucide-angular';
 
@@ -81,6 +84,8 @@ export class PhaseFormComponent implements OnInit {
   protected readonly arrowLeftRightIcon = ArrowLeftRight;
   protected readonly sparklesIcon = Sparkles;
   protected readonly penLineIcon = PenLine;
+  protected readonly gitForkIcon = GitFork;
+  protected readonly shuffleIcon = Shuffle;
 
   protected readonly form = this._fb.group({
     name: this._fb.nonNullable.control('', {
@@ -104,6 +109,7 @@ export class PhaseFormComponent implements OnInit {
     playsInsideGroupOnly: this._fb.nonNullable.control<boolean>(false),
     hasThirdPlace: this._fb.nonNullable.control<boolean>(false),
     finalLegMode: this._fb.nonNullable.control<FinalLegChoice>('INHERIT'),
+    bracketMode: this._fb.nonNullable.control<BracketMode>('FIXED_BRACKET'),
   });
 
   private readonly _phaseType = toSignal(
@@ -130,6 +136,10 @@ export class PhaseFormComponent implements OnInit {
     this.form.controls.finalLegMode.valueChanges,
     { initialValue: this.form.controls.finalLegMode.value },
   );
+  private readonly _bracketMode = toSignal(
+    this.form.controls.bracketMode.valueChanges,
+    { initialValue: this.form.controls.bracketMode.value },
+  );
   private readonly _formStatus = toSignal(this.form.statusChanges, {
     initialValue: this.form.status,
   });
@@ -140,6 +150,7 @@ export class PhaseFormComponent implements OnInit {
   protected readonly playsInsideGroupOnly = this._playsInsideGroupOnly;
   protected readonly hasThirdPlace = this._hasThirdPlace;
   protected readonly finalLegMode = this._finalLegMode;
+  protected readonly bracketMode = this._bracketMode;
 
   protected readonly isGroups = computed(() => this.phaseType() === 'GROUPS');
   protected readonly isKnockout = computed(
@@ -190,6 +201,7 @@ export class PhaseFormComponent implements OnInit {
         playsInsideGroupOnly: init.playsInsideGroupOnly ?? false,
         hasThirdPlace: init.hasThirdPlace,
         finalLegMode: init.finalLegMode ?? 'INHERIT',
+        bracketMode: init.bracketMode ?? 'FIXED_BRACKET',
       });
     }
     if (this.isLocked()) {
@@ -237,6 +249,12 @@ export class PhaseFormComponent implements OnInit {
     this.form.controls.finalLegMode.markAsDirty();
   }
 
+  protected setBracketMode(value: BracketMode): void {
+    if (this.form.controls.bracketMode.disabled) return;
+    this.form.controls.bracketMode.setValue(value);
+    this.form.controls.bracketMode.markAsDirty();
+  }
+
   protected toggleHasThirdPlace(): void {
     if (this.form.controls.hasThirdPlace.disabled) return;
     this.form.controls.hasThirdPlace.setValue(
@@ -267,6 +285,9 @@ export class PhaseFormComponent implements OnInit {
         raw.phaseType === 'KNOCKOUT' && raw.finalLegMode !== 'INHERIT'
           ? raw.finalLegMode
           : null,
+      // Sempre explícito em KO (o default por modo de geração existe só para
+      // clientes antigos — ver CHAVEAMENTO.md §2.2).
+      bracketMode: raw.phaseType === 'KNOCKOUT' ? raw.bracketMode : null,
     };
 
     this.saveForm.emit(payload);

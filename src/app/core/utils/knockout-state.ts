@@ -68,3 +68,43 @@ export function currentKnockoutRound(
   if (!bracket || bracket.rounds.length === 0) return null;
   return bracket.rounds[bracket.rounds.length - 1]!.round;
 }
+
+/**
+ * Nº de vencedores decididos na rodada mais recente (confrontos que não são de
+ * 3º lugar e já têm `winner`). Base para saber se dá para sortear a próxima
+ * rodada em `REDRAW_EACH_ROUND` (ver {@link canRedrawGenerateNextRound}).
+ */
+export function lastRoundWinnerCount(
+  bracket: IBracketResponse | null,
+): number {
+  if (!bracket || bracket.rounds.length === 0) return 0;
+  const lastRound = bracket.rounds[bracket.rounds.length - 1]!;
+  return lastRound.ties.filter((t) => !t.thirdPlace && t.winner != null).length;
+}
+
+/**
+ * Em `REDRAW_EACH_ROUND`, dá para gerar (sortear) a próxima rodada? Só quando a
+ * rodada atual está toda decidida e sobra um nº PAR de vencedores ≥ 2 para
+ * emparelhar. Com 1 vencedor a fase acabou (campeão); com nº ímpar o backend
+ * recusa (o admin finaliza a fase levando os sobreviventes adiante).
+ */
+export function canRedrawGenerateNextRound(
+  bracket: IBracketResponse | null,
+): boolean {
+  if (!isCurrentKnockoutRoundDone(bracket)) return false;
+  const winners = lastRoundWinnerCount(bracket);
+  return winners >= 2 && winners % 2 === 0;
+}
+
+/**
+ * Em `REDRAW_EACH_ROUND`, a fase chegou a um ponto em que NÃO há próxima rodada
+ * a sortear: rodada atual decidida e ou saiu um campeão (1 vencedor) ou o nº de
+ * vencedores é ímpar (dead-end). Em ambos os casos o caminho adiante é o
+ * `finalize`.
+ */
+export function isRedrawPhaseExhausted(
+  bracket: IBracketResponse | null,
+): boolean {
+  if (!isCurrentKnockoutRoundDone(bracket)) return false;
+  return !canRedrawGenerateNextRound(bracket);
+}

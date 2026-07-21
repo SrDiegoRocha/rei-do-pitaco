@@ -28,6 +28,10 @@
       <app-match-form
         mode="create"
         [phaseType]="p.phaseType"
+        [teamCount]="p.teamCount"
+        [matchLegMode]="p.matchLegMode"
+        [finalLegMode]="p.finalLegMode"
+        [bracketMode]="p.bracketMode"
         [phaseTeams]="phaseTeams()"
         [groups]="groups()"
         [playsInsideGroupOnly]="p.playsInsideGroupOnly ?? false"

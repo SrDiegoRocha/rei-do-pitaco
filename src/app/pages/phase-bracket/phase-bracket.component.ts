@@ -19,7 +19,10 @@ import { BracketService } from '@core/services/bracket.service';
 import { PhasesService } from '@core/services/phases.service';
 import { StandingsService } from '@core/services/standings.service';
 import { TournamentsService } from '@core/services/tournaments.service';
-import { isKnockoutFinalDone } from '@core/utils/knockout-state';
+import {
+  isCurrentKnockoutRoundDone,
+  isKnockoutFinalDone,
+} from '@core/utils/knockout-state';
 import { listStagger } from '@shared/animations/animations';
 import {
   BracketViewComponent,
@@ -105,6 +108,11 @@ export class PhaseBracketComponent implements OnInit {
     () => this.phase()?.phaseType !== 'KNOCKOUT',
   );
 
+  /** Sem chaveamento fixo (Copa do Brasil): sorteio a cada rodada. */
+  protected readonly isRedraw = computed(
+    () => this.phase()?.bracketMode === 'REDRAW_EACH_ROUND',
+  );
+
   protected readonly isFinalized = computed(
     () => this.phase()?.finalizedAt != null,
   );
@@ -125,10 +133,15 @@ export class PhaseBracketComponent implements OnInit {
     }
   });
 
-  /** Fase de mata-mata terminou de verdade (chegou na final e decidiu, incluindo 3º lugar se houver). */
+  /**
+   * Pronto para finalizar? Em chaveamento fixo, exige chegar à final e decidi-la
+   * (incluindo 3º lugar). Em REDRAW_EACH_ROUND não há "final" fixa — o admin
+   * decide quando parar; basta a rodada atual estar toda decidida.
+   */
   protected readonly bracketComplete = computed(() => {
     const p = this.phase();
     if (!p) return false;
+    if (this.isRedraw()) return isCurrentKnockoutRoundDone(this.bracket());
     return isKnockoutFinalDone(this.bracket(), p.teamCount, p.hasThirdPlace);
   });
 
@@ -148,7 +161,9 @@ export class PhaseBracketComponent implements OnInit {
     }
     if (status === 'FINISHED') return null;
     if (!this.bracketComplete()) {
-      return 'A final do mata-mata ainda não foi disputada. Gere as próximas rodadas e lance os resultados antes de finalizar.';
+      return this.isRedraw()
+        ? 'A rodada atual ainda não foi toda decidida. Lance os resultados (e defina pênaltis onde houver empate) antes de finalizar.'
+        : 'A final do mata-mata ainda não foi disputada. Gere as próximas rodadas e lance os resultados antes de finalizar.';
     }
     return null;
   });
@@ -229,6 +244,10 @@ export class PhaseBracketComponent implements OnInit {
           this.tournament.set(tournament);
           this.phase.set(phase);
           this.bracket.set(bracket);
+          // Sem chaveamento fixo não há árvore — lista de rodadas em cards.
+          if (phase.bracketMode === 'REDRAW_EACH_ROUND') {
+            this.viewMode.set('cards');
+          }
           this.loading.set(false);
         },
         error: (err: unknown) => {

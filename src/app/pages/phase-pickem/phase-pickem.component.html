@@ -252,6 +252,14 @@
                 }
               </div>
             } @else if (koDerived(); as ko) {
+              @if (isRedrawBracket()) {
+                <p class="ph-redraw-warn" role="note">
+                  <lucide-icon [img]="alertIcon" [size]="14" />
+                  Esta fase não tem chaveamento fixo — os confrontos das próximas
+                  rodadas serão sorteados. Seu palpite de cruzamentos é uma aposta
+                  no sorteio.
+                </p>
+              }
               <p class="ph-hint">
                 Toque num time para marcá-lo como vencedor do confronto — ele avança
                 sozinho para a próxima rodada. Toque de novo para desfazer.

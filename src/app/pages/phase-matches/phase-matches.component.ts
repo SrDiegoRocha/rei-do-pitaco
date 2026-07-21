@@ -21,12 +21,19 @@ import { MatchesService } from '@core/services/matches.service';
 import { PhasesService } from '@core/services/phases.service';
 import { TournamentsService } from '@core/services/tournaments.service';
 import {
+  canRedrawGenerateNextRound,
   currentKnockoutRound,
   expectedKnockoutRounds,
   isCurrentKnockoutRoundDone,
   isKnockoutFinalDone,
+  isRedrawPhaseExhausted,
+  lastRoundWinnerCount,
 } from '@core/utils/knockout-state';
-import { knockoutRoundLabel } from '@core/utils/round-label';
+import {
+  knockoutMatchBucketLabel,
+  knockoutRoundLabel,
+  knockoutRoundLabelByTieCount,
+} from '@core/utils/round-label';
 import { listStagger } from '@shared/animations/animations';
 import { ButtonComponent } from '@shared/components/button/button.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -167,15 +174,25 @@ export class PhaseMatchesComponent implements OnInit {
     () => this.phase()?.phaseType === 'KNOCKOUT',
   );
 
+  /** Sem chaveamento fixo (Copa do Brasil): sorteio a cada rodada. */
+  protected readonly isRedraw = computed(
+    () => this.phase()?.bracketMode === 'REDRAW_EACH_ROUND',
+  );
+
   protected readonly isFinalized = computed(
     () => this.phase()?.finalizedAt != null,
   );
 
-  /** Fase de mata-mata realmente terminada — chegou na rodada final e está decidida. */
+  /**
+   * Fase de mata-mata sem mais rodadas a gerar. Em chaveamento fixo é a final
+   * decidida; em REDRAW é quando a rodada atual está decidida e não sobra um nº
+   * par de vencedores para sortear (campeão único ou dead-end ímpar → finaliza).
+   */
   protected readonly isFinalDone = computed(() => {
     if (!this.isKnockoutPhase()) return false;
     const p = this.phase();
     if (!p) return false;
+    if (this.isRedraw()) return isRedrawPhaseExhausted(this.bracket());
     return isKnockoutFinalDone(this.bracket(), p.teamCount, p.hasThirdPlace);
   });
 
@@ -185,9 +202,10 @@ export class PhaseMatchesComponent implements OnInit {
     return isCurrentKnockoutRoundDone(this.bracket());
   });
 
-  /** Pronto para gerar a próxima rodada (KO + rodada atual decidida + não é a final). */
+  /** Pronto para gerar a próxima rodada (KO + rodada atual decidida + há o que gerar). */
   protected readonly canGenerateNextRound = computed(() => {
     if (!this.isKnockoutPhase()) return false;
+    if (this.isRedraw()) return canRedrawGenerateNextRound(this.bracket());
     if (this.isFinalDone()) return false;
     if (!this.isCurrentRoundDone()) return false;
     return true;
@@ -197,10 +215,24 @@ export class PhaseMatchesComponent implements OnInit {
     currentKnockoutRound(this.bracket()),
   );
 
+  /** Nº de confrontos (não-3º-lugar) da rodada mais recente do bracket. */
+  private readonly _currentRoundTieCount = computed(() => {
+    const b = this.bracket();
+    if (!b || b.rounds.length === 0) return 0;
+    const last = b.rounds[b.rounds.length - 1]!;
+    return last.ties.filter((t) => !t.thirdPlace).length;
+  });
+
   protected readonly currentRoundFriendlyLabel = computed(() => {
     const r = this.currentRoundNumber();
     const p = this.phase();
     if (r === null || !p) return null;
+    if (this.isRedraw()) {
+      return (
+        knockoutRoundLabelByTieCount(this._currentRoundTieCount()) ??
+        `Rodada ${r}`
+      );
+    }
     return knockoutRoundLabel(r, p.teamCount);
   });
 
@@ -208,6 +240,12 @@ export class PhaseMatchesComponent implements OnInit {
     const r = this.currentRoundNumber();
     const p = this.phase();
     if (r === null || !p) return null;
+    if (this.isRedraw()) {
+      // A próxima rodada emparelha os vencedores da atual (winners / 2 ties).
+      if (!canRedrawGenerateNextRound(this.bracket())) return null;
+      const nextTies = lastRoundWinnerCount(this.bracket()) / 2;
+      return knockoutRoundLabelByTieCount(nextTies) ?? 'próxima rodada';
+    }
     const expected = expectedKnockoutRounds(p.teamCount);
     if (expected === 0 || r >= expected) return null;
     const base = knockoutRoundLabel(r + 1, p.teamCount);
@@ -265,8 +303,9 @@ export class PhaseMatchesComponent implements OnInit {
 
   protected readonly generateLabel = computed(() => {
     if (this.isKnockoutPhase() && this.matches().length > 0) {
-      return 'Gerar próxima rodada';
+      return this.isRedraw() ? 'Sortear próxima rodada' : 'Gerar próxima rodada';
     }
+    if (this.isRedraw()) return 'Sortear confrontos';
     return 'Gerar partidas';
   });
 
@@ -274,10 +313,14 @@ export class PhaseMatchesComponent implements OnInit {
     const p = this.phase();
     if (!p) return '';
     if (this.isKnockoutPhase() && this.matches().length > 0) {
-      return 'Gera a próxima rodada a partir dos vencedores da rodada anterior. Só conclua quando todos os resultados da rodada atual estiverem lançados.';
+      return this.isRedraw()
+        ? 'Sorteia os confrontos da próxima rodada entre os times que avançaram. Só conclua quando todos os resultados da rodada atual estiverem lançados.'
+        : 'Gera a próxima rodada a partir dos vencedores da rodada anterior. Só conclua quando todos os resultados da rodada atual estiverem lançados.';
     }
     if (p.phaseType === 'KNOCKOUT') {
-      return 'Gera o chaveamento inicial. Requer um número de times que seja potência de 2.';
+      return this.isRedraw()
+        ? 'Sorteia a 1ª rodada emparelhando os times. Requer um número par de times (não precisa ser potência de 2).'
+        : 'Gera o chaveamento inicial. Requer um número de times que seja potência de 2.';
     }
     if (p.phaseType === 'GROUPS') {
       return 'Gera todas as rodadas de cada grupo usando o algoritmo de Berger. Esta fase precisa estar sem partidas.';
@@ -484,13 +527,20 @@ export class PhaseMatchesComponent implements OnInit {
       : 'REGULAR';
   }
 
-  /** Rótulo do balde: etapa de mata-mata, "Disputa de 3º lugar" ou "Rodada N". */
+  /** Rótulo do balde: etapa de mata-mata (+ perna, em ida-e-volta), "Disputa
+   *  de 3º lugar" ou "Rodada N". */
   private _bucketLabel(round: number, kind: MatchBucketKind): string {
-    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     const p = this.phase();
     if (p?.phaseType === 'KNOCKOUT') {
-      return knockoutRoundLabel(round, p.teamCount);
+      return knockoutMatchBucketLabel(
+        round,
+        kind === 'THIRD_PLACE',
+        p.teamCount,
+        p.matchLegMode,
+        p.finalLegMode,
+      );
     }
+    if (kind === 'THIRD_PLACE') return 'Disputa de 3º lugar';
     return `Rodada ${round}`;
   }
 

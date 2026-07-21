@@ -215,6 +215,14 @@ export class PhasePickemComponent implements OnInit {
     () => this.template()?.phaseType !== 'KNOCKOUT',
   );
 
+  /**
+   * Bracket sem chaveamento fixo: os cruzamentos das próximas rodadas serão
+   * sorteados, então o palpite de confronto é uma aposta no sorteio.
+   */
+  protected readonly isRedrawBracket = computed(
+    () => this.template()?.bracket?.bracketMode === 'REDRAW_EACH_ROUND',
+  );
+
   protected readonly notReadyMessage = computed(() => {
     const reason = this.template()?.stateReason;
     return reason
