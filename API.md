@@ -672,7 +672,7 @@ Hard delete. Bloqueado quando há matches associados (**409** `Cannot remove pha
 ### Lifecycle vs status do torneio
 
 - **DRAFT/OPEN**: cria/edita/deleta/reordena phases livremente.
-- **IN_PROGRESS**: estrutura trava → **409** `Phase structure is locked while tournament is IN_PROGRESS`.
+- **IN_PROGRESS**: a **estrutura** (criar/editar/deletar/reordenar phase e grupo) trava → **409** `Phase structure is locked while tournament is IN_PROGRESS`. Mas a **atribuição de times às phases** (§12) e as **zonas** (§13) continuam editáveis — é assim que os times entram nas fases seguintes com o torneio rolando.
 - **FINISHED**: read-only.
 
 ---
@@ -724,7 +724,14 @@ Hard delete. Bloqueado se há matches no grupo (**409** `Cannot remove group bec
 
 ## 12. Times da fase (`/api/tournaments/{tid}/phases/{pid}/teams`)
 
-Quais times participam **daquela phase**. Em phase 0, é auto-populado com os `TournamentTeam`. Em phases seguintes, admin adiciona manualmente (ou são propagados pelo `finalize`).
+Quais times participam **daquela phase**. Em phase 0, é auto-populado com os `TournamentTeam`. Em phases seguintes, os times entram de dois jeitos (podem coexistir no torneio, mas escolha **um por fase-destino**):
+
+- **Automático** — `POST .../finalize` da fase anterior materializa os classificados via zonas (§16). Caminho recomendado.
+- **Manual** — os endpoints abaixo (`POST`/`PUT`/`DELETE`/`draw`).
+
+> **NOVO — edição em `IN_PROGRESS` liberada.** A **atribuição** de times a fases (add/move/remove/draw) agora é editável em `DRAFT`, `OPEN` **e `IN_PROGRESS`** (trava só em `FINISHED`) — igual às zonas. Isso resolve o cenário multi-fase: depois de iniciar o torneio, o admin ainda consegue popular as fases seguintes conforme as anteriores terminam. A **estrutura** (criar/editar fase e grupo — §10/§11) continua travando em `IN_PROGRESS`. Guarde a diferença: *mexer nos times de uma fase* é permitido com o torneio rolando; *criar/apagar fases e grupos*, não. Ver o guia completo em **`FLUXO_FASES.md`** na raiz.
+>
+> Interação com o `finalize`: se você popular a fase-destino manualmente e depois chamar `finalize` numa fase cuja zona aponta pra ela, o `finalize` recusa (**409** `Next phase 'X' already has teams; cannot finalize`) — proteção contra popular duas vezes. Por isso: por fase-destino, use **ou** o automático **ou** o manual.
 
 ### `PhaseTeamResponse`
 
@@ -748,11 +755,12 @@ export interface PhaseTeamResponse {
 
 ### `POST /api/tournaments/{tid}/phases/{pid}/teams/{teamId}` → 201
 
-Adiciona time à phase. O time precisa estar em `TournamentTeam` (vinculado ao torneio).
+Adiciona time à phase. O time precisa estar em `TournamentTeam` (vinculado ao torneio). Permitido em `DRAFT`/`OPEN`/`IN_PROGRESS`.
 
 Erros:
 - **409** `Team is not part of this tournament` — time não está no roster do torneio.
 - **409** `Team is already part of this tournament` — duplicado na phase.
+- **409** `Phase structure is locked while tournament is FINISHED` — torneio encerrado.
 
 ### `PUT /api/tournaments/{tid}/phases/{pid}/teams/{teamId}` → 200
 
@@ -770,7 +778,7 @@ Erros:
 
 ### `DELETE /api/tournaments/{tid}/phases/{pid}/teams/{teamId}` → 204
 
-Remove time da phase. Bloqueado se há matches envolvendo o time na phase (**409**).
+Remove time da phase. Permitido em `DRAFT`/`OPEN`/`IN_PROGRESS`. Bloqueado se há matches envolvendo o time na phase (**409** `Cannot remove team from phase because it has matches attached`) — então remover em `IN_PROGRESS` só vale para time de fase que ainda não jogou.
 
 ### `POST /api/tournaments/{tid}/phases/{pid}/teams/draw` → 200 `PhaseTeamResponse[]`
 

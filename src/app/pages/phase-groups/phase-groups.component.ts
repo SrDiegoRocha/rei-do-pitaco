@@ -125,16 +125,29 @@ export class PhaseGroupsComponent implements OnInit {
     return !!(t && user && t.owner.id === user.id);
   });
 
+  /**
+   * ESTRUTURA (criar/renomear/excluir grupos): trava ao entrar em IN_PROGRESS.
+   * Definida antes de iniciar o torneio (§10/§11 do API.md).
+   */
   protected readonly canEdit = computed(() => {
     if (!this.isOwner()) return false;
     const status = this.tournament()?.status;
     return status === 'DRAFT' || status === 'OPEN';
   });
 
+  /**
+   * TIMES (atribuir a grupo, sortear, mover): editável em DRAFT/OPEN/IN_PROGRESS,
+   * trava só em FINISHED (ver FLUXO_FASES.md §3). Separado da estrutura.
+   */
+  protected readonly canManageTeams = computed(() => {
+    if (!this.isOwner()) return false;
+    return this.tournament()?.status !== 'FINISHED';
+  });
+
   protected readonly statusBanner = computed<string | null>(() => {
     const status = this.tournament()?.status;
     if (status === 'IN_PROGRESS') {
-      return 'Torneio em andamento — grupos não podem ser alterados.';
+      return 'Torneio em andamento — não dá pra criar ou renomear grupos, mas você ainda pode distribuir os times entre eles.';
     }
     if (status === 'FINISHED') {
       return 'Torneio finalizado — somente leitura.';
@@ -171,7 +184,7 @@ export class PhaseGroupsComponent implements OnInit {
   );
 
   protected readonly canDraw = computed(() => {
-    if (!this.canEdit()) return false;
+    if (!this.canManageTeams()) return false;
     if (this.groups().length === 0) return false;
     return this.teamsWithoutGroup().length > 0;
   });
@@ -389,7 +402,7 @@ export class PhaseGroupsComponent implements OnInit {
     targetGroupId: string | null,
     targetGroupName: string | null,
   ): void {
-    if (!this.canEdit()) return;
+    if (!this.canManageTeams()) return;
 
     const team = event.previousContainer.data[event.previousIndex];
     if (!team) return;
@@ -400,7 +413,7 @@ export class PhaseGroupsComponent implements OnInit {
   }
 
   protected canMoveTeam(team: IPhaseTeamResponse): boolean {
-    if (!this.canEdit()) return false;
+    if (!this.canManageTeams()) return false;
     if (team.groupId !== null) return true;
     return this.groups().length > 0;
   }

@@ -85,16 +85,18 @@ export class PhaseTeamsComponent implements OnInit {
     return !!(t && user && t.owner.id === user.id);
   });
 
+  // Os times da fase são editáveis em DRAFT/OPEN/IN_PROGRESS — só travam em
+  // FINISHED (ver FLUXO_FASES.md §3). É o que permite popular as fases
+  // seguintes com o torneio já em andamento.
   protected readonly canEdit = computed(() => {
     if (!this.isOwner()) return false;
-    const status = this.tournament()?.status;
-    return status === 'DRAFT' || status === 'OPEN';
+    return this.tournament()?.status !== 'FINISHED';
   });
 
   protected readonly statusBanner = computed<string | null>(() => {
     const status = this.tournament()?.status;
     if (status === 'IN_PROGRESS') {
-      return 'Torneio em andamento — estrutura das fases está congelada.';
+      return 'Torneio em andamento — você ainda pode ajustar os times desta fase (a estrutura de fases e grupos, essa sim, fica travada).';
     }
     if (status === 'FINISHED') {
       return 'Torneio finalizado — somente leitura.';

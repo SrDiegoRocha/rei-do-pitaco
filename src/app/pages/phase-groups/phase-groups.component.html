@@ -31,7 +31,7 @@
       <div class="page__banner" role="status">{{ banner }}</div>
     }
 
-    @if (canEdit() && groups().length > 0) {
+    @if (canManageTeams() && groups().length > 0) {
       <div class="page__actions">
         <app-button
           variant="brand-outline"
@@ -67,7 +67,7 @@
         @if (teamsWithoutGroup().length > 0 || groups().length > 0) {
           <article
             class="group group--unassigned"
-            [class.group--locked]="!canEdit()"
+            [class.group--locked]="!canManageTeams()"
           >
             <header class="group__header">
               <h3 class="group__name">Sem grupo</h3>
@@ -81,7 +81,7 @@
               class="group__teams"
               cdkDropList
               [cdkDropListData]="teamsWithoutGroup()"
-              [cdkDropListDisabled]="!canEdit()"
+              [cdkDropListDisabled]="!canManageTeams()"
               (cdkDropListDropped)="onDrop($event, null, null)"
             >
               @for (team of teamsWithoutGroup(); track team.teamId) {
@@ -89,7 +89,7 @@
                   class="team-chip"
                   cdkDrag
                   [cdkDragData]="team"
-                  [cdkDragDisabled]="!canEdit() || movingTeamId() !== null"
+                  [cdkDragDisabled]="!canManageTeams() || movingTeamId() !== null"
                   [cdkDragStartDelay]="{ touch: 180, mouse: 0 }"
                   [class.team-chip--moving]="movingTeamId() === team.teamId"
                 >
@@ -131,7 +131,7 @@
         @for (group of groups(); track group.id) {
           <article
             class="group"
-            [class.group--locked]="!canEdit()"
+            [class.group--locked]="!canManageTeams()"
           >
             <header class="group__header">
               <h3 class="group__name">{{ group.name }}</h3>
@@ -167,7 +167,7 @@
               class="group__teams"
               cdkDropList
               [cdkDropListData]="teamsInGroup(group.id)"
-              [cdkDropListDisabled]="!canEdit()"
+              [cdkDropListDisabled]="!canManageTeams()"
               (cdkDropListDropped)="onDrop($event, group.id, group.name)"
             >
               @for (team of teamsInGroup(group.id); track team.teamId) {
@@ -175,7 +175,7 @@
                   class="team-chip"
                   cdkDrag
                   [cdkDragData]="team"
-                  [cdkDragDisabled]="!canEdit() || movingTeamId() !== null"
+                  [cdkDragDisabled]="!canManageTeams() || movingTeamId() !== null"
                   [cdkDragStartDelay]="{ touch: 180, mouse: 0 }"
                   [class.team-chip--moving]="movingTeamId() === team.teamId"
                 >
