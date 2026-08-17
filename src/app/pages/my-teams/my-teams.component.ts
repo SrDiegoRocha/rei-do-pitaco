@@ -10,7 +10,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { TeamScope, TeamType } from '@core/interfaces/enums';
-import { ITeamResponse } from '@core/interfaces/team.interface';
+import {
+  ICountryFilter,
+  ITeamResponse,
+} from '@core/interfaces/team.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
 import { matchesSearchTerm } from '@core/utils/search-text';
 import { listStagger, tabSlide } from '@shared/animations/animations';
@@ -23,6 +26,10 @@ import { FabComponent } from '@shared/components/fab/fab.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { TeamCardComponent } from '@shared/components/team-card/team-card.component';
+import {
+  ITeamFilterSelection,
+  TeamFiltersComponent,
+} from '@shared/components/team-filters/team-filters.component';
 import { Plus, SearchX, Shield } from 'lucide-angular';
 
 const PAGE_SIZE = 24;
@@ -56,6 +63,7 @@ const GROUP_QUERY: Record<TeamGroup, IGroupQuery> = {
     PaginationComponent,
     RouterLink,
     SearchInputComponent,
+    TeamFiltersComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-teams.component.html',
@@ -82,6 +90,18 @@ export class MyTeamsComponent implements OnInit {
   protected readonly totalElements = signal(0);
 
   protected readonly isMineGroup = computed(() => this.group() === 'mine');
+  protected readonly isClubsGroup = computed(() => this.group() === 'clubs');
+
+  /* ── Filtro de país/liga (só clubes do sistema) ──────────────────────
+     Opções vêm de GET /api/teams/system/filters — nada hardcodado aqui. */
+
+  protected readonly countries = signal<ICountryFilter[]>([]);
+  protected readonly country = signal<string | null>(null);
+  protected readonly league = signal<string | null>(null);
+
+  protected readonly hasFilter = computed(
+    () => this.country() !== null || this.league() !== null,
+  );
 
   protected readonly isEmpty = computed(
     () =>
@@ -105,8 +125,9 @@ export class MyTeamsComponent implements OnInit {
 
   /** Grupo inteiro carregado para busca (null = ainda não carregado). */
   private readonly _searchPool = signal<ITeamResponse[] | null>(null);
-  private readonly _searchCache = new Map<TeamGroup, ITeamResponse[]>();
-  private _poolFetchGroup: TeamGroup | null = null;
+  /* O pool depende do filtro ativo, então a chave é grupo + país + liga. */
+  private readonly _searchCache = new Map<string, ITeamResponse[]>();
+  private _poolFetchKey: string | null = null;
 
   protected readonly searchResults = computed(() => {
     const pool = this._searchPool();
@@ -135,9 +156,27 @@ export class MyTeamsComponent implements OnInit {
   protected setGroup(next: TeamGroup): void {
     if (this.group() === next) return;
     this.group.set(next);
+    if (next === 'clubs') this._loadFilters();
     this.items.set([]);
     this.currentPage.set(0);
-    this._searchPool.set(this._searchCache.get(next) ?? null);
+    this._syncSearchPool();
+    this._load();
+    if (this.searching()) this._ensureSearchPool();
+  }
+
+  /** País/liga escolhidos: volta pra primeira página e recarrega. */
+  protected onFiltersChange(selection: ITeamFilterSelection): void {
+    if (
+      selection.country === this.country() &&
+      selection.league === this.league()
+    ) {
+      return;
+    }
+    this.country.set(selection.country);
+    this.league.set(selection.league);
+    this.items.set([]);
+    this.currentPage.set(0);
+    this._syncSearchPool();
     this._load();
     if (this.searching()) this._ensureSearchPool();
   }
@@ -182,44 +221,65 @@ export class MyTeamsComponent implements OnInit {
     this._scrollContainer.scrollToTop();
   }
 
-  /** Garante o pool de busca do grupo atual (uma chamada por grupo). */
+  /** Filtros do grupo ativo — país/liga só valem para clubes do sistema. */
+  private _groupParams(): ITeamListParams {
+    const query = GROUP_QUERY[this.group()];
+    const clubs = this.isClubsGroup();
+    return {
+      scope: query.scope,
+      type: query.type,
+      country: clubs ? (this.country() ?? undefined) : undefined,
+      league: clubs ? (this.league() ?? undefined) : undefined,
+    };
+  }
+
+  /** Chave do cache de busca: o pool muda com o filtro, não só com o grupo. */
+  private _poolKey(): string {
+    const p = this._groupParams();
+    return `${this.group()}|${p.country ?? ''}|${p.league ?? ''}`;
+  }
+
+  /** Aponta o pool exibido para o cache da combinação atual (ou nada). */
+  private _syncSearchPool(): void {
+    this._searchPool.set(this._searchCache.get(this._poolKey()) ?? null);
+  }
+
+  /** Garante o pool de busca da combinação atual (uma chamada por chave). */
   private _ensureSearchPool(): void {
-    const group = this.group();
-    const cached = this._searchCache.get(group);
+    const key = this._poolKey();
+    const cached = this._searchCache.get(key);
     if (cached) {
       this._searchPool.set(cached);
       this.searchLoading.set(false);
       this.searchError.set(null);
       return;
     }
-    if (this._poolFetchGroup === group) return; // fetch já em andamento
+    if (this._poolFetchKey === key) return; // fetch já em andamento
 
-    this._poolFetchGroup = group;
+    this._poolFetchKey = key;
     this.searchLoading.set(true);
     this.searchError.set(null);
-    const query = GROUP_QUERY[group];
     this._service
       .list({
         page: 0,
         size: SEARCH_POOL_SIZE,
         sort: SORT,
-        scope: query.scope,
-        type: query.type,
+        ...this._groupParams(),
       })
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (page) => {
-          if (this._poolFetchGroup === group) this._poolFetchGroup = null;
-          this._searchCache.set(group, page.content);
-          // Se o usuário trocou de grupo durante o fetch, não sobrescreve.
-          if (this.group() === group) {
+          if (this._poolFetchKey === key) this._poolFetchKey = null;
+          this._searchCache.set(key, page.content);
+          // Se o usuário trocou de grupo/filtro durante o fetch, não sobrescreve.
+          if (this._poolKey() === key) {
             this._searchPool.set(page.content);
             this.searchLoading.set(false);
           }
         },
         error: (err: unknown) => {
-          if (this._poolFetchGroup === group) this._poolFetchGroup = null;
-          if (this.group() === group) {
+          if (this._poolFetchKey === key) this._poolFetchKey = null;
+          if (this._poolKey() === key) {
             this.searchLoading.set(false);
             this.searchError.set(err);
           }
@@ -227,16 +287,27 @@ export class MyTeamsComponent implements OnInit {
       });
   }
 
+  /** Opções dos selects, na primeira vez que a aba de clubes abre.
+      Falha silenciosa: sem filtro a lista segue inteira. */
+  private _loadFilters(): void {
+    if (this.countries().length > 0) return;
+    this._service
+      .systemFilters()
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (filters) => this.countries.set(filters.countries),
+        error: () => this.countries.set([]),
+      });
+  }
+
   private _load(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    const query = GROUP_QUERY[this.group()];
     const params: ITeamListParams = {
       page: this.currentPage(),
       size: PAGE_SIZE,
       sort: SORT,
-      scope: query.scope,
-      type: query.type,
+      ...this._groupParams(),
     };
     this._service
       .list(params)

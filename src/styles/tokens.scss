@@ -175,7 +175,17 @@
   --safe-left:   env(safe-area-inset-left);
   --safe-right:  env(safe-area-inset-right);
 
+  /* Só vale até o ThemeService carimbar o data-theme no <html> (primeiro
+     paint). Depois disso quem manda são as regras por tema abaixo. */
   color-scheme: light dark;
+}
+
+/* Os controles nativos — popup do <select>, date picker, scrollbar — seguem o
+   color-scheme, não os tokens. Sem amarrá-lo ao tema escolhido no app, o
+   navegador os desenharia pela preferência do sistema: app no escuro + SO no
+   claro dava popup claro com o texto do tema escuro em cima. */
+[data-theme='light'] {
+  color-scheme: light;
 }
 
 @media (max-width: 767px) {
@@ -203,6 +213,8 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
+
   --bg-base:          #0A0F0A;
   --bg-surface:       #14201A;
   --bg-elevated:      #1C2A23;

@@ -37,14 +37,29 @@
     </button>
   </div>
 
-  @if (loadError() === null && !isEmpty()) {
-    <app-search-input
-      class="page__search"
-      [value]="searchTerm()"
-      (valueChange)="onSearchChange($event)"
-      placeholder="Buscar time pelo nome..."
-      ariaLabel="Buscar time pelo nome"
-    />
+  <!-- Com filtro ativo a barra fica de pé mesmo sem resultado: é por ela que
+       o usuário sai de um filtro vazio. -->
+  @if (loadError() === null && (!isEmpty() || (isClubsGroup() && hasFilter()))) {
+    <div class="page__filters">
+      <app-search-input
+        class="page__search"
+        [value]="searchTerm()"
+        (valueChange)="onSearchChange($event)"
+        placeholder="Buscar time pelo nome..."
+        ariaLabel="Buscar time pelo nome"
+      />
+
+      @if (isClubsGroup() && countries().length > 0) {
+        <app-team-filters
+          class="page__country-filter"
+          [countries]="countries()"
+          [country]="country()"
+          [league]="league()"
+          [disabled]="loading()"
+          (filtersChange)="onFiltersChange($event)"
+        />
+      }
+    </div>
   }
 
   <div class="page__pager" [@tabSlide]="groupIndex()">
@@ -78,6 +93,12 @@
         [icon]="shieldIcon"
         title="Sem seleções disponíveis"
         description="As seleções do sistema aparecem aqui."
+      />
+    } @else if (hasFilter()) {
+      <app-empty-state
+        [icon]="searchOffIcon"
+        title="Nenhum clube nesse filtro"
+        description="Escolha outro país ou outra liga."
       />
     } @else {
       <app-empty-state

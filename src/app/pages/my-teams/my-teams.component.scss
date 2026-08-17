@@ -76,6 +76,12 @@
   border-color: var(--brand);
 }
 
+.page__filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .page__search {
   width: 100%;
 }
@@ -156,8 +162,20 @@
 }
 
 @media (min-width: 640px) {
-  /* Mobile ocupa a largura toda; em telas largas o campo não vira um trilho. */
+  /* Mobile empilha; em telas largas busca e filtros dividem a mesma linha
+     sem virarem trilhos. */
+  .page__filters {
+    flex-direction: row;
+    align-items: center;
+  }
+
   .page__search {
+    flex: 1 1 320px;
+    max-width: 420px;
+  }
+
+  .page__country-filter {
+    flex: 1 1 320px;
     max-width: 420px;
   }
 

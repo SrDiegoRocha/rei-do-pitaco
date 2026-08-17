@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  flex-shrink: 0; /* em containers flex (sheet), os selects não são espremidos */
+}
+
+.team-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.team-filters__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 160px;
+  min-width: 0;
+  min-height: 44px; /* alvo de toque confortável no mobile */
+  padding-inline: var(--space-3);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  transition:
+    border-color var(--duration-fast) var(--easing-default),
+    box-shadow var(--duration-fast) var(--easing-default);
+}
+
+[data-theme='dark'] .team-filters__field {
+  background-color: var(--bg-elevated);
+}
+
+.team-filters__field:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+/* Bandeira do país escolhido: o `<option>` nativo não aceita imagem, então ela
+   fica ao lado do select — mesma fonte de SVG do badge de time. */
+.team-filters__flag {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background-image: var(--flag-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.team-filters__select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px; /* < 16px dispara auto-zoom no iOS */
+  line-height: var(--lh-base);
+  padding-block: var(--space-2);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  text-overflow: ellipsis;
+}
+
+/* A lista aberta é desenhada pelo sistema: só `background-color` e `color`
+   chegam nela. Sem isto as opções sairiam no cinza padrão do navegador, fora
+   da paleta esverdeada do tema escuro. */
+.team-filters__select option {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.team-filters__select:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* `appearance: none` tira a seta nativa — ela volta como ícone para o campo
+   continuar legível como um select. */
+.team-filters__chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+}

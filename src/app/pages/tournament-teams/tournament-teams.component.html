@@ -134,6 +134,16 @@
         </button>
       </div>
 
+      @if (isClubsGroup() && countries().length > 0) {
+        <app-team-filters
+          [countries]="countries()"
+          [country]="country()"
+          [league]="league()"
+          [disabled]="loadingAvailable()"
+          (filtersChange)="onFiltersChange($event)"
+        />
+      }
+
       @if (loadingAvailable() || availableTeams().length > 0) {
         <app-search-input
           [(value)]="availableSearch"
@@ -165,6 +175,11 @@
           } @else if (availableGroup() === 'national') {
             <p class="sheet__empty-text">
               Todas as seleções disponíveis já estão vinculadas.
+            </p>
+          } @else if (hasFilter()) {
+            <p class="sheet__empty-text">
+              Nenhum clube disponível nesse filtro. Escolha outro país ou outra
+              liga.
             </p>
           } @else {
             <p class="sheet__empty-text">
@@ -201,9 +216,16 @@
                 />
                 <div class="sheet__team-info">
                   <span class="sheet__team-name">{{ team.name }}</span>
-                  @if (team.shortName) {
-                    <span class="sheet__team-short">{{ team.shortName }}</span>
-                  }
+                  <span class="sheet__team-meta">
+                    @if (team.shortName) {
+                      <span class="sheet__team-short">{{ team.shortName }}</span>
+                    }
+                    @if (team.leagueName) {
+                      <span class="sheet__team-league">
+                        {{ team.leagueName }}
+                      </span>
+                    }
+                  </span>
                 </div>
                 @if (attachingTeamId() === team.id) {
                   <span class="sheet__spinner" aria-hidden="true"></span>

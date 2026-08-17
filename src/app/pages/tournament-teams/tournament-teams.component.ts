@@ -13,7 +13,10 @@ import { forkJoin } from 'rxjs';
 import { AuthState } from '@core/auth/auth-state';
 import { ApiException } from '@core/errors/api-error';
 import { TeamScope, TeamType } from '@core/interfaces/enums';
-import { ITeamResponse } from '@core/interfaces/team.interface';
+import {
+  ICountryFilter,
+  ITeamResponse,
+} from '@core/interfaces/team.interface';
 import { ITournamentTeamResponse } from '@core/interfaces/tournament-team.interface';
 import { ITournamentResponse } from '@core/interfaces/tournament.interface';
 import { ITeamListParams, TeamsService } from '@core/services/teams.service';
@@ -31,6 +34,10 @@ import { FabComponent } from '@shared/components/fab/fab.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { TeamBadgeComponent } from '@shared/components/team-badge/team-badge.component';
+import {
+  ITeamFilterSelection,
+  TeamFiltersComponent,
+} from '@shared/components/team-filters/team-filters.component';
 import { ToastService } from '@shared/services/toast.service';
 import { LucideAngularModule, Plus, Trash2, Trophy, X } from 'lucide-angular';
 
@@ -54,6 +61,7 @@ const AVAILABLE_PAGE_SIZE = 300;
     PageHeaderComponent,
     SearchInputComponent,
     TeamBadgeComponent,
+    TeamFiltersComponent,
     EmptyStateComponent,
     FabComponent,
     ConfirmDialogComponent,
@@ -88,6 +96,19 @@ export class TournamentTeamsComponent implements OnInit {
   protected readonly attachingTeamId = signal<string | null>(null);
   protected readonly availableGroup = signal<TeamGroup>('mine');
   protected readonly availableSearch = signal('');
+
+  /* Filtro de país/liga do grupo "Clubes" (opções vindas da API). */
+  protected readonly countries = signal<ICountryFilter[]>([]);
+  protected readonly country = signal<string | null>(null);
+  protected readonly league = signal<string | null>(null);
+
+  protected readonly isClubsGroup = computed(
+    () => this.availableGroup() === 'clubs',
+  );
+
+  protected readonly hasFilter = computed(
+    () => this.country() !== null || this.league() !== null,
+  );
 
   /** Lista do sheet filtrada pela busca (nome ou sigla, sem acentos). */
   protected readonly filteredAvailableTeams = computed(() => {
@@ -134,6 +155,7 @@ export class TournamentTeamsComponent implements OnInit {
     if (!this.canEdit()) return;
     this.addSheetOpen.set(true);
     this.availableSearch.set('');
+    if (this.isClubsGroup()) this._loadFilters();
     this._loadAvailable();
   }
 
@@ -144,6 +166,20 @@ export class TournamentTeamsComponent implements OnInit {
   protected setAvailableGroup(group: TeamGroup): void {
     if (this.availableGroup() === group) return;
     this.availableGroup.set(group);
+    this.availableTeams.set([]);
+    if (group === 'clubs') this._loadFilters();
+    this._loadAvailable();
+  }
+
+  protected onFiltersChange(selection: ITeamFilterSelection): void {
+    if (
+      selection.country === this.country() &&
+      selection.league === this.league()
+    ) {
+      return;
+    }
+    this.country.set(selection.country);
+    this.league.set(selection.league);
     this.availableTeams.set([]);
     this._loadAvailable();
   }
@@ -251,15 +287,32 @@ export class TournamentTeamsComponent implements OnInit {
       });
   }
 
+  /** Opções dos selects, na primeira vez que a aba de clubes abre.
+      Falha silenciosa: sem filtro a lista segue inteira. */
+  private _loadFilters(): void {
+    if (this.countries().length > 0) return;
+    this._teamsService
+      .systemFilters()
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (filters) => this.countries.set(filters.countries),
+        error: () => this.countries.set([]),
+      });
+  }
+
   private _loadAvailable(): void {
     this.loadingAvailable.set(true);
     const query = GROUP_QUERY[this.availableGroup()];
+    const clubs = this.isClubsGroup();
     const params: ITeamListParams = {
       page: 0,
       size: AVAILABLE_PAGE_SIZE,
       sort: 'name,asc',
       scope: query.scope,
       type: query.type,
+      // País/liga só existem nos clubes do sistema.
+      country: clubs ? (this.country() ?? undefined) : undefined,
+      league: clubs ? (this.league() ?? undefined) : undefined,
     };
     this._teamsService
       .list(params)

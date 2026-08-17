@@ -1,0 +1,48 @@
+<div class="team-filters">
+  <div class="team-filters__field">
+    @if (flagUrl(); as url) {
+      <span
+        class="team-filters__flag"
+        [style.--flag-url]="url"
+        aria-hidden="true"
+      ></span>
+    }
+    <select
+      class="team-filters__select"
+      [disabled]="disabled()"
+      aria-label="Filtrar clubes por país"
+      (change)="changeCountry($any($event.target).value)"
+    >
+      <option value="" [selected]="country() === null">Todos os países</option>
+      @for (c of countries(); track c.code) {
+        <option [value]="c.code" [selected]="c.code === country()">
+          {{ c.name }} ({{ c.clubCount }})
+        </option>
+      }
+    </select>
+    <lucide-icon
+      class="team-filters__chevron"
+      [img]="chevronIcon"
+      [size]="16"
+      aria-hidden="true"
+    />
+  </div>
+
+  @if (showLeague()) {
+    <div class="team-filters__field">
+      <select
+        class="team-filters__select"
+        [disabled]="disabled()"
+        aria-label="Filtrar clubes por liga"
+        (change)="changeLeague($any($event.target).value)"
+      >
+        <option value="" [selected]="league() === null">Todas as ligas</option>
+        @for (l of leagueOptions(); track l.slug) {
+          <option [value]="l.slug" [selected]="l.slug === league()">
+            {{ l.name }} ({{ l.clubCount }})
+          </option>
+        }
+      </select>
+    </div>
+  }
+</div>

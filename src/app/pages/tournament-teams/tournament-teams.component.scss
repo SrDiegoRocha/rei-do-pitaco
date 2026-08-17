@@ -339,11 +339,28 @@
   white-space: nowrap;
 }
 
+/* Sigla e liga na mesma linha; a liga cede espaço primeiro e é truncada. */
+.sheet__team-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .sheet__team-short {
   font-size: var(--text-xs);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.sheet__team-league {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sheet__team-icon {
